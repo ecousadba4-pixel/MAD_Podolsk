@@ -1,0 +1,14 @@
+service:
+  name: skpdi-dashboard-backend
+  dockerfile: ./Dockerfile
+  context: .
+  ports:
+    - 8000
+
+  env:
+    - name: DB_DSN
+      value: postgresql://USER:PASSWORD@HOST:5432/DBNAME?sslmode=require
+    # Разрешённые origin'ы для CORS (через запятую).
+    # Например: https://dima.github.io,https://u4s.ru
+    - name: ALLOWED_ORIGINS
+      value: "*"
