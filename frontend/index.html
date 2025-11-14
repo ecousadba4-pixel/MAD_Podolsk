@@ -548,6 +548,7 @@
     const searchInput = document.getElementById("search");
     const statusCountsEl = document.getElementById("status-counts");
 
+    const monthCache = new Map();
     let currentData = null;
     let filteredItems = [];
 
@@ -593,7 +594,15 @@
         return;
       }
 
-      const s = currentData.summary || {};
+      if (!currentData.summary) {
+        sumPlannedEl.textContent = "–";
+        sumFactEl.textContent = "–";
+        sumCompleteEl.textContent = "–";
+        sumDeltaEl.textContent = "–";
+        return;
+      }
+
+      const s = currentData.summary;
       const planned = s.planned_amount ?? 0;
       const fact = s.fact_amount ?? 0;
       const completion = s.completion_pct ?? (planned ? fact / planned : null);
@@ -615,7 +624,13 @@
       mobileList.innerHTML = "";
 
       if (!filteredItems || filteredItems.length === 0) {
-        statusCountsEl.textContent = "Записей: 0";
+        if (currentData && !currentData.has_data) {
+          statusCountsEl.textContent = "Данные для выбранного месяца отсутствуют";
+        } else if (searchInput.value.trim()) {
+          statusCountsEl.textContent = "Ничего не найдено";
+        } else {
+          statusCountsEl.textContent = "Записей: 0";
+        }
         return;
       }
 
@@ -678,33 +693,48 @@
       statusCountsEl.textContent = `Записей: ${filteredItems.length}`;
     }
 
+    function applyDataToUi(data) {
+      currentData = data;
+      filteredItems = data.items || [];
+      lastUpdatedText.textContent = data.has_data
+        ? "Обновлено: " + formatDateTime(data.last_updated)
+        : "Данные за месяц отсутствуют";
+      renderSummary();
+      applyFilter();
+    }
+
     async function loadMonthData(monthIso) {
-      tableBody.innerHTML = "";
-      mobileList.innerHTML = "";
-      statusCountsEl.textContent = "Загрузка...";
-      sumPlannedEl.textContent = "…";
-      sumFactEl.textContent = "…";
-      sumCompleteEl.textContent = "…";
-      sumDeltaEl.textContent = "…";
+      const cached = monthCache.get(monthIso);
+      if (cached) {
+        applyDataToUi(cached);
+      } else {
+        tableBody.innerHTML = "";
+        mobileList.innerHTML = "";
+        statusCountsEl.textContent = "Загрузка...";
+        sumPlannedEl.textContent = "…";
+        sumFactEl.textContent = "…";
+        sumCompleteEl.textContent = "…";
+        sumDeltaEl.textContent = "…";
+      }
 
       try {
-        const url = new URL(API_URL);
+        const url = new URL(API_URL, window.location.origin);
         url.searchParams.set("month", monthIso);
         const res = await fetch(url.toString());
         if (!res.ok) {
           throw new Error("HTTP " + res.status);
         }
         const data = await res.json();
-        currentData = data;
-        filteredItems = data.items || [];
-
-        lastUpdatedText.textContent = "Обновлено: " + formatDateTime(data.last_updated);
-        renderSummary();
-        applyFilter();
+        monthCache.set(monthIso, data);
+        applyDataToUi(data);
       } catch (e) {
         console.error(e);
-        statusCountsEl.textContent = "Ошибка загрузки данных";
-        lastUpdatedText.textContent = "Ошибка загрузки данных";
+        if (!cached) {
+          statusCountsEl.textContent = "Ошибка загрузки данных";
+          lastUpdatedText.textContent = "Ошибка загрузки данных";
+        } else {
+          statusCountsEl.textContent = "Ошибка обновления, показаны кэшированные данные";
+        }
       }
     }
 

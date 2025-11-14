@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 
 from ..models import DashboardResponse
 from ..queries import fetch_plan_vs_fact_for_month
@@ -19,10 +19,6 @@ def get_dashboard(
     """
     items, summary, last_updated_iso = fetch_plan_vs_fact_for_month(month)
 
-    if not items:
-        # Можно вернуть пустой ответ, но удобнее явно сказать, что данных нет.
-        raise HTTPException(status_code=404, detail="Нет данных для указанного месяца")
-
     last_updated: Optional[datetime] = None
     if last_updated_iso:
         try:
@@ -35,4 +31,5 @@ def get_dashboard(
         last_updated=last_updated,
         summary=summary,
         items=items,
+        has_data=bool(items),
     )

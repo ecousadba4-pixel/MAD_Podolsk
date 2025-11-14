@@ -29,5 +29,6 @@ class DashboardSummary(BaseModel):
 class DashboardResponse(BaseModel):
     month: date
     last_updated: Optional[datetime]
-    summary: DashboardSummary
+    summary: Optional[DashboardSummary]
     items: List[DashboardItem]
+    has_data: bool
