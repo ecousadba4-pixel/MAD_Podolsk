@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>СКПДИ · План / Факт</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --bg-card: #ffffff;
+      --border-soft: #e0e4ef;
+      --text-main: #1e293b;
+      --text-muted: #6b7280;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --danger: #b91c1c;
+      --success: #15803d;
+      --radius-lg: 16px;
+      --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #f9fbff 0, #f3f4f6 40%, #eef2ff 100%);
+      color: var(--text-main);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 12px 12px 40px;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .page {
+        padding: 24px 20px 60px;
+      }
+      header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .month-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
+    }
+
+    .month-select label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    select {
+      border: none;
+      background: transparent;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    .pill {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--accent-soft);
+      background: #eff6ff;
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      padding: 7px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent-soft);
+      box-shadow: none;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+    }
+
+    /* Карточки сводки */
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .summary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+    }
+
+    .summary-card {
+      background: linear-gradient(135deg, #ffffff, #f9fafb);
+      border-radius: var(--radius-lg);
+      padding: 10px 12px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 70px;
+    }
+
+    .summary-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .summary-value {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .summary-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .summary-value.positive {
+      color: var(--success);
+    }
+
+    .summary-value.negative {
+      color: var(--danger);
+    }
+
+    /* Таблица / список работ */
+
+    .panel {
+      background: rgba(255,255,255,0.9);
+      border-radius: 20px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-soft);
+      padding: 12px;
+    }
+
+    @media (min-width: 768px) {
+      .panel {
+        padding: 16px 18px;
+      }
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .panel-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      background: #f9fafb;
+      flex: 1;
+    }
+
+    .search input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+
+    .tag {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f3f4ff;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    thead {
+      background: #f9fafb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      text-align: right;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      text-align: left;
+    }
+
+    th {
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    tr:nth-child(even) td {
+      background: #f9fafb;
+    }
+
+    .delta-pos {
+      color: var(--success);
+    }
+
+    .delta-neg {
+      color: var(--danger);
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    /* Мобильный режим — карточки вместо таблицы */
+
+    @media (max-width: 640px) {
+      .table-wrapper {
+        display: none;
+      }
+
+      .mobile-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .work-card {
+        border-radius: 14px;
+        border: 1px solid var(--border-soft);
+        background: #f9fafb;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .work-title {
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .work-unit {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .work-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.78rem;
+      }
+
+      .work-row span.label {
+        color: var(--text-muted);
+      }
+    }
+
+    @media (min-width: 641px) {
+      .mobile-list {
+        display: none;
+      }
+    }
+
+    .status-bar {
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .status-bar strong {
+      color: var(--text-main);
+    }
+
+    /* Print: 1 страница A4 */
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .page {
+        max-width: 100%;
+        padding: 0 10mm;
+      }
+      header, .controls, .search {
+        margin-bottom: 6px;
+      }
+      .btn, .pill, .tag {
+        display: none !important;
+      }
+      .panel {
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+      }
+      .table-wrapper {
+        display: block;
+        max-height: none;
+        overflow: visible;
+      }
+      .mobile-list {
+        display: none !important;
+      }
+      th, td {
+        padding: 3px 4px;
+        font-size: 0.7rem;
+      }
+      .summary-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .summary-card {
+        padding: 6px 8px;
+        box-shadow: none;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="title-block">
+        <div class="title">СКПДИ · План / Факт</div>
+        <div class="subtitle" id="subtitle">
+          Месячный отчёт по работам. Факт: только строки со статусом «Рассмотрено».
+        </div>
+      </div>
+      <div class="controls">
+        <div class="month-select">
+          <label for="month">Месяц:</label>
+          <select id="month">
+            <!-- заполним в JS -->
+          </select>
+        </div>
+        <div class="pill" id="last-updated-pill">
+          <span class="pill-dot"></span>
+          <span id="last-updated-text">Обновление данных…</span>
+        </div>
+        <button class="btn-outline btn" type="button" onclick="window.print()">
+          📄 Отчёт в PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Сводка -->
+    <section class="summary-grid" id="summary-grid">
+      <div class="summary-card">
+        <div class="summary-label">План, ₽</div>
+        <div class="summary-value" id="sum-planned">–</div>
+        <div class="summary-sub">Сметная стоимость по плану</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Факт, ₽ («Рассмотрено»)</div>
+        <div class="summary-value" id="sum-fact">–</div>
+        <div class="summary-sub">Сумма принятых работ</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">% исполнения</div>
+        <div class="summary-value" id="sum-complete">–</div>
+        <div class="summary-sub">Факт / План</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Отклонение, ₽</div>
+        <div class="summary-value" id="sum-delta">–</div>
+        <div class="summary-sub">Факт − План</div>
+      </div>
+    </section>
+
+    <!-- Таблица / список -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Детализация по видам работ</div>
+          <div class="panel-subtitle">Отсортировано по сумме отклонения</div>
+        </div>
+        <div class="search">
+          🔍
+          <input type="text" id="search" placeholder="Фильтр по описанию..." />
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Работа</th>
+              <th>План, объём</th>
+              <th>План, ₽</th>
+              <th>Факт, объём</th>
+              <th>Факт, ₽</th>
+              <th>Δ, ₽</th>
+              <th>Δ, %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- заполним в JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Мобильный список -->
+      <div class="mobile-list" id="mobile-list">
+        <!-- заполним в JS -->
+      </div>
+
+      <div class="status-bar">
+        <div id="status-counts">Записей: 0</div>
+        <div class="muted">Факт: только строки со статусом <strong>«Рассмотрено»</strong></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const API_URL = "https://mad-podolsk-karinausadba.amvera.io/"; // ← тут вставишь свой URL
+
+    const monthSelect = document.getElementById("month");
+    const lastUpdatedText = document.getElementById("last-updated-text");
+    const sumPlannedEl = document.getElementById("sum-planned");
+    const sumFactEl = document.getElementById("sum-fact");
+    const sumCompleteEl = document.getElementById("sum-complete");
+    const sumDeltaEl = document.getElementById("sum-delta");
+    const tableBody = document.querySelector("#data-table tbody");
+    const mobileList = document.getElementById("mobile-list");
+    const searchInput = document.getElementById("search");
+    const statusCountsEl = document.getElementById("status-counts");
+
+    let currentData = null;
+    let filteredItems = [];
+
+    function formatMoney(value) {
+      if (value === null || value === undefined || isNaN(value)) return "–";
+      return value.toLocaleString("ru-RU", { maximumFractionDigits: 0 });
+    }
+
+    function formatPercent(value) {
+      if (value === null || value === undefined || isNaN(value)) return "–";
+      return (value * 100).toFixed(1) + " %";
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      return d.toLocaleString("ru-RU");
+    }
+
+    function applyFilter() {
+      const q = searchInput.value.toLowerCase().trim();
+      if (!currentData) {
+        filteredItems = [];
+        renderItems();
+        return;
+      }
+      if (!q) {
+        filteredItems = [...currentData.items];
+      } else {
+        filteredItems = currentData.items.filter(item =>
+          item.description.toLowerCase().includes(q)
+        );
+      }
+      renderItems();
+    }
+
+    function renderSummary() {
+      if (!currentData) {
+        sumPlannedEl.textContent = "–";
+        sumFactEl.textContent = "–";
+        sumCompleteEl.textContent = "–";
+        sumDeltaEl.textContent = "–";
+        return;
+      }
+
+      const s = currentData.summary || {};
+      const planned = s.planned_amount ?? 0;
+      const fact = s.fact_amount ?? 0;
+      const completion = s.completion_pct ?? (planned ? fact / planned : null);
+      const delta = s.delta_amount ?? (fact - planned);
+      const deltaPct = s.delta_pct ?? (planned ? delta / planned : null);
+
+      sumPlannedEl.textContent = formatMoney(planned);
+      sumFactEl.textContent = formatMoney(fact);
+      sumCompleteEl.textContent = formatPercent(completion);
+
+      sumDeltaEl.textContent = formatMoney(delta);
+      sumDeltaEl.classList.remove("positive", "negative");
+      if (delta > 0) sumDeltaEl.classList.add("positive");
+      if (delta < 0) sumDeltaEl.classList.add("negative");
+    }
+
+    function renderItems() {
+      tableBody.innerHTML = "";
+      mobileList.innerHTML = "";
+
+      if (!filteredItems || filteredItems.length === 0) {
+        statusCountsEl.textContent = "Записей: 0";
+        return;
+      }
+
+      // Сортируем по абсолютной величине отклонения (по деньгам)
+      const items = [...filteredItems].sort((a, b) =>
+        Math.abs(b.delta_amount || 0) - Math.abs(a.delta_amount || 0)
+      );
+
+      items.forEach((item, idx) => {
+        const tr = document.createElement("tr");
+
+        const delta = item.delta_amount ?? (item.fact_amount - item.planned_amount);
+        const deltaPct = item.delta_pct ?? (
+          item.planned_amount ? delta / item.planned_amount : null
+        );
+
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${item.description}</td>
+          <td class="muted">${item.planned_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""}</td>
+          <td>${formatMoney(item.planned_amount)}</td>
+          <td class="muted">${item.fact_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""}</td>
+          <td>${formatMoney(item.fact_amount)}</td>
+          <td class="${delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : ""}">
+            ${formatMoney(delta)}
+          </td>
+          <td class="${delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : ""}">
+            ${formatPercent(deltaPct)}
+          </td>
+        `;
+
+        tableBody.appendChild(tr);
+
+        // Мобильная карточка
+        const card = document.createElement("div");
+        card.className = "work-card";
+
+        card.innerHTML = `
+          <div class="work-title">${item.description}</div>
+          <div class="work-unit">${item.unit || ""}</div>
+          <div class="work-row">
+            <span class="label">План:</span>
+            <span>${item.planned_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""} · ${formatMoney(item.planned_amount)} ₽</span>
+          </div>
+          <div class="work-row">
+            <span class="label">Факт:</span>
+            <span>${item.fact_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""} · ${formatMoney(item.fact_amount)} ₽</span>
+          </div>
+          <div class="work-row">
+            <span class="label">Δ:</span>
+            <span class="${delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : ""}">
+              ${formatMoney(delta)} ₽ (${formatPercent(deltaPct)})
+            </span>
+          </div>
+        `;
+
+        mobileList.appendChild(card);
+      });
+
+      statusCountsEl.textContent = `Записей: ${filteredItems.length}`;
+    }
+
+    async function loadMonthData(monthIso) {
+      tableBody.innerHTML = "";
+      mobileList.innerHTML = "";
+      statusCountsEl.textContent = "Загрузка...";
+      sumPlannedEl.textContent = "…";
+      sumFactEl.textContent = "…";
+      sumCompleteEl.textContent = "…";
+      sumDeltaEl.textContent = "…";
+
+      try {
+        const url = new URL(API_URL);
+        url.searchParams.set("month", monthIso);
+        const res = await fetch(url.toString());
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status);
+        }
+        const data = await res.json();
+        currentData = data;
+        filteredItems = data.items || [];
+
+        lastUpdatedText.textContent = "Обновлено: " + formatDateTime(data.last_updated);
+        renderSummary();
+        applyFilter();
+      } catch (e) {
+        console.error(e);
+        statusCountsEl.textContent = "Ошибка загрузки данных";
+        lastUpdatedText.textContent = "Ошибка загрузки данных";
+      }
+    }
+
+    function initMonthSelect() {
+      const now = new Date();
+      const months = [];
+
+      // последние 6 месяцев
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const iso = d.toISOString().slice(0, 10);
+        const label = d.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+        months.push({ iso, label });
+      }
+
+      months.forEach((m, idx) => {
+        const opt = document.createElement("option");
+        opt.value = m.iso;
+        opt.textContent = m.label;
+        if (idx === 0) opt.selected = true;
+        monthSelect.appendChild(opt);
+      });
+
+      monthSelect.addEventListener("change", () => {
+        loadMonthData(monthSelect.value);
+      });
+
+      // первая загрузка
+      loadMonthData(months[0].iso);
+    }
+
+    searchInput.addEventListener("input", () => {
+      applyFilter();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initMonthSelect();
+    });
+  </script>
+</body>
+</html>
