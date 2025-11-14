@@ -19,7 +19,9 @@ def _to_float(x) -> Optional[float]:
         return None
 
 
-def fetch_plan_vs_fact_for_month(month_start: date) -> Tuple[List[DashboardItem], DashboardSummary, Optional[str]]:
+def fetch_plan_vs_fact_for_month(
+    month_start: date,
+) -> Tuple[List[DashboardItem], Optional[DashboardSummary], Optional[str]]:
     """
     Читает данные из view skpdi_plan_vs_fact_monthly для конкретного месяца
     и собирает summary.
@@ -27,9 +29,10 @@ def fetch_plan_vs_fact_for_month(month_start: date) -> Tuple[List[DashboardItem]
     """
     items: List[DashboardItem] = []
 
-    conn = get_connection()
     last_updated_iso: Optional[str] = None
-    try:
+    summary: Optional[DashboardSummary] = None
+
+    with get_connection() as conn:
         with conn.cursor() as cur:
             # Основные строки
             cur.execute(
@@ -95,22 +98,31 @@ def fetch_plan_vs_fact_for_month(month_start: date) -> Tuple[List[DashboardItem]
             if res and res[0]:
                 last_updated_iso = res[0].isoformat()
 
-        # summary по данным
-        planned_total = sum(_to_float(i.planned_amount) or 0.0 for i in items)
-        fact_total = sum(_to_float(i.fact_amount) or 0.0 for i in items)
-        delta = fact_total - planned_total
-        completion = (fact_total / planned_total) if planned_total else None
-        delta_pct = (delta / planned_total) if planned_total else None
+            cur.execute(
+                """
+                SELECT
+                    SUM(planned_amount) AS planned_total,
+                    SUM(fact_amount_done) AS fact_total,
+                    CASE WHEN SUM(planned_amount) <> 0
+                        THEN SUM(fact_amount_done) / SUM(planned_amount)
+                    END AS completion_pct,
+                    SUM(fact_amount_done) - SUM(planned_amount) AS delta_amount,
+                    CASE WHEN SUM(planned_amount) <> 0
+                        THEN (SUM(fact_amount_done) - SUM(planned_amount)) / SUM(planned_amount)
+                    END AS delta_pct
+                FROM skpdi_plan_vs_fact_monthly
+                WHERE month_start = %s;
+                """,
+                (month_start,),
+            )
+            summary_row = cur.fetchone()
+            if summary_row and summary_row[0] is not None:
+                summary = DashboardSummary(
+                    planned_amount=_to_float(summary_row[0]) or 0.0,
+                    fact_amount=_to_float(summary_row[1]) or 0.0,
+                    completion_pct=_to_float(summary_row[2]),
+                    delta_amount=_to_float(summary_row[3]) or 0.0,
+                    delta_pct=_to_float(summary_row[4]),
+                )
 
-        summary = DashboardSummary(
-            planned_amount=planned_total,
-            fact_amount=fact_total,
-            completion_pct=completion,
-            delta_amount=delta,
-            delta_pct=delta_pct,
-        )
-
-        return items, summary, last_updated_iso
-
-    finally:
-        conn.close()
+    return items, summary, last_updated_iso
