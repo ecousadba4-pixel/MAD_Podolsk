@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extensions import connection as PgConnection
 
-from .config import DB_DSN
+from .config import get_settings
 
 _pool: Optional[SimpleConnectionPool] = None
 _pool_lock = Lock()
@@ -17,7 +17,14 @@ def _get_pool() -> SimpleConnectionPool:
     if _pool is None:
         with _pool_lock:
             if _pool is None:
-                _pool = SimpleConnectionPool(1, 10, dsn=DB_DSN)
+                dsn = get_settings().db_dsn
+                if not dsn:
+                    raise RuntimeError(
+                        "Переменная окружения DB_DSN не задана. "
+                        "Невозможно установить соединение с базой данных."
+                    )
+
+                _pool = SimpleConnectionPool(1, 10, dsn=dsn)
     return _pool
 
 
