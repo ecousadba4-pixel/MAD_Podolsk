@@ -7,7 +7,9 @@ from .routers import dashboard
 app = FastAPI(title="SKPDI Dashboard API")
 
 # CORS
-if ALLOWED_ORIGINS == ["*"]:
+allow_all_origins = "*" in ALLOWED_ORIGINS
+
+if allow_all_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
