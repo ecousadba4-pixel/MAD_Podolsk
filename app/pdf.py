@@ -138,6 +138,11 @@ MONTH_LABELS = [
     "декабрь",
 ]
 
+MERGED_CATEGORY_OVERRIDES: dict[str, str] = {
+    "внерегл_ч_1": "внерегламент",
+    "внерегл_ч_2": "внерегламент",
+}
+
 
 @dataclass
 class CategoryGroup:
@@ -172,11 +177,28 @@ def _calculate_delta(item: DashboardItem) -> float:
     return fact - planned
 
 
+def _resolve_category_name(
+    raw_key: str | None,
+    title_hint: str | None = None,
+) -> tuple[str, str]:
+    candidate = (raw_key or "").strip()
+    hint = (title_hint or "").strip()
+    fallback = candidate or hint or "Прочее"
+    override = MERGED_CATEGORY_OVERRIDES.get(fallback.lower())
+    if override:
+        return override, override
+    key = candidate or fallback
+    title = hint or fallback
+    return key, title
+
+
 def _group_items(items: Sequence[DashboardItem]) -> list[CategoryGroup]:
     groups: dict[str, CategoryGroup] = {}
     for item in items:
-        key = (item.smeta or item.category or "Прочее").strip() or "Прочее"
-        title = (item.smeta or item.category or "Прочее").strip() or "Прочее"
+        key, title = _resolve_category_name(
+            item.category or item.smeta,
+            item.smeta or item.category,
+        )
         group = groups.get(key)
         if group is None:
             group = CategoryGroup(key=key, title=title)
