@@ -1301,12 +1301,14 @@
 
       applyData(data) {
         this.dataManager.setCurrentData(data);
-        this.groupedCategories = this.dataManager.buildCategories(data.items || []);
+        const items = Array.isArray(data.items) ? data.items : [];
+        this.groupedCategories = this.dataManager.buildCategories(items);
         this.ensureActiveCategory();
         this.elements.lastUpdatedText.textContent = data.has_data
           ? formatDateTime(data.last_updated)
           : "Нет данных";
-        this.elements.pdfButton.disabled = !this.groupedCategories.length;
+        const hasAnyData = data.has_data && items.length > 0;
+        this.elements.pdfButton.disabled = !hasAnyData;
         this.renderSummary();
         this.renderCategories();
         this.renderWorkList();
