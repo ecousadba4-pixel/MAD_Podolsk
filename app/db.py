@@ -5,12 +5,9 @@ import logging
 from threading import Lock
 from typing import Iterator, Protocol
 
-from psycopg import Connection, connect
-
-try:
-    from psycopg_pool import ConnectionPool
-except ModuleNotFoundError:  # pragma: no cover - optional dependency
-    ConnectionPool = None  # type: ignore[assignment]
+from psycopg2 import connect
+from psycopg2.extensions import connection as PGConnection
+from psycopg2.pool import ThreadedConnectionPool
 
 from .config import get_settings
 
@@ -18,23 +15,44 @@ logger = logging.getLogger(__name__)
 
 
 class _ConnectionProvider(Protocol):
-    def connection(self) -> AbstractContextManager[Connection]:
+    def connection(self) -> AbstractContextManager[PGConnection]:
         """Возвращает контекстный менеджер с подключением."""
 
     def close(self) -> None:
         """Закрывает ресурсы провайдера."""
 
 
-class _SimpleConnectionPool:
-    """Fallback-пул на случай отсутствия psycopg_pool."""
+class _ThreadSafeConnectionPool:
+    """Обёртка над ThreadedConnectionPool с безопасным контекстом."""
+
+    def __init__(self, conninfo: str, *, min_size: int = 1, max_size: int = 10) -> None:
+        self._pool = ThreadedConnectionPool(minconn=min_size, maxconn=max_size, dsn=conninfo)
+
+    @contextmanager
+    def connection(self) -> Iterator[PGConnection]:
+        conn = self._pool.getconn()
+        try:
+            yield conn
+        finally:
+            self._pool.putconn(conn)
+
+    def close(self) -> None:
+        self._pool.closeall()
+
+
+class _DirectConnectionProvider:
+    """Запасной вариант без пула (последовательные подключения)."""
 
     def __init__(self, conninfo: str) -> None:
         self._conninfo = conninfo
 
     @contextmanager
-    def connection(self) -> Iterator[Connection]:
-        with connect(self._conninfo) as conn:
+    def connection(self) -> Iterator[PGConnection]:
+        conn = connect(self._conninfo)
+        try:
             yield conn
+        finally:
+            conn.close()
 
     def close(self) -> None:  # pragma: no cover - нечего закрывать
         return None
@@ -45,19 +63,13 @@ _pool_lock = Lock()
 
 
 def _create_pool(dsn: str) -> _ConnectionProvider:
-    if ConnectionPool is None:
-        logger.warning(
-            "psycopg_pool не установлен. Использую последовательные подключения без пула.",
+    try:
+        return _ThreadSafeConnectionPool(conninfo=dsn)
+    except Exception:  # pragma: no cover - защита от неожиданных ошибок
+        logger.exception(
+            "Не удалось создать ThreadedConnectionPool. Использую последовательные подключения.",
         )
-        return _SimpleConnectionPool(conninfo=dsn)
-
-    return ConnectionPool(
-        conninfo=dsn,
-        open=True,
-        min_size=1,
-        max_size=10,
-        timeout=5,
-    )
+        return _DirectConnectionProvider(conninfo=dsn)
 
 
 def _get_pool() -> _ConnectionProvider:
@@ -78,7 +90,7 @@ def _get_pool() -> _ConnectionProvider:
 
 
 @contextmanager
-def get_connection() -> Iterator[Connection]:
+def get_connection() -> Iterator[PGConnection]:
     """Получение соединения из пула с автоматическим возвратом."""
 
     pool = _get_pool()

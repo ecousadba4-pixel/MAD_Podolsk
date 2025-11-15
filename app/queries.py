@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from psycopg.rows import dict_row
+from psycopg2.extras import RealDictCursor
 
 from .db import get_connection
 from .models import DashboardItem, DashboardSummary
@@ -77,7 +77,7 @@ def fetch_plan_vs_fact_for_month(
     last_updated: datetime | None = None
 
     with get_connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(ITEMS_SQL, (month_start,))
             rows = cur.fetchall()
 
@@ -101,7 +101,7 @@ def fetch_plan_vs_fact_for_month(
             if res:
                 last_updated = res[0]
 
-        with conn.cursor(row_factory=dict_row) as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(SUMMARY_SQL, (month_start,))
             summary_row = cur.fetchone()
             if summary_row and summary_row["planned_total"] is not None:
