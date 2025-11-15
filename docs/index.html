@@ -862,10 +862,9 @@
     </table>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNa5m1RUpZ4KlaYpkFFitvolG/GpNZgbf+5Q5e0siJmq9VcZRrrodpJX4Bz2T14cX+ASzqSe6hOGaLT8yIy5xg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-6Qrsr4bl12Dcrk4D7hIFlC1OnApdA9rbAiT9g7wKFF+qGIDViml0zHlqQRJReNzHw+wH2wJ/xZ3coN+QwHAlaQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     const API_URL = "https://mad-podolsk-karinausadba.amvera.io/api/dashboard"; // ← тут вставишь свой URL
+    const API_PDF_URL = `${API_URL.replace(/\/$/, "")}/pdf`;
 
     const monthSelect = document.getElementById("month");
     const lastUpdatedText = document.getElementById("last-updated-text");
@@ -889,7 +888,6 @@
     const printTotalDeltaEl = document.getElementById("print-total-delta");
     const printSubtitleEl = document.getElementById("print-subtitle");
     const pdfButton = document.getElementById("download-pdf");
-    const printReportEl = document.getElementById("print-report");
     const pdfButtonDefaultLabel = pdfButton.innerHTML;
     pdfButton.disabled = true;
 
@@ -1247,8 +1245,6 @@
       event.preventDefault();
       if (pdfButton.disabled) return;
 
-      renderPrintReport();
-
       const selectedMonth = getSelectedMonthLabel() || monthSelect.value || "period";
       const fileNameSlug = selectedMonth
         .toString()
@@ -1262,45 +1258,29 @@
       pdfButton.disabled = true;
       pdfButton.innerHTML = "Формируем PDF…";
 
-      const restoreDisplay = () => {
-        printReportEl.classList.remove("print-visible");
-        printReportEl.setAttribute("aria-hidden", "true");
-      };
-
-      printReportEl.classList.add("print-visible");
-      printReportEl.setAttribute("aria-hidden", "false");
-
       try {
-        if (window.html2canvas && window.jspdf && window.jspdf.jsPDF) {
-          const canvas = await window.html2canvas(printReportEl, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            windowWidth: printReportEl.scrollWidth,
-            windowHeight: printReportEl.scrollHeight,
-          });
-
-          const imgData = canvas.toDataURL("image/jpeg", 0.95);
-          const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = pdf.internal.pageSize.getHeight();
-          const widthRatio = pageWidth / canvas.width;
-          const heightRatio = pageHeight / canvas.height;
-          const ratio = Math.min(widthRatio, heightRatio);
-          const imgWidth = canvas.width * ratio;
-          const imgHeight = canvas.height * ratio;
-          const offsetX = (pageWidth - imgWidth) / 2;
-          const offsetY = (pageHeight - imgHeight) / 2;
-          pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgWidth, imgHeight);
-          pdf.save(fileName);
-        } else {
-          window.print();
+        const pdfUrl = new URL(API_PDF_URL, window.location.origin);
+        pdfUrl.searchParams.set("month", monthSelect.value);
+        const response = await fetch(pdfUrl.toString(), {
+          headers: { Accept: "application/pdf" },
+        });
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
         }
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.download = fileName;
+        anchor.style.display = "none";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
       } catch (error) {
         console.error("PDF export error", error);
-        alert("Не удалось сформировать PDF. Попробуйте ещё раз или воспользуйтесь печатью браузера.");
+        alert("Не удалось сформировать PDF. Попробуйте ещё раз позже.");
       } finally {
-        restoreDisplay();
         pdfButton.innerHTML = pdfButtonDefaultLabel;
         pdfButton.disabled = !groupedCategories.length;
       }
