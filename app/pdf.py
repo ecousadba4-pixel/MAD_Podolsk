@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import Iterable, Sequence
 from xml.sax.saxutils import escape
 
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -49,7 +49,14 @@ FONT_FALLBACKS: dict[str, str] = {
     BODY_FONT_BOLD: DEFAULT_FONT_BOLD,
 }
 
-MOSCOW_TZ = ZoneInfo("Europe/Moscow")
+try:
+    MOSCOW_TZ = ZoneInfo("Europe/Moscow")
+except ZoneInfoNotFoundError:
+    LOGGER.warning(
+        "Не удалось загрузить таймзону Europe/Moscow из системной базы. "
+        "Используется фиксированное смещение UTC+3."
+    )
+    MOSCOW_TZ = timezone(timedelta(hours=3))
 
 def _font_search_roots() -> list[Path]:
     env_paths = [
