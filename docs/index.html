@@ -497,6 +497,73 @@
       font-size: 0.9rem;
     }
 
+    /* Печатная версия */
+
+    .print-report {
+      display: none;
+      font-family: 'Roboto Mono', 'IBM Plex Mono', 'PT Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 24px;
+      color: #111827;
+    }
+
+    .print-report h1 {
+      font-size: 1.2rem;
+      margin: 0 0 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .print-report .print-meta {
+      font-size: 0.8rem;
+      color: #4b5563;
+      margin-bottom: 12px;
+    }
+
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    .print-table th,
+    .print-table td {
+      border: 1px solid #d1d5db;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    .print-table th {
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      background: #f3f4f6;
+    }
+
+    .print-table td.num {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .print-smeta-summary td {
+      font-weight: 600;
+      background: #f9fafb;
+    }
+
+    .delta-positive {
+      color: #166534;
+    }
+
+    .delta-negative {
+      color: #b91c1c;
+    }
+
+    .print-table tfoot td {
+      font-weight: 700;
+      background: #e5e7eb;
+      text-transform: uppercase;
+    }
+
     /* Print: 1 страница A4 */
 
     @media print {
@@ -504,36 +571,14 @@
         background: #ffffff;
       }
       .page {
-        max-width: 100%;
-        padding: 0 10mm;
+        display: none;
       }
-      header, .controls, .search {
-        margin-bottom: 6px;
-      }
-      .btn, .pill, .tag {
-        display: none !important;
-      }
-      .panel {
-        box-shadow: none;
-        border-radius: 0;
-        padding: 0;
-      }
-      .category-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .work-card {
-        box-shadow: none;
-      }
-      .summary-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-      .summary-card {
-        padding: 6px 8px;
-        box-shadow: none;
+      .print-report {
+        display: block;
       }
       @page {
         size: A4 portrait;
-        margin: 10mm;
+        margin: 8mm;
       }
     }
   </style>
@@ -623,6 +668,39 @@
     </section>
   </div>
 
+  <div class="print-report" id="print-report" aria-hidden="true">
+    <h1>Сводный отчёт по работам</h1>
+    <div class="print-meta">
+      <div>Месяц: <strong id="print-month">–</strong></div>
+      <div>Данные обновлены: <strong id="print-updated">–</strong></div>
+      <div id="print-subtitle">Выгружены все строки со статусом «Рассмотрено»</div>
+    </div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 28%">Смета</th>
+          <th style="width: 42%">Работа</th>
+          <th style="width: 10%">План</th>
+          <th style="width: 10%">Факт</th>
+          <th style="width: 10%">Отклонение</th>
+        </tr>
+      </thead>
+      <tbody id="print-report-body">
+        <tr>
+          <td colspan="5" style="text-align:center; font-style: italic;">Данные загружаются…</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Итого</td>
+          <td class="num" id="print-total-plan">–</td>
+          <td class="num" id="print-total-fact">–</td>
+          <td class="num" id="print-total-delta">–</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
   <script>
     const API_URL = "https://mad-podolsk-karinausadba.amvera.io/api/dashboard"; // ← тут вставишь свой URL
 
@@ -640,6 +718,13 @@
     const activeCategoryMeta = document.getElementById("active-category-meta");
     const workEmptyState = document.getElementById("work-empty-state");
     searchInput.disabled = true;
+    const printMonthEl = document.getElementById("print-month");
+    const printUpdatedEl = document.getElementById("print-updated");
+    const printBodyEl = document.getElementById("print-report-body");
+    const printTotalPlanEl = document.getElementById("print-total-plan");
+    const printTotalFactEl = document.getElementById("print-total-fact");
+    const printTotalDeltaEl = document.getElementById("print-total-delta");
+    const printSubtitleEl = document.getElementById("print-subtitle");
 
     const monthCache = new Map();
     let currentData = null;
@@ -927,6 +1012,74 @@
       statusCountsEl.textContent = `Категорий: ${groupedCategories.length} · Работ: ${visibleCount} / ${totalWorks}`;
     }
 
+    function renderPrintReport() {
+      const monthLabel = monthSelect.options[monthSelect.selectedIndex]?.textContent || "–";
+      printMonthEl.textContent = monthLabel;
+      printUpdatedEl.textContent = currentData && currentData.has_data
+        ? formatDateTime(currentData.last_updated)
+        : "нет данных";
+      printSubtitleEl.textContent = currentData && currentData.has_data
+        ? "Выгружены все строки со статусом «Рассмотрено»"
+        : "Данные по выбранному месяцу отсутствуют";
+
+      printBodyEl.innerHTML = "";
+
+      if (!currentData || !groupedCategories.length) {
+        const row = document.createElement("tr");
+        row.innerHTML = '<td colspan="5" style="text-align:center; font-style: italic;">Нет данных для печати</td>';
+        printBodyEl.appendChild(row);
+        printTotalPlanEl.textContent = "–";
+        printTotalFactEl.textContent = "–";
+        printTotalDeltaEl.textContent = "–";
+        printTotalDeltaEl.classList.remove("delta-positive", "delta-negative");
+        return;
+      }
+
+      let totalPlan = 0;
+      let totalFact = 0;
+      let totalDelta = 0;
+
+      groupedCategories.forEach((cat) => {
+        const catDelta = cat.delta ?? (cat.fact - cat.planned);
+        const catRow = document.createElement("tr");
+        const deltaClass = catDelta > 0 ? "delta-positive" : catDelta < 0 ? "delta-negative" : "";
+        catRow.className = "print-smeta-summary";
+        catRow.innerHTML = `
+          <td>${cat.title}</td>
+          <td>Итого по смете</td>
+          <td class="num">${formatMoneyRub(cat.planned)}</td>
+          <td class="num">${formatMoneyRub(cat.fact)}</td>
+          <td class="num ${deltaClass}">${formatMoneyRub(catDelta)}</td>
+        `;
+        printBodyEl.appendChild(catRow);
+
+        cat.works.forEach((item) => {
+          const delta = calculateDelta(item);
+          const deltaClassWork = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
+          const workRow = document.createElement("tr");
+          workRow.innerHTML = `
+            <td></td>
+            <td>${item.work_name || item.description || "Без названия"}</td>
+            <td class="num">${formatMoneyRub(item.planned_amount)}</td>
+            <td class="num">${formatMoneyRub(item.fact_amount)}</td>
+            <td class="num ${deltaClassWork}">${formatMoneyRub(delta)}</td>
+          `;
+          printBodyEl.appendChild(workRow);
+        });
+
+        totalPlan += cat.planned ?? 0;
+        totalFact += cat.fact ?? 0;
+        totalDelta += catDelta ?? 0;
+      });
+
+      printTotalPlanEl.textContent = formatMoneyRub(totalPlan);
+      printTotalFactEl.textContent = formatMoneyRub(totalFact);
+      printTotalDeltaEl.textContent = formatMoneyRub(totalDelta);
+      printTotalDeltaEl.classList.remove("delta-positive", "delta-negative");
+      if (totalDelta > 0) printTotalDeltaEl.classList.add("delta-positive");
+      if (totalDelta < 0) printTotalDeltaEl.classList.add("delta-negative");
+    }
+
     function applyDataToUi(data) {
       const previousKey = activeCategoryKey;
       currentData = data;
@@ -943,6 +1096,7 @@
       renderSummary();
       renderCategories();
       renderWorkList();
+      renderPrintReport();
     }
 
     async function loadMonthData(monthIso) {
