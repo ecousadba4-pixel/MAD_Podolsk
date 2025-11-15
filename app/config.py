@@ -1,5 +1,6 @@
-from functools import lru_cache
-from typing import List, Optional
+from __future__ import annotations
+
+from functools import cache
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -8,13 +9,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Конфигурация приложения с валидацией переменных окружения."""
 
-    db_dsn: Optional[str] = Field(None, env="DB_DSN")
+    db_dsn: str | None = Field(None, env="DB_DSN")
     allowed_origins: str = Field("*", env="ALLOWED_ORIGINS")
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
     @field_validator("db_dsn")
-    def validate_dsn(cls, value: Optional[str]) -> Optional[str]:  # noqa: D417
+    @classmethod
+    def validate_dsn(cls, value: str | None) -> str | None:  # noqa: D417
         if value is None:
             return None
 
@@ -22,22 +24,21 @@ class Settings(BaseSettings):
         if not value:
             return None
         if "//" not in value:
-            raise ValueError("DB_DSN должен быть полноценной строкой подключения")
+            msg = "DB_DSN должен быть полноценной строкой подключения"
+            raise ValueError(msg)
         return value
 
     @property
-    def allowed_origins_list(self) -> List[str]:
+    def allowed_origins_list(self) -> list[str]:
         raw = self.allowed_origins.strip()
         if raw == "*":
             return ["*"]
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
-@lru_cache
+
+@cache
 def get_settings() -> Settings:
     return Settings()
 
 
 settings = get_settings()
-
-DB_DSN = settings.db_dsn
-ALLOWED_ORIGINS = settings.allowed_origins_list

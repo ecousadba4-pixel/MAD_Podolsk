@@ -1,5 +1,7 @@
-from datetime import date, datetime
-from typing import Optional
+from __future__ import annotations
+
+from datetime import date
+from typing import Annotated
 
 from fastapi import APIRouter, Query
 
@@ -8,24 +10,17 @@ from ..queries import fetch_plan_vs_fact_for_month
 
 router = APIRouter()
 
+MonthQuery = Annotated[
+    date,
+    Query(..., description="Первый день месяца, напр. 2025-11-01"),
+]
+
 
 @router.get("/dashboard", response_model=DashboardResponse)
-def get_dashboard(
-    month: date = Query(..., description="Первый день месяца, напр. 2025-11-01"),
-):
-    """
-    Основной эндпоинт для дашборда.
-    Берём данные из skpdi_plan_vs_fact_monthly по month_start.
-    """
-    items, summary, last_updated_iso = fetch_plan_vs_fact_for_month(month)
+def get_dashboard(month: MonthQuery) -> DashboardResponse:
+    """Основной эндпоинт для дашборда."""
 
-    last_updated: Optional[datetime] = None
-    if last_updated_iso:
-        try:
-            last_updated = datetime.fromisoformat(last_updated_iso)
-        except Exception:
-            last_updated = None
-
+    items, summary, last_updated = fetch_plan_vs_fact_for_month(month)
     return DashboardResponse(
         month=month,
         last_updated=last_updated,
