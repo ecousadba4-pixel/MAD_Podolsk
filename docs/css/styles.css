@@ -730,6 +730,30 @@
       font-size: 0.98rem;
       font-weight: 400;
       color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .work-row-name-text {
+      display: block;
+    }
+
+    .work-row-name-toggle {
+      display: none;
+      border: none;
+      background: none;
+      padding: 0;
+      font: inherit;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .work-row-name-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 6px;
     }
 
     .work-row-money {
@@ -769,6 +793,24 @@
       }
       .work-row-name {
         grid-column: 1 / -1;
+        align-items: flex-start;
+      }
+      .work-row-name.work-row-name-collapsible .work-row-name-toggle {
+        display: inline-flex;
+      }
+      .work-row-name-text.is-collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .work-row-name-toggle {
+        font-size: 0.78rem;
+        letter-spacing: 0.01em;
+        padding-top: 2px;
+      }
+      .work-row-name.is-expanded .work-row-name-toggle {
+        color: var(--text-muted);
       }
       .work-row-money,
       .work-row-delta {

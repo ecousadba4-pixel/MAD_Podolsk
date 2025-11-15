@@ -100,6 +100,61 @@ export class UIManager {
       }
     });
     this.elements.workListScroller.appendChild(fragment);
+    this.applyWorkNameToggles();
+  }
+
+  applyWorkNameToggles() {
+    if (!this.elements.workListScroller) {
+      return;
+    }
+    const workNames = this.elements.workListScroller.querySelectorAll(".work-row-name");
+    workNames.forEach((nameEl) => {
+      const textEl = nameEl.querySelector(".work-row-name-text");
+      const toggleEl = nameEl.querySelector(".work-row-name-toggle");
+      if (!textEl || !toggleEl) {
+        return;
+      }
+
+      nameEl.classList.remove("work-row-name-collapsible", "is-expanded");
+      textEl.classList.remove("is-collapsed");
+      toggleEl.setAttribute("aria-expanded", "false");
+      toggleEl.textContent = "Показать полностью";
+
+      const computedStyle = window.getComputedStyle(textEl);
+      let lineHeight = parseFloat(computedStyle.lineHeight);
+      if (!lineHeight || Number.isNaN(lineHeight)) {
+        const fontSize = parseFloat(computedStyle.fontSize);
+        lineHeight = !Number.isNaN(fontSize) ? fontSize * 1.2 : 0;
+      }
+      if (!lineHeight) {
+        return;
+      }
+
+      const maxLines = 2;
+      const maxHeight = lineHeight * maxLines + 1;
+      if (textEl.scrollHeight <= maxHeight) {
+        return;
+      }
+
+      nameEl.classList.add("work-row-name-collapsible");
+      textEl.classList.add("is-collapsed");
+
+      if (!toggleEl.dataset.bound) {
+        toggleEl.addEventListener("click", () => {
+          const isExpanded = nameEl.classList.toggle("is-expanded");
+          if (isExpanded) {
+            textEl.classList.remove("is-collapsed");
+            toggleEl.textContent = "Свернуть";
+            toggleEl.setAttribute("aria-expanded", "true");
+          } else {
+            textEl.classList.add("is-collapsed");
+            toggleEl.textContent = "Показать полностью";
+            toggleEl.setAttribute("aria-expanded", "false");
+          }
+        });
+        toggleEl.dataset.bound = "true";
+      }
+    });
   }
 
   bindEvents() {
@@ -355,7 +410,12 @@ export class UIManager {
       row.classList.add("work-row-last");
     }
     row.innerHTML = `
-      <div class="work-row-name">${workName}</div>
+      <div class="work-row-name">
+        <span class="work-row-name-text">${workName}</span>
+        <button type="button" class="work-row-name-toggle" aria-expanded="false">
+          Показать полностью
+        </button>
+      </div>
       <div class="work-row-money work-row-plan">
         <span class="work-row-label">План</span>
         <span>${formatMoneyRub(item.planned_amount)}</span>
