@@ -1134,35 +1134,44 @@
       "внерегл_ч_2": { key: "внерегламент", title: "внерегламент" },
     };
 
-    const elements = {
-      monthSelect: document.getElementById("month"),
-      lastUpdatedText: document.getElementById("last-updated-text"),
-      sumPlanned: document.getElementById("sum-planned"),
-      sumFact: document.getElementById("sum-fact"),
-      sumComplete: document.getElementById("sum-complete"),
-      sumDelta: document.getElementById("sum-delta"),
-      summaryGrid: document.getElementById("summary-grid"),
-      summarySkeleton: document.getElementById("summary-skeleton"),
-      categoryGrid: document.getElementById("category-grid"),
-      categorySkeleton: document.getElementById("category-skeleton"),
-      workList: document.getElementById("work-list"),
-      workSkeleton: document.getElementById("work-skeleton"),
-      workEmptyState: document.getElementById("work-empty-state"),
-      searchInput: document.getElementById("search"),
-      activeCategoryTitle: document.getElementById("active-category-title"),
-      printMonth: document.getElementById("print-month"),
-      printUpdated: document.getElementById("print-updated"),
-      printBody: document.getElementById("print-report-body"),
-      printTotalPlan: document.getElementById("print-total-plan"),
-      printTotalFact: document.getElementById("print-total-fact"),
-      printTotalDelta: document.getElementById("print-total-delta"),
-      printSubtitle: document.getElementById("print-subtitle"),
-      pdfButton: document.getElementById("download-pdf"),
-    };
+    function cacheDomElements(selectorMap) {
+      const result = {};
+      Object.entries(selectorMap).forEach(([key, selector]) => {
+        result[key] = document.querySelector(selector);
+      });
+      return result;
+    }
 
-    const pdfButtonDefaultLabel = elements.pdfButton.innerHTML;
-    elements.pdfButton.disabled = true;
-    elements.searchInput.disabled = true;
+    // Кэшируем часто используемые DOM-элементы, чтобы не искать их повторно
+    const DOM = cacheDomElements({
+      monthSelect: "#month",
+      lastUpdatedText: "#last-updated-text",
+      sumPlanned: "#sum-planned",
+      sumFact: "#sum-fact",
+      sumComplete: "#sum-complete",
+      sumDelta: "#sum-delta",
+      summaryGrid: "#summary-grid",
+      summarySkeleton: "#summary-skeleton",
+      categoryGrid: "#category-grid",
+      categorySkeleton: "#category-skeleton",
+      workList: "#work-list",
+      workSkeleton: "#work-skeleton",
+      workEmptyState: "#work-empty-state",
+      searchInput: "#search",
+      activeCategoryTitle: "#active-category-title",
+      printMonth: "#print-month",
+      printUpdated: "#print-updated",
+      printBody: "#print-report-body",
+      printTotalPlan: "#print-total-plan",
+      printTotalFact: "#print-total-fact",
+      printTotalDelta: "#print-total-delta",
+      printSubtitle: "#print-subtitle",
+      pdfButton: "#download-pdf",
+    });
+
+    const pdfButtonDefaultLabel = DOM.pdfButton.innerHTML;
+    DOM.pdfButton.disabled = true;
+    DOM.searchInput.disabled = true;
 
     function formatMoney(value) {
       if (value === null || value === undefined || isNaN(value)) return "–";
@@ -1854,7 +1863,7 @@
       const dataManager = new DataManager(API_URL);
       const uiManager = new UIManager({
         dataManager,
-        elements,
+        elements: DOM,
         apiPdfUrl: API_PDF_URL,
         pdfButtonDefaultLabel,
       });
