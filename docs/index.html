@@ -1436,12 +1436,14 @@
         if (!Array.isArray(works) || !works.length) {
           return;
         }
+        const fragment = document.createDocumentFragment();
         works.forEach((item, index) => {
           const row = this.createWorkRow(item, index, works.length);
           if (row) {
-            this.elements.workListScroller.appendChild(row);
+            fragment.appendChild(row);
           }
         });
+        this.elements.workListScroller.appendChild(fragment);
       }
 
       bindEvents() {
@@ -1604,6 +1606,7 @@
           return;
         }
 
+        const fragment = document.createDocumentFragment();
         this.groupedCategories.forEach((category, idx) => {
           const palette = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
           const card = document.createElement("button");
@@ -1629,8 +1632,10 @@
             this.renderCategories();
             this.renderWorkList();
           });
-          this.elements.categoryGrid.appendChild(card);
+          fragment.appendChild(card);
         });
+
+        this.elements.categoryGrid.appendChild(fragment);
 
         this.enhanceAccessibility();
       }
@@ -1724,10 +1729,13 @@
 
         this.elements.printBody.innerHTML = "";
 
+        const fragment = document.createDocumentFragment();
+
         if (!currentData || !this.groupedCategories.length) {
           const row = document.createElement("tr");
           row.innerHTML = '<td colspan="5" style="text-align:center; font-style: italic;">Нет данных для печати</td>';
-          this.elements.printBody.appendChild(row);
+          fragment.appendChild(row);
+          this.elements.printBody.appendChild(fragment);
           this.elements.printTotalPlan.textContent = "–";
           this.elements.printTotalFact.textContent = "–";
           this.elements.printTotalDelta.textContent = "–";
@@ -1751,7 +1759,7 @@
             <td class="num">${formatMoneyRub(category.fact)}</td>
             <td class="num ${deltaClass}">${formatMoneyRub(catDelta)}</td>
           `;
-          this.elements.printBody.appendChild(catRow);
+          fragment.appendChild(catRow);
 
           category.works.forEach((item) => {
             const delta = calculateDelta(item);
@@ -1764,13 +1772,15 @@
               <td class="num">${formatMoneyRub(item.fact_amount)}</td>
               <td class="num ${deltaClassWork}">${formatMoneyRub(delta)}</td>
             `;
-            this.elements.printBody.appendChild(workRow);
+            fragment.appendChild(workRow);
           });
 
           totalPlan += category.planned ?? 0;
           totalFact += category.fact ?? 0;
           totalDelta += catDelta ?? 0;
         });
+
+        this.elements.printBody.appendChild(fragment);
 
         this.elements.printTotalPlan.textContent = formatMoneyRub(totalPlan);
         this.elements.printTotalFact.textContent = formatMoneyRub(totalFact);
