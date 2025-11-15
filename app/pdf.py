@@ -16,11 +16,13 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from .font_storage import ensure_embedded_fonts
 from .models import DashboardItem, DashboardSummary
 
 LOGGER = logging.getLogger(__name__)
 
 FONT_DIR = Path(__file__).resolve().parent / "fonts"
+ensure_embedded_fonts(FONT_DIR)
 BODY_FONT = "DejaVuSans"
 BODY_FONT_BOLD = "DejaVuSans-Bold"
 DEFAULT_FONT = "Helvetica"
