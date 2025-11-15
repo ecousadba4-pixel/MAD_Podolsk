@@ -183,9 +183,25 @@ def _group_items(items: Sequence[DashboardItem]) -> list[CategoryGroup]:
             group.planned_total += item.planned_amount
         if item.fact_amount is not None:
             group.fact_total += item.fact_amount
+    for group in groups.values():
+        group.items.sort(key=_work_sort_key)
     return sorted(
         groups.values(),
         key=lambda g: (-(g.planned_total or 0.0), g.title.lower()),
+    )
+
+
+def _work_sort_key(item: DashboardItem) -> tuple:
+    planned = item.planned_amount
+    fact = item.fact_amount
+    planned_order = 0 if planned is not None else 1
+    primary_value = planned if planned is not None else (fact or 0.0)
+    fact_value = fact or 0.0
+    return (
+        planned_order,
+        -primary_value,
+        -fact_value,
+        (item.work_name or item.description or ""),
     )
 
 
@@ -231,8 +247,7 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
 
 
 def _build_group_items_table(group: CategoryGroup, width: float) -> Table:
-    header = ["Работа", "План", "Факт", "Отклонение"]
-    rows: list[list[object]] = [header]
+    rows: list[list[object]] = []
     for item in group.items:
         delta = _calculate_delta(item)
         work_name = item.work_name or item.description or "Без названия"
@@ -256,10 +271,7 @@ def _build_group_items_table(group: CategoryGroup, width: float) -> Table:
     table.setStyle(
         TableStyle(
             [
-                ("FONTNAME", (0, 0), (-1, 0), BODY_FONT_BOLD_NAME),
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f8fafc")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
-                ("FONTNAME", (0, 1), (-1, -1), BODY_FONT_NAME),
+                ("FONTNAME", (0, 0), (-1, -1), BODY_FONT_NAME),
                 ("FONTSIZE", (0, 0), (-1, -1), 8.3),
                 ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -267,7 +279,7 @@ def _build_group_items_table(group: CategoryGroup, width: float) -> Table:
                 ("RIGHTPADDING", (0, 0), (-1, -1), 3),
                 ("TOPPADDING", (0, 0), (-1, -1), 2),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f1f5f9")]),
+                ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, colors.HexColor("#f1f5f9")]),
             ]
         )
     )
