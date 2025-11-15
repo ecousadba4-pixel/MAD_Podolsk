@@ -839,9 +839,6 @@
         Здесь появится список работ выбранной сметы.
       </div>
       <div class="work-list" id="work-list"></div>
-      <div class="status-bar">
-        <div id="status-counts">Категорий: 0 · Работ: 0</div>
-      </div>
     </section>
 
     <div class="page-actions">
@@ -901,7 +898,6 @@
     const categoryGrid = document.getElementById("category-grid");
     const workList = document.getElementById("work-list");
     const searchInput = document.getElementById("search");
-    const statusCountsEl = document.getElementById("status-counts");
     const activeCategoryTitle = document.getElementById("active-category-title");
     const workEmptyState = document.getElementById("work-empty-state");
     searchInput.disabled = true;
@@ -1118,7 +1114,6 @@
           ? "Данные за выбранный месяц отсутствуют"
           : "Здесь появится список работ выбранной сметы.";
         activeCategoryTitle.textContent = "Смета не выбрана";
-        statusCountsEl.textContent = `Категорий: ${groupedCategories.length} · Работ: 0`;
         return;
       }
 
@@ -1131,9 +1126,6 @@
             return name.includes(filter);
           });
 
-      const totalWorks = activeCategory.works.length;
-      const plannedText = formatMoneyRub(activeCategory.planned);
-      const factText = formatMoneyRub(activeCategory.fact);
       activeCategoryTitle.textContent = `Расшифровка работ по смете «${activeCategory.title}»`;
 
       if (!works.length) {
@@ -1187,8 +1179,6 @@
           workList.appendChild(row);
         });
 
-      const visibleCount = works.length;
-      statusCountsEl.textContent = `Категорий: ${groupedCategories.length} · Работ: ${visibleCount} / ${totalWorks}`;
     }
 
     function renderPrintReport() {
@@ -1338,7 +1328,6 @@
         workEmptyState.style.display = "block";
         workEmptyState.textContent = "Загрузка данных...";
         activeCategoryTitle.textContent = "Загрузка...";
-        statusCountsEl.textContent = "Категорий: – · Работ: –";
         sumPlannedEl.textContent = "…";
         sumFactEl.textContent = "…";
         sumCompleteEl.textContent = "…";
@@ -1358,12 +1347,10 @@
       } catch (e) {
         console.error(e);
         if (!cached) {
-          statusCountsEl.textContent = "Ошибка загрузки данных";
           workEmptyState.style.display = "block";
           workEmptyState.textContent = "Ошибка загрузки данных";
           lastUpdatedText.textContent = "Ошибка загрузки данных";
         } else {
-          statusCountsEl.textContent = "Ошибка обновления, показаны кэшированные данные";
         }
       }
     }
