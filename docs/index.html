@@ -469,6 +469,18 @@
       gap: 2px;
     }
 
+    .category-values span + span {
+      border-left: 1px solid var(--border-soft);
+      padding-left: 10px;
+      margin-left: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .category-values span + span {
+        border-left-color: rgba(184, 193, 216, 0.6);
+      }
+    }
+
     .category-values .label {
       font-size: 0.7rem;
       color: var(--text-muted);
