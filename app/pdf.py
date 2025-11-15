@@ -132,6 +132,12 @@ TABLE_TEXT_STYLE = ParagraphStyle(
     spaceBefore=0,
 )
 
+NESTED_TABLE_TEXT_STYLE = ParagraphStyle(
+    "NestedTableText",
+    parent=TABLE_TEXT_STYLE,
+    leftIndent=8,
+)
+
 MONTH_LABELS = [
     "январь",
     "февраль",
@@ -284,51 +290,12 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
     return table
 
 
-def _build_group_items_table(group: CategoryGroup, width: float) -> Table:
-    rows: list[list[object]] = []
-    for item in group.items:
-        delta = _calculate_delta(item)
-        work_name = item.work_name or item.description or "Без названия"
-        rows.append(
-            [
-                _paragraph(work_name),
-                _format_money(item.planned_amount),
-                _format_money(item.fact_amount),
-                _format_money(delta),
-            ]
-        )
-    table = Table(
-        rows,
-        colWidths=[
-            width * 0.52,
-            width * 0.16,
-            width * 0.16,
-            width * 0.16,
-        ],
-    )
-    table.setStyle(
-        TableStyle(
-            [
-                ("FONTNAME", (0, 0), (-1, -1), BODY_FONT_NAME),
-                ("FONTSIZE", (0, 0), (-1, -1), 8.3),
-                ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 3),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-                ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, colors.HexColor("#f1f5f9")]),
-            ]
-        )
-    )
-    return table
-
-
 def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
     header = ["Смета", "План", "Факт", "Отклонение"]
     data: list[list[object]] = [header]
     category_rows: list[int] = []
-    nested_rows: list[int] = []
+    item_rows: list[int] = []
+    item_row_backgrounds: list[tuple[int, colors.Color]] = []
     row_idx = 1
     for group in groups:
         data.append(
@@ -342,10 +309,26 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         category_rows.append(row_idx)
         row_idx += 1
         if group.items:
-            nested_table = _build_group_items_table(group, width)
-            data.append([nested_table, "", "", ""])
-            nested_rows.append(row_idx)
-            row_idx += 1
+            background_toggle = 0
+            for item in group.items:
+                delta = _calculate_delta(item)
+                work_name = item.work_name or item.description or "Без названия"
+                data.append(
+                    [
+                        _paragraph(work_name, NESTED_TABLE_TEXT_STYLE),
+                        _format_money(item.planned_amount),
+                        _format_money(item.fact_amount),
+                        _format_money(delta),
+                    ]
+                )
+                item_rows.append(row_idx)
+                if background_toggle:
+                    bg = colors.HexColor("#f8fafc")
+                else:
+                    bg = colors.white
+                item_row_backgrounds.append((row_idx, bg))
+                background_toggle = 1 - background_toggle
+                row_idx += 1
     table = Table(
         data,
         repeatRows=1,
@@ -379,17 +362,10 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
                 ("LINEBELOW", (0, idx), (-1, idx), 0.25, colors.HexColor("#c7d2fe")),
             ]
         )
-    for idx in nested_rows:
-        style_commands.extend(
-            [
-                ("SPAN", (0, idx), (-1, idx)),
-                ("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#f8fafc")),
-                ("LEFTPADDING", (0, idx), (-1, idx), 2),
-                ("RIGHTPADDING", (0, idx), (-1, idx), 2),
-                ("TOPPADDING", (0, idx), (-1, idx), 2),
-                ("BOTTOMPADDING", (0, idx), (-1, idx), 4),
-            ]
-        )
+    for idx, background in item_row_backgrounds:
+        style_commands.append(("BACKGROUND", (0, idx), (-1, idx), background))
+    for idx in item_rows:
+        style_commands.append(("LEFTPADDING", (0, idx), (0, idx), 10))
     table.setStyle(TableStyle(style_commands))
     return table
 
