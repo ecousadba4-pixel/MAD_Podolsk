@@ -199,6 +199,12 @@
       white-space: nowrap;
     }
 
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
     .btn-outline {
       background: transparent;
       color: var(--accent);
@@ -657,7 +663,7 @@
             </div>
           </div>
         </div>
-        <button class="btn-outline btn" type="button" onclick="window.print()">
+        <button class="btn-outline btn" type="button" id="download-pdf" aria-live="polite">
           📄 Отчёт в PDF
         </button>
       </div>
@@ -753,6 +759,7 @@
     </table>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     const API_URL = "https://mad-podolsk-karinausadba.amvera.io/api/dashboard"; // ← тут вставишь свой URL
 
@@ -777,6 +784,10 @@
     const printTotalFactEl = document.getElementById("print-total-fact");
     const printTotalDeltaEl = document.getElementById("print-total-delta");
     const printSubtitleEl = document.getElementById("print-subtitle");
+    const pdfButton = document.getElementById("download-pdf");
+    const printReportEl = document.getElementById("print-report");
+    const pdfButtonDefaultLabel = pdfButton.innerHTML;
+    pdfButton.disabled = true;
 
     const monthCache = new Map();
     let currentData = null;
@@ -1133,6 +1144,65 @@
       if (totalDelta < 0) printTotalDeltaEl.classList.add("delta-negative");
     }
 
+    function getSelectedMonthLabel() {
+      const option = monthSelect.options[monthSelect.selectedIndex];
+      return option ? option.textContent.trim() : "";
+    }
+
+    async function downloadPdfReport(event) {
+      event.preventDefault();
+      if (pdfButton.disabled) return;
+
+      renderPrintReport();
+
+      if (window.html2pdf) {
+        const temporaryNode = printReportEl.cloneNode(true);
+        temporaryNode.style.display = "block";
+        temporaryNode.style.position = "fixed";
+        temporaryNode.style.top = "0";
+        temporaryNode.style.left = "0";
+        temporaryNode.style.right = "0";
+        temporaryNode.style.zIndex = "-1";
+        temporaryNode.setAttribute("aria-hidden", "false");
+        document.body.appendChild(temporaryNode);
+
+        const selectedMonth = getSelectedMonthLabel() || monthSelect.value || "period";
+        const fileNameSlug = selectedMonth
+          .toString()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^0-9A-Za-zА-Яа-я\-]+/g, "")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "");
+        const fileName = fileNameSlug ? `mad-podolsk-otchet-${fileNameSlug}.pdf` : "mad-podolsk-otchet.pdf";
+
+        const options = {
+          margin: [10, 10, 10, 10],
+          filename: fileName,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        };
+
+        pdfButton.disabled = true;
+        pdfButton.innerHTML = "⌛ Формируем PDF…";
+
+        try {
+          await html2pdf().set(options).from(temporaryNode).save();
+        } catch (error) {
+          console.error("PDF export error", error);
+          alert("Не удалось сформировать PDF. Попробуйте ещё раз или воспользуйтесь печатью браузера.");
+        } finally {
+          pdfButton.innerHTML = pdfButtonDefaultLabel;
+          document.body.removeChild(temporaryNode);
+          pdfButton.disabled = !groupedCategories.length;
+        }
+        return;
+      }
+
+      window.print();
+    }
+
     function applyDataToUi(data) {
       const previousKey = activeCategoryKey;
       currentData = data;
@@ -1150,6 +1220,7 @@
       renderCategories();
       renderWorkList();
       renderPrintReport();
+      pdfButton.disabled = !groupedCategories.length;
     }
 
     async function loadMonthData(monthIso) {
@@ -1229,6 +1300,8 @@
     searchInput.addEventListener("input", () => {
       renderWorkList();
     });
+
+    pdfButton.addEventListener("click", downloadPdfReport);
 
     document.addEventListener("DOMContentLoaded", () => {
       initMonthSelect();
