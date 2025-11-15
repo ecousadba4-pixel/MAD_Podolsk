@@ -1134,7 +1134,7 @@
       const totalWorks = activeCategory.works.length;
       const plannedText = formatMoneyRub(activeCategory.planned);
       const factText = formatMoneyRub(activeCategory.fact);
-      activeCategoryTitle.textContent = `Смета «${activeCategory.title}»`;
+      activeCategoryTitle.textContent = `Расшифровка работ по смете «${activeCategory.title}»`;
 
       if (!works.length) {
         workEmptyState.style.display = "block";
