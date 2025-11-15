@@ -360,8 +360,12 @@ export class UIManager {
     row.innerHTML = `
       <div class="work-row-name work-row-name--collapsed" data-expanded="false">
         <span class="work-row-name-text">${workName}</span>
-        <button type="button" class="work-row-name-toggle" aria-expanded="false">
-          <span class="work-row-name-toggle-text">Показать полностью</span>
+        <button
+          type="button"
+          class="work-row-name-toggle"
+          aria-expanded="false"
+          aria-label="Развернуть полное название"
+        >
           <span class="work-row-name-toggle-icon" aria-hidden="true"></span>
         </button>
       </div>
@@ -380,8 +384,7 @@ export class UIManager {
     `;
     const nameWrapper = row.querySelector(".work-row-name");
     const toggleBtn = row.querySelector(".work-row-name-toggle");
-    const toggleText = row.querySelector(".work-row-name-toggle-text");
-    if (nameWrapper && toggleBtn && toggleText) {
+    if (nameWrapper && toggleBtn) {
       nameWrapper.dataset.expanded = "false";
       toggleBtn.addEventListener("click", () => {
         const isExpanded = nameWrapper.classList.toggle("work-row-name--expanded");
@@ -392,7 +395,10 @@ export class UIManager {
         }
         nameWrapper.dataset.expanded = String(isExpanded);
         toggleBtn.setAttribute("aria-expanded", String(isExpanded));
-        toggleText.textContent = isExpanded ? "Свернуть" : "Показать полностью";
+        toggleBtn.setAttribute(
+          "aria-label",
+          isExpanded ? "Свернуть название" : "Развернуть полное название"
+        );
       });
     }
     return row;
@@ -407,8 +413,7 @@ export class UIManager {
     nameWrappers.forEach((wrapper) => {
       const textEl = wrapper.querySelector(".work-row-name-text");
       const toggleBtn = wrapper.querySelector(".work-row-name-toggle");
-      const toggleText = wrapper.querySelector(".work-row-name-toggle-text");
-      if (!textEl || !toggleBtn || !toggleText) {
+      if (!textEl || !toggleBtn) {
         return;
       }
 
@@ -417,7 +422,7 @@ export class UIManager {
         wrapper.dataset.expanded = "";
         toggleBtn.hidden = true;
         toggleBtn.setAttribute("aria-expanded", "false");
-        toggleText.textContent = "Показать полностью";
+        toggleBtn.setAttribute("aria-label", "Развернуть полное название");
         return;
       }
 
@@ -430,7 +435,10 @@ export class UIManager {
         wrapper.classList.remove("work-row-name--expanded");
       }
       toggleBtn.setAttribute("aria-expanded", String(isExpanded));
-      toggleText.textContent = isExpanded ? "Свернуть" : "Показать полностью";
+      toggleBtn.setAttribute(
+        "aria-label",
+        isExpanded ? "Свернуть название" : "Развернуть полное название"
+      );
       wrapper.classList.remove("work-row-name--collapsible");
       toggleBtn.hidden = true;
 

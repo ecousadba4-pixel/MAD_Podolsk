@@ -733,11 +733,13 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      position: relative;
     }
 
     .work-row-name-text {
       display: block;
       line-height: 1.4;
+      padding-right: 28px;
     }
 
     .work-row-name-toggle {
@@ -746,11 +748,15 @@
       padding: 0;
       display: none;
       align-items: center;
-      gap: 6px;
-      font-size: 0.78rem;
-      font-weight: 600;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
       color: var(--accent);
       cursor: pointer;
+      position: absolute;
+      top: 0;
+      right: 0;
     }
 
     .work-row-name-toggle:focus-visible {
@@ -760,13 +766,12 @@
     }
 
     .work-row-name-toggle-icon {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       border-right: 2px solid currentColor;
       border-bottom: 2px solid currentColor;
       transform: rotate(45deg);
       transition: transform 0.2s ease;
-      margin-top: 2px;
     }
 
     .work-row-name-toggle[aria-expanded="true"] .work-row-name-toggle-icon {
