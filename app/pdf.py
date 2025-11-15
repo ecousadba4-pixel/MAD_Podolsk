@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -17,9 +18,13 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from .models import DashboardItem, DashboardSummary
 
+LOGGER = logging.getLogger(__name__)
+
 FONT_DIR = Path(__file__).resolve().parent / "fonts"
 BODY_FONT = "DejaVuSans"
 BODY_FONT_BOLD = "DejaVuSans-Bold"
+DEFAULT_FONT = "Helvetica"
+DEFAULT_FONT_BOLD = "Helvetica-Bold"
 
 FONT_ALTERNATIVES: dict[str, list[str]] = {
     BODY_FONT: [
@@ -32,6 +37,11 @@ FONT_ALTERNATIVES: dict[str, list[str]] = {
         "FreeSansBold.ttf",
         "LiberationSans-Bold.ttf",
     ],
+}
+
+FONT_FALLBACKS: dict[str, str] = {
+    BODY_FONT: DEFAULT_FONT,
+    BODY_FONT_BOLD: DEFAULT_FONT_BOLD,
 }
 
 
@@ -68,22 +78,35 @@ def _resolve_font_path(file_names: Sequence[str]) -> Path | None:
     return None
 
 
-def _register_fonts() -> None:
+def _register_fonts() -> dict[str, str]:
+    resolved: dict[str, str] = {}
+    registered = set(pdfmetrics.getRegisteredFontNames())
     for font_name, file_candidates in FONT_ALTERNATIVES.items():
-        if font_name in pdfmetrics.getRegisteredFontNames():
+        if font_name in registered:
+            resolved[font_name] = font_name
             continue
         font_path = _resolve_font_path(file_candidates)
         if font_path is None:
+            fallback = FONT_FALLBACKS.get(font_name, DEFAULT_FONT)
             readable_names = ", ".join(file_candidates)
-            raise FileNotFoundError(
-                "Не удалось найти подходящий файл шрифта для "
-                f"'{font_name}'. Добавьте файл ({readable_names}) в каталог app/fonts "
-                "или укажите путь к шрифтам через переменную окружения MAD_PDF_FONT_PATHS."
+            LOGGER.warning(
+                "Не удалось найти подходящий файл шрифта для '%s'. "
+                "Ожидались файлы: %s. Используется встроенный шрифт '%s'.",
+                font_name,
+                readable_names,
+                fallback,
             )
+            resolved[font_name] = fallback
+            continue
         pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+        registered.add(font_name)
+        resolved[font_name] = font_name
+    return resolved
 
 
-_register_fonts()
+REGISTERED_FONTS = _register_fonts()
+BODY_FONT_NAME = REGISTERED_FONTS[BODY_FONT]
+BODY_FONT_BOLD_NAME = REGISTERED_FONTS[BODY_FONT_BOLD]
 
 MONTH_LABELS = [
     "январь",
@@ -180,7 +203,7 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
     table.setStyle(
         TableStyle(
             [
-                ("FONTNAME", (0, 0), (-1, -1), BODY_FONT),
+                ("FONTNAME", (0, 0), (-1, -1), BODY_FONT_NAME),
                 ("FONTSIZE", (0, 0), (-1, -1), 10),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                 ("TOPPADDING", (0, 0), (-1, -1), 2),
@@ -232,11 +255,11 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         ],
     )
     style_commands: list[tuple] = [
-        ("FONTNAME", (0, 0), (-1, 0), BODY_FONT_BOLD),
+        ("FONTNAME", (0, 0), (-1, 0), BODY_FONT_BOLD_NAME),
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f3f4f6")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
         ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
-        ("FONTNAME", (0, 1), (-1, -1), BODY_FONT),
+        ("FONTNAME", (0, 1), (-1, -1), BODY_FONT_NAME),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#cbd5f5")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
@@ -249,7 +272,7 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
     for idx in category_rows:
         style_commands.extend(
             [
-                ("FONTNAME", (0, idx), (-1, idx), BODY_FONT_BOLD),
+                ("FONTNAME", (0, idx), (-1, idx), BODY_FONT_BOLD_NAME),
                 ("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#eef2ff")),
             ]
         )
@@ -274,14 +297,14 @@ def build_dashboard_pdf(
     )
     title_style = ParagraphStyle(
         "Title",
-        fontName=BODY_FONT_BOLD,
+        fontName=BODY_FONT_BOLD_NAME,
         fontSize=16,
         leading=20,
         spaceAfter=6,
     )
     meta_style = ParagraphStyle(
         "Meta",
-        fontName=BODY_FONT,
+        fontName=BODY_FONT_NAME,
         fontSize=10,
         leading=13,
         spaceAfter=2,
