@@ -40,6 +40,18 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .page {
       max-width: 1180px;
       margin: 0 auto;
@@ -557,6 +569,12 @@
       margin-top: 12px;
     }
 
+    .work-list-scroller {
+      width: 100%;
+      max-height: min(65vh, 560px);
+      overflow-y: auto;
+    }
+
     .work-list.has-data {
       border: 1px solid var(--border-soft);
       border-radius: 20px;
@@ -577,7 +595,12 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .work-row:last-child {
+    .virtualized-list-inner {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .work-row-last {
       border-bottom: none;
     }
 
@@ -916,36 +939,43 @@
   </div>
 
   <script>
-    const API_URL = "https://mad-podolsk-karinausadba.amvera.io/api/dashboard"; // ← тут вставишь свой URL
+    const API_URL = "https://mad-podolsk-karinausadba.amvera.io/api/dashboard";
     const API_PDF_URL = `${API_URL.replace(/\/$/, "")}/pdf`;
 
-    const monthSelect = document.getElementById("month");
-    const lastUpdatedText = document.getElementById("last-updated-text");
-    const sumPlannedEl = document.getElementById("sum-planned");
-    const sumFactEl = document.getElementById("sum-fact");
-    const sumCompleteEl = document.getElementById("sum-complete");
-    const sumDeltaEl = document.getElementById("sum-delta");
-    const categoryGrid = document.getElementById("category-grid");
-    const workList = document.getElementById("work-list");
-    const searchInput = document.getElementById("search");
-    const activeCategoryTitle = document.getElementById("active-category-title");
-    const workEmptyState = document.getElementById("work-empty-state");
-    searchInput.disabled = true;
-    const printMonthEl = document.getElementById("print-month");
-    const printUpdatedEl = document.getElementById("print-updated");
-    const printBodyEl = document.getElementById("print-report-body");
-    const printTotalPlanEl = document.getElementById("print-total-plan");
-    const printTotalFactEl = document.getElementById("print-total-fact");
-    const printTotalDeltaEl = document.getElementById("print-total-delta");
-    const printSubtitleEl = document.getElementById("print-subtitle");
-    const pdfButton = document.getElementById("download-pdf");
-    const pdfButtonDefaultLabel = pdfButton.innerHTML;
-    pdfButton.disabled = true;
+    const CATEGORY_COLORS = [
+      { accent: "#22c55e", soft: "rgba(34, 197, 94, 0.25)" },
+      { accent: "#2563eb", soft: "rgba(37, 99, 235, 0.25)" },
+      { accent: "#f97316", soft: "rgba(249, 115, 22, 0.25)" },
+      { accent: "#dc2626", soft: "rgba(220, 38, 38, 0.25)" },
+      { accent: "#a855f7", soft: "rgba(168, 85, 247, 0.25)" },
+      { accent: "#0f766e", soft: "rgba(15, 118, 110, 0.25)" }
+    ];
 
-    const monthCache = new Map();
-    let currentData = null;
-    let groupedCategories = [];
-    let activeCategoryKey = null;
+    const elements = {
+      monthSelect: document.getElementById("month"),
+      lastUpdatedText: document.getElementById("last-updated-text"),
+      sumPlanned: document.getElementById("sum-planned"),
+      sumFact: document.getElementById("sum-fact"),
+      sumComplete: document.getElementById("sum-complete"),
+      sumDelta: document.getElementById("sum-delta"),
+      categoryGrid: document.getElementById("category-grid"),
+      workList: document.getElementById("work-list"),
+      workEmptyState: document.getElementById("work-empty-state"),
+      searchInput: document.getElementById("search"),
+      activeCategoryTitle: document.getElementById("active-category-title"),
+      printMonth: document.getElementById("print-month"),
+      printUpdated: document.getElementById("print-updated"),
+      printBody: document.getElementById("print-report-body"),
+      printTotalPlan: document.getElementById("print-total-plan"),
+      printTotalFact: document.getElementById("print-total-fact"),
+      printTotalDelta: document.getElementById("print-total-delta"),
+      printSubtitle: document.getElementById("print-subtitle"),
+      pdfButton: document.getElementById("download-pdf"),
+    };
+
+    const pdfButtonDefaultLabel = elements.pdfButton.innerHTML;
+    elements.pdfButton.disabled = true;
+    elements.searchInput.disabled = true;
 
     function formatMoney(value) {
       if (value === null || value === undefined || isNaN(value)) return "–";
@@ -968,15 +998,6 @@
       return d.toLocaleString("ru-RU");
     }
 
-    const CATEGORY_COLORS = [
-      { accent: "#22c55e", soft: "rgba(34, 197, 94, 0.25)" },
-      { accent: "#2563eb", soft: "rgba(37, 99, 235, 0.25)" },
-      { accent: "#f97316", soft: "rgba(249, 115, 22, 0.25)" },
-      { accent: "#dc2626", soft: "rgba(220, 38, 38, 0.25)" },
-      { accent: "#a855f7", soft: "rgba(168, 85, 247, 0.25)" },
-      { accent: "#0f766e", soft: "rgba(15, 118, 110, 0.25)" }
-    ];
-
     function calculateDelta(item) {
       if (item.delta_amount !== null && item.delta_amount !== undefined) {
         return item.delta_amount;
@@ -984,66 +1005,6 @@
       const planned = item.planned_amount ?? 0;
       const fact = item.fact_amount ?? 0;
       return fact - planned;
-    }
-
-    function buildCategories(items) {
-      const map = new Map();
-      items.forEach((item) => {
-        const rawKey = item.category || item.smeta || "";
-        const trimmedKey = rawKey ? rawKey.trim() : "";
-        if (!trimmedKey) return;
-        if (trimmedKey.toLowerCase() === "без категории") return;
-        const key = trimmedKey;
-        const title = (item.smeta && item.smeta.trim()) || key;
-        if (!map.has(key)) {
-          map.set(key, {
-            key,
-            title,
-            works: [],
-            planned: 0,
-            fact: 0,
-            delta: 0,
-          });
-        }
-        const group = map.get(key);
-        if (!group.title && title) {
-          group.title = title;
-        }
-        group.works.push(item);
-        const planned = item.planned_amount ?? 0;
-        const fact = item.fact_amount ?? 0;
-        const delta = calculateDelta(item);
-        if (!isNaN(planned)) group.planned += planned;
-        if (!isNaN(fact)) group.fact += fact;
-        if (!isNaN(delta)) group.delta += delta;
-      });
-      return Array.from(map.values()).sort((a, b) => {
-        const planA = !isNaN(a.planned) ? a.planned : 0;
-        const planB = !isNaN(b.planned) ? b.planned : 0;
-        if (planA === planB) {
-          const titleA = (a.title || "").toLowerCase();
-          const titleB = (b.title || "").toLowerCase();
-          return titleA.localeCompare(titleB, "ru");
-        }
-        return planB - planA;
-      });
-    }
-
-    function summarizeItems(items) {
-      return items.reduce(
-        (acc, item) => {
-          if (item.planned_amount !== null && item.planned_amount !== undefined) {
-            acc.planned += item.planned_amount;
-            acc.hasPlanned = true;
-          }
-          if (item.fact_amount !== null && item.fact_amount !== undefined) {
-            acc.fact += item.fact_amount;
-            acc.hasFact = true;
-          }
-          return acc;
-        },
-        { planned: 0, fact: 0, hasPlanned: false, hasFact: false }
-      );
     }
 
     function getWorkSortValue(item) {
@@ -1056,378 +1017,662 @@
       return 0;
     }
 
-    function renderSummary() {
-      if (!currentData) {
-        sumPlannedEl.textContent = "–";
-        sumFactEl.textContent = "–";
-        sumCompleteEl.textContent = "–";
-        sumDeltaEl.textContent = "–";
-        return;
-      }
-
-      const items = currentData.items || [];
-      const totals = summarizeItems(items);
-      const s = currentData.summary || {};
-      const planned = s.planned_amount ?? (totals.hasPlanned ? totals.planned : null);
-      const fact = s.fact_amount ?? (totals.hasFact ? totals.fact : null);
-      const completion = s.completion_pct ?? (planned ? (fact ?? 0) / planned : null);
-      const hasDeltaSource = s.delta_amount !== null && s.delta_amount !== undefined;
-      const delta = hasDeltaSource
-        ? s.delta_amount
-        : planned !== null || fact !== null
-          ? (fact ?? 0) - (planned ?? 0)
-          : null;
-
-      sumPlannedEl.textContent = formatMoney(planned);
-      sumFactEl.textContent = formatMoney(fact);
-      sumCompleteEl.textContent = formatPercent(completion);
-
-      sumDeltaEl.textContent = formatMoney(delta);
-      sumDeltaEl.classList.remove("positive", "negative");
-      if (delta > 0) sumDeltaEl.classList.add("positive");
-      if (delta < 0) sumDeltaEl.classList.add("negative");
+    function debounce(func, wait) {
+      let timeout;
+      return function debounced(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
     }
 
-    function renderCategories() {
-      categoryGrid.innerHTML = "";
-      if (!groupedCategories.length) {
-        const emptyText = currentData && !currentData.has_data
-          ? "Данные за выбранный месяц отсутствуют"
-          : "Нет данных для отображения";
-        categoryGrid.innerHTML = `<div class="empty-state">${emptyText}</div>`;
-        activeCategoryKey = null;
-        renderWorkList();
-        return;
+    class DataManager {
+      constructor(apiUrl) {
+        this.apiUrl = apiUrl;
+        this.cache = new Map();
+        this.currentData = null;
       }
 
-      groupedCategories.forEach((category, idx) => {
-        const palette = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
-        category.palette = palette;
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = `category-card${category.key === activeCategoryKey ? " active" : ""}`;
-        card.style.setProperty("--accent", palette.accent);
-        card.style.setProperty("--accent-soft", palette.soft);
+      getCached(monthIso) {
+        return this.cache.get(monthIso) || null;
+      }
 
-        const deltaClass = category.delta > 0 ? "delta-positive" : category.delta < 0 ? "delta-negative" : "";
+      async fetchData(monthIso, { force = false } = {}) {
+        if (!force && this.cache.has(monthIso)) {
+          return { data: this.cache.get(monthIso), fromCache: true };
+        }
+        const url = new URL(this.apiUrl, window.location.origin);
+        url.searchParams.set("month", monthIso);
+        const response = await fetch(url.toString());
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        const data = await response.json();
+        this.cache.set(monthIso, data);
+        return { data, fromCache: false };
+      }
 
-        card.innerHTML = `
-          <div class="category-title">
-            <span>${category.title}</span>
-            <span class="category-pill">${category.works.length} работ</span>
-          </div>
-          <div class="category-values">
-            <span><span class="label">План</span><strong>${formatMoneyRub(category.planned)}</strong></span>
-            <span><span class="label">Факт</span><strong>${formatMoneyRub(category.fact)}</strong></span>
-            <span><span class="label">Отклонение</span><strong class="category-delta ${deltaClass}">${formatMoneyRub(category.delta)}</strong></span>
-          </div>
-        `;
+      setCurrentData(data) {
+        this.currentData = data;
+      }
 
-        card.addEventListener("click", () => {
-          activeCategoryKey = category.key;
-          renderCategories();
-          renderWorkList();
+      getCurrentData() {
+        return this.currentData;
+      }
+
+      summarizeItems(items = []) {
+        return items.reduce(
+          (acc, item) => {
+            if (item.planned_amount !== null && item.planned_amount !== undefined) {
+              acc.planned += item.planned_amount;
+              acc.hasPlanned = true;
+            }
+            if (item.fact_amount !== null && item.fact_amount !== undefined) {
+              acc.fact += item.fact_amount;
+              acc.hasFact = true;
+            }
+            return acc;
+          },
+          { planned: 0, fact: 0, hasPlanned: false, hasFact: false }
+        );
+      }
+
+      calculateMetrics(data) {
+        if (!data) {
+          return null;
+        }
+        const items = data.items || [];
+        const totals = this.summarizeItems(items);
+        const summary = data.summary || {};
+        const planned = summary.planned_amount ?? (totals.hasPlanned ? totals.planned : null);
+        const fact = summary.fact_amount ?? (totals.hasFact ? totals.fact : null);
+        const completion = summary.completion_pct ?? (planned ? (fact ?? 0) / planned : null);
+        const hasDelta = summary.delta_amount !== null && summary.delta_amount !== undefined;
+        const delta = hasDelta
+          ? summary.delta_amount
+          : planned !== null || fact !== null
+            ? (fact ?? 0) - (planned ?? 0)
+            : null;
+        return { planned, fact, completion, delta };
+      }
+
+      buildCategories(items = []) {
+        const map = new Map();
+        items.forEach((item) => {
+          const rawKey = item.category || item.smeta || "";
+          const trimmedKey = rawKey ? rawKey.trim() : "";
+          if (!trimmedKey) return;
+          if (trimmedKey.toLowerCase() === "без категории") return;
+          const key = trimmedKey;
+          const title = (item.smeta && item.smeta.trim()) || key;
+          if (!map.has(key)) {
+            map.set(key, {
+              key,
+              title,
+              works: [],
+              planned: 0,
+              fact: 0,
+              delta: 0,
+            });
+          }
+          const group = map.get(key);
+          if (!group.title && title) {
+            group.title = title;
+          }
+          group.works.push(item);
+          const planned = item.planned_amount ?? 0;
+          const fact = item.fact_amount ?? 0;
+          const delta = calculateDelta(item);
+          if (!isNaN(planned)) group.planned += planned;
+          if (!isNaN(fact)) group.fact += fact;
+          if (!isNaN(delta)) group.delta += delta;
         });
-
-        categoryGrid.appendChild(card);
-      });
+        return Array.from(map.values()).sort((a, b) => {
+          const planA = !isNaN(a.planned) ? a.planned : 0;
+          const planB = !isNaN(b.planned) ? b.planned : 0;
+          if (planA === planB) {
+            const titleA = (a.title || "").toLowerCase();
+            const titleB = (b.title || "").toLowerCase();
+            return titleA.localeCompare(titleB, "ru");
+          }
+          return planB - planA;
+        });
+      }
     }
 
-    function renderWorkList() {
-      workList.innerHTML = "";
-      const activeCategory = groupedCategories.find((c) => c.key === activeCategoryKey) || null;
-      searchInput.disabled = !activeCategory;
-
-      if (!activeCategory) {
-        workEmptyState.style.display = "block";
-        workEmptyState.textContent = currentData && !currentData.has_data
-          ? "Данные за выбранный месяц отсутствуют"
-          : "Здесь появится список работ выбранной сметы.";
-        activeCategoryTitle.textContent = "Смета не выбрана";
-        return;
+    class VirtualizedList {
+      constructor(container, { rowHeight = 86, buffer = 5, renderItem } = {}) {
+        this.container = container;
+        this.rowHeight = rowHeight;
+        this.buffer = buffer;
+        this.renderItem = renderItem;
+        this.items = [];
+        this.visibleStart = -1;
+        this.visibleEnd = -1;
+        this.topSpacer = document.createElement("div");
+        this.bottomSpacer = document.createElement("div");
+        this.inner = document.createElement("div");
+        this.inner.className = "virtualized-list-inner";
+        this.topSpacer.setAttribute("aria-hidden", "true");
+        this.bottomSpacer.setAttribute("aria-hidden", "true");
+        this.container.innerHTML = "";
+        this.container.appendChild(this.topSpacer);
+        this.container.appendChild(this.inner);
+        this.container.appendChild(this.bottomSpacer);
+        this.onScroll = this.onScroll.bind(this);
+        this.container.addEventListener("scroll", this.onScroll, { passive: true });
+        window.addEventListener("resize", this.onScroll);
       }
 
-      workEmptyState.style.display = "none";
-      const filter = searchInput.value.toLowerCase().trim();
-      const works = !filter
-        ? [...activeCategory.works]
-        : activeCategory.works.filter((item) => {
-            const name = (item.work_name || item.description || "").toLowerCase();
-            return name.includes(filter);
-          });
-
-      activeCategoryTitle.textContent = `Расшифровка работ по смете «${activeCategory.title}»`;
-
-      if (!works.length) {
-        workEmptyState.style.display = "block";
-        workEmptyState.textContent = filter
-          ? "Нет работ, подходящих под фильтр"
-          : "В этой смете нет строк для отображения";
+      setItems(items) {
+        this.items = Array.isArray(items) ? items : [];
+        this.visibleStart = -1;
+        this.visibleEnd = -1;
+        this.container.scrollTop = 0;
+        this.render(true);
       }
 
-      workList.classList.toggle("has-data", works.length > 0);
+      onScroll() {
+        this.render();
+      }
 
-      if (works.length) {
-        const header = document.createElement("div");
-        header.className = "work-row work-row-header";
-        header.innerHTML = `
+      render(force = false) {
+        const total = this.items.length;
+        if (!total) {
+          this.inner.innerHTML = "";
+          this.topSpacer.style.height = "0px";
+          this.bottomSpacer.style.height = "0px";
+          return;
+        }
+        const viewHeight = this.container.clientHeight || window.innerHeight || this.rowHeight;
+        const scrollTop = this.container.scrollTop;
+        const startIndex = Math.max(Math.floor(scrollTop / this.rowHeight) - this.buffer, 0);
+        const endIndex = Math.min(Math.ceil((scrollTop + viewHeight) / this.rowHeight) + this.buffer, total);
+        if (!force && startIndex === this.visibleStart && endIndex === this.visibleEnd) {
+          return;
+        }
+        this.visibleStart = startIndex;
+        this.visibleEnd = endIndex;
+        this.inner.innerHTML = "";
+        for (let i = startIndex; i < endIndex; i++) {
+          const node = this.renderItem(this.items[i], i, total);
+          if (node) {
+            this.inner.appendChild(node);
+          }
+        }
+        this.topSpacer.style.height = `${startIndex * this.rowHeight}px`;
+        this.bottomSpacer.style.height = `${Math.max(total - endIndex, 0) * this.rowHeight}px`;
+      }
+    }
+
+    class UIManager {
+      constructor({ dataManager, elements, apiPdfUrl, pdfButtonDefaultLabel }) {
+        this.dataManager = dataManager;
+        this.elements = elements;
+        this.apiPdfUrl = apiPdfUrl;
+        this.pdfButtonDefaultLabel = pdfButtonDefaultLabel;
+        this.groupedCategories = [];
+        this.activeCategoryKey = null;
+        this.virtualizedList = null;
+        this.workHeaderEl = null;
+        this.liveRegion = null;
+        this.debouncedSearch = debounce(() => this.renderWorkList(), 300);
+      }
+
+      init() {
+        this.prepareWorkList();
+        this.liveRegion = this.createLiveRegion();
+        this.bindEvents();
+        this.initMonthSelect();
+      }
+
+      prepareWorkList() {
+        this.workHeaderEl = document.createElement("div");
+        this.workHeaderEl.className = "work-row work-row-header";
+        this.workHeaderEl.innerHTML = `
           <div>Работа</div>
           <div>План, ₽</div>
           <div>Факт, ₽</div>
           <div>Отклонение</div>
         `;
-        workList.appendChild(header);
+        this.workHeaderEl.hidden = true;
+        this.elements.workList.appendChild(this.workHeaderEl);
+
+        this.elements.workListScroller = document.createElement("div");
+        this.elements.workListScroller.className = "work-list-scroller";
+        this.elements.workList.appendChild(this.elements.workListScroller);
+        this.elements.workListScroller.style.display = "none";
+
+        this.virtualizedList = new VirtualizedList(this.elements.workListScroller, {
+          rowHeight: 86,
+          renderItem: (item, index, total) => this.createWorkRow(item, index, total),
+        });
       }
 
-      works
-        .sort((a, b) => getWorkSortValue(b) - getWorkSortValue(a))
-        .forEach((item) => {
-          const workName = item.work_name || item.description || "Без названия";
-          const delta = calculateDelta(item);
-          const deltaClass = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
-          const row = document.createElement("div");
-          row.className = "work-row";
-
-          const arrow = delta < 0 ? "▼" : delta > 0 ? "▲" : "●";
-
-          row.innerHTML = `
-            <div class="work-row-name">${workName}</div>
-            <div class="work-row-money work-row-plan">
-              <span class="work-row-label">План</span>
-              <span>${formatMoneyRub(item.planned_amount)}</span>
-            </div>
-            <div class="work-row-money work-row-fact">
-              <span class="work-row-label">Факт</span>
-              <span>${formatMoneyRub(item.fact_amount)}</span>
-            </div>
-            <div class="work-row-delta ${deltaClass}">
-              <span class="work-row-label">Отклонение</span>
-              <span class="work-row-delta-value">${arrow} ${formatMoneyRub(delta)}</span>
-            </div>
-          `;
-
-          workList.appendChild(row);
-        });
-
-    }
-
-    function renderPrintReport() {
-      const monthLabel = monthSelect.options[monthSelect.selectedIndex]?.textContent || "–";
-      printMonthEl.textContent = monthLabel;
-      printUpdatedEl.textContent = currentData && currentData.has_data
-        ? formatDateTime(currentData.last_updated)
-        : "нет данных";
-      printSubtitleEl.textContent = currentData && currentData.has_data
-        ? "Выгружены все строки со статусом «Рассмотрено»"
-        : "Данные по выбранному месяцу отсутствуют";
-
-      printBodyEl.innerHTML = "";
-
-      if (!currentData || !groupedCategories.length) {
-        const row = document.createElement("tr");
-        row.innerHTML = '<td colspan="5" style="text-align:center; font-style: italic;">Нет данных для печати</td>';
-        printBodyEl.appendChild(row);
-        printTotalPlanEl.textContent = "–";
-        printTotalFactEl.textContent = "–";
-        printTotalDeltaEl.textContent = "–";
-        printTotalDeltaEl.classList.remove("delta-positive", "delta-negative");
-        return;
+      bindEvents() {
+        this.elements.searchInput.addEventListener("input", this.debouncedSearch);
+        this.elements.pdfButton.addEventListener("click", (event) => this.downloadPdfReport(event));
       }
 
-      let totalPlan = 0;
-      let totalFact = 0;
-      let totalDelta = 0;
+      initMonthSelect() {
+        const now = new Date();
+        const months = [];
+        const formatMonthIso = (d) => {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          return `${year}-${month}-01`;
+        };
 
-      groupedCategories.forEach((cat) => {
-        const catDelta = cat.delta ?? (cat.fact - cat.planned);
-        const catRow = document.createElement("tr");
-        const deltaClass = catDelta > 0 ? "delta-positive" : catDelta < 0 ? "delta-negative" : "";
-        catRow.className = "print-smeta-summary";
-        catRow.innerHTML = `
-          <td>${cat.title}</td>
-          <td>Итого по смете</td>
-          <td class="num">${formatMoneyRub(cat.planned)}</td>
-          <td class="num">${formatMoneyRub(cat.fact)}</td>
-          <td class="num ${deltaClass}">${formatMoneyRub(catDelta)}</td>
-        `;
-        printBodyEl.appendChild(catRow);
-
-        cat.works.forEach((item) => {
-          const delta = calculateDelta(item);
-          const deltaClassWork = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
-          const workRow = document.createElement("tr");
-          workRow.innerHTML = `
-            <td></td>
-            <td>${item.work_name || item.description || "Без названия"}</td>
-            <td class="num">${formatMoneyRub(item.planned_amount)}</td>
-            <td class="num">${formatMoneyRub(item.fact_amount)}</td>
-            <td class="num ${deltaClassWork}">${formatMoneyRub(delta)}</td>
-          `;
-          printBodyEl.appendChild(workRow);
-        });
-
-        totalPlan += cat.planned ?? 0;
-        totalFact += cat.fact ?? 0;
-        totalDelta += catDelta ?? 0;
-      });
-
-      printTotalPlanEl.textContent = formatMoneyRub(totalPlan);
-      printTotalFactEl.textContent = formatMoneyRub(totalFact);
-      printTotalDeltaEl.textContent = formatMoneyRub(totalDelta);
-      printTotalDeltaEl.classList.remove("delta-positive", "delta-negative");
-      if (totalDelta > 0) printTotalDeltaEl.classList.add("delta-positive");
-      if (totalDelta < 0) printTotalDeltaEl.classList.add("delta-negative");
-    }
-
-    function getSelectedMonthLabel() {
-      const option = monthSelect.options[monthSelect.selectedIndex];
-      return option ? option.textContent.trim() : "";
-    }
-
-    async function downloadPdfReport(event) {
-      event.preventDefault();
-      if (pdfButton.disabled) return;
-
-      const selectedMonth = getSelectedMonthLabel() || monthSelect.value || "period";
-      const fileNameSlug = selectedMonth
-        .toString()
-        .trim()
-        .replace(/\s+/g, "-")
-        .replace(/[^0-9A-Za-zА-Яа-я\-]+/g, "")
-        .replace(/-+/g, "-")
-        .replace(/^-|-$/g, "");
-      const fileName = fileNameSlug ? `mad-podolsk-otchet-${fileNameSlug}.pdf` : "mad-podolsk-otchet.pdf";
-
-      pdfButton.disabled = true;
-      pdfButton.innerHTML = "Формируем PDF…";
-
-      try {
-        const pdfUrl = new URL(API_PDF_URL, window.location.origin);
-        pdfUrl.searchParams.set("month", monthSelect.value);
-        const response = await fetch(pdfUrl.toString(), {
-          headers: { Accept: "application/pdf" },
-        });
-        if (!response.ok) {
-          throw new Error("HTTP " + response.status);
+        for (let i = 0; i < 6; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          months.push({
+            iso: formatMonthIso(d),
+            label: d.toLocaleDateString("ru-RU", { month: "long", year: "numeric" }),
+          });
         }
-        const blob = await response.blob();
-        const downloadUrl = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = downloadUrl;
-        anchor.download = fileName;
-        anchor.style.display = "none";
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
-      } catch (error) {
-        console.error("PDF export error", error);
-        alert("Не удалось сформировать PDF. Попробуйте ещё раз позже.");
-      } finally {
-        pdfButton.innerHTML = pdfButtonDefaultLabel;
-        pdfButton.disabled = !groupedCategories.length;
-      }
-    }
 
-    function applyDataToUi(data) {
-      const previousKey = activeCategoryKey;
-      currentData = data;
-      const items = data.items || [];
-      groupedCategories = buildCategories(items);
-      if (previousKey && groupedCategories.some((cat) => cat.key === previousKey)) {
-        activeCategoryKey = previousKey;
-      } else {
-        activeCategoryKey = groupedCategories.length ? groupedCategories[0].key : null;
-      }
-      lastUpdatedText.textContent = data.has_data
-        ? formatDateTime(data.last_updated)
-        : "Нет данных";
-      renderSummary();
-      renderCategories();
-      renderWorkList();
-      renderPrintReport();
-      pdfButton.disabled = !groupedCategories.length;
-    }
+        months.forEach((monthInfo, index) => {
+          const option = document.createElement("option");
+          option.value = monthInfo.iso;
+          option.textContent = monthInfo.label;
+          if (index === 0) {
+            option.selected = true;
+          }
+          this.elements.monthSelect.appendChild(option);
+        });
 
-    async function loadMonthData(monthIso) {
-      const cached = monthCache.get(monthIso);
-      if (cached) {
-        applyDataToUi(cached);
-      } else {
-        workList.innerHTML = "";
-        workEmptyState.style.display = "block";
-        workEmptyState.textContent = "Загрузка данных...";
-        activeCategoryTitle.textContent = "Загрузка...";
-        sumPlannedEl.textContent = "…";
-        sumFactEl.textContent = "…";
-        sumCompleteEl.textContent = "…";
-        sumDeltaEl.textContent = "…";
-      }
+        this.elements.monthSelect.addEventListener("change", () => {
+          this.loadMonthData(this.elements.monthSelect.value);
+        });
 
-      try {
-        const url = new URL(API_URL, window.location.origin);
-        url.searchParams.set("month", monthIso);
-        const res = await fetch(url.toString());
-        if (!res.ok) {
-          throw new Error("HTTP " + res.status);
+        if (months.length) {
+          this.loadMonthData(months[0].iso);
         }
-        const data = await res.json();
-        monthCache.set(monthIso, data);
-        applyDataToUi(data);
-      } catch (e) {
-        console.error(e);
-        if (!cached) {
-          workEmptyState.style.display = "block";
-          workEmptyState.textContent = "Ошибка загрузки данных";
-          lastUpdatedText.textContent = "Ошибка загрузки данных";
+      }
+
+      async loadMonthData(monthIso) {
+        const cached = this.dataManager.getCached(monthIso);
+        if (cached) {
+          this.applyData(cached);
         } else {
+          this.showLoadingState();
+        }
+        try {
+          const { data } = await this.dataManager.fetchData(monthIso, { force: Boolean(cached) });
+          this.applyData(data);
+          this.announce(`Данные за ${this.getSelectedMonthLabel() || "выбранный месяц"} обновлены.`);
+        } catch (error) {
+          console.error(error);
+          if (!cached) {
+            this.handleLoadError();
+          } else {
+            this.announce("Не удалось обновить данные");
+          }
         }
       }
-    }
 
-    function initMonthSelect() {
-      const now = new Date();
-      const months = [];
-
-      // последние 6 месяцев
-      const formatMonthIso = (d) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, "0");
-        return `${year}-${month}-01`;
-      };
-
-      for (let i = 0; i < 6; i++) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const iso = formatMonthIso(d);
-        const label = d.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
-        months.push({ iso, label });
+      showLoadingState() {
+        this.groupedCategories = [];
+        this.activeCategoryKey = null;
+        this.elements.categoryGrid.innerHTML = '<div class="empty-state">Загружаем данные…</div>';
+        this.elements.lastUpdatedText.textContent = "Загрузка данных…";
+        this.elements.sumPlanned.textContent = "…";
+        this.elements.sumFact.textContent = "…";
+        this.elements.sumComplete.textContent = "…";
+        this.elements.sumDelta.textContent = "…";
+        this.elements.activeCategoryTitle.textContent = "Загрузка...";
+        this.elements.workEmptyState.style.display = "block";
+        this.elements.workEmptyState.textContent = "Загрузка данных...";
+        this.elements.workList.classList.remove("has-data");
+        this.workHeaderEl.hidden = true;
+        this.elements.workListScroller.style.display = "none";
+        this.virtualizedList.setItems([]);
+        this.elements.searchInput.disabled = true;
+        this.elements.pdfButton.disabled = true;
       }
 
-      months.forEach((m, idx) => {
-        const opt = document.createElement("option");
-        opt.value = m.iso;
-        opt.textContent = m.label;
-        if (idx === 0) opt.selected = true;
-        monthSelect.appendChild(opt);
-      });
+      handleLoadError() {
+        this.elements.workEmptyState.style.display = "block";
+        this.elements.workEmptyState.textContent = "Ошибка загрузки данных";
+        this.elements.lastUpdatedText.textContent = "Ошибка загрузки данных";
+        this.elements.activeCategoryTitle.textContent = "Смета не выбрана";
+        this.elements.searchInput.disabled = true;
+        this.elements.workList.classList.remove("has-data");
+        this.workHeaderEl.hidden = true;
+        this.elements.workListScroller.style.display = "none";
+        this.virtualizedList.setItems([]);
+        this.elements.pdfButton.disabled = true;
+        this.elements.categoryGrid.innerHTML = '<div class="empty-state">Ошибка загрузки данных</div>';
+      }
 
-      monthSelect.addEventListener("change", () => {
-        loadMonthData(monthSelect.value);
-      });
+      applyData(data) {
+        this.dataManager.setCurrentData(data);
+        this.groupedCategories = this.dataManager.buildCategories(data.items || []);
+        this.ensureActiveCategory();
+        this.elements.lastUpdatedText.textContent = data.has_data
+          ? formatDateTime(data.last_updated)
+          : "Нет данных";
+        this.elements.pdfButton.disabled = !this.groupedCategories.length;
+        this.renderSummary();
+        this.renderCategories();
+        this.renderWorkList();
+        this.renderPrintReport();
+      }
 
-      // первая загрузка
-      loadMonthData(months[0].iso);
+      ensureActiveCategory() {
+        if (this.activeCategoryKey && this.groupedCategories.some((cat) => cat.key === this.activeCategoryKey)) {
+          return;
+        }
+        this.activeCategoryKey = this.groupedCategories.length ? this.groupedCategories[0].key : null;
+      }
+
+      renderSummary() {
+        const metrics = this.dataManager.calculateMetrics(this.dataManager.getCurrentData());
+        if (!metrics) {
+          this.elements.sumPlanned.textContent = "–";
+          this.elements.sumFact.textContent = "–";
+          this.elements.sumComplete.textContent = "–";
+          this.elements.sumDelta.textContent = "–";
+          this.elements.sumDelta.classList.remove("positive", "negative");
+          return;
+        }
+        this.elements.sumPlanned.textContent = formatMoney(metrics.planned);
+        this.elements.sumFact.textContent = formatMoney(metrics.fact);
+        this.elements.sumComplete.textContent = formatPercent(metrics.completion);
+        this.elements.sumDelta.textContent = formatMoney(metrics.delta);
+        this.elements.sumDelta.classList.remove("positive", "negative");
+        if (metrics.delta > 0) this.elements.sumDelta.classList.add("positive");
+        if (metrics.delta < 0) this.elements.sumDelta.classList.add("negative");
+      }
+
+      renderCategories() {
+        const currentData = this.dataManager.getCurrentData();
+        this.elements.categoryGrid.innerHTML = "";
+        if (!this.groupedCategories.length) {
+          const emptyText = currentData && !currentData.has_data
+            ? "Данные за выбранный месяц отсутствуют"
+            : "Нет данных для отображения";
+          this.elements.categoryGrid.innerHTML = `<div class="empty-state">${emptyText}</div>`;
+          this.activeCategoryKey = null;
+          this.renderWorkList();
+          return;
+        }
+
+        this.groupedCategories.forEach((category, idx) => {
+          const palette = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = `category-card${category.key === this.activeCategoryKey ? " active" : ""}`;
+          card.style.setProperty("--accent", palette.accent);
+          card.style.setProperty("--accent-soft", palette.soft);
+          const deltaClass = category.delta > 0 ? "delta-positive" : category.delta < 0 ? "delta-negative" : "";
+          card.innerHTML = `
+            <div class="category-title">
+              <span>${category.title}</span>
+              <span class="category-pill">${category.works.length} работ</span>
+            </div>
+            <div class="category-values">
+              <span><span class="label">План</span><strong>${formatMoneyRub(category.planned)}</strong></span>
+              <span><span class="label">Факт</span><strong>${formatMoneyRub(category.fact)}</strong></span>
+              <span><span class="label">Отклонение</span><strong class="category-delta ${deltaClass}">${formatMoneyRub(category.delta)}</strong></span>
+            </div>
+          `;
+          card.setAttribute("aria-pressed", category.key === this.activeCategoryKey ? "true" : "false");
+          card.addEventListener("click", () => {
+            this.activeCategoryKey = category.key;
+            this.renderCategories();
+            this.renderWorkList();
+          });
+          this.elements.categoryGrid.appendChild(card);
+        });
+
+        this.enhanceAccessibility();
+      }
+
+      renderWorkList() {
+        const currentData = this.dataManager.getCurrentData();
+        const activeCategory = this.groupedCategories.find((cat) => cat.key === this.activeCategoryKey) || null;
+        const filter = this.elements.searchInput.value.toLowerCase().trim();
+        this.elements.searchInput.disabled = !activeCategory;
+
+        if (!activeCategory) {
+          this.elements.workEmptyState.style.display = "block";
+          this.elements.workEmptyState.textContent = currentData && !currentData.has_data
+            ? "Данные за выбранный месяц отсутствуют"
+            : "Здесь появится список работ выбранной сметы.";
+          this.elements.activeCategoryTitle.textContent = "Смета не выбрана";
+          this.elements.workList.classList.remove("has-data");
+          this.workHeaderEl.hidden = true;
+          this.elements.workListScroller.style.display = "none";
+          this.virtualizedList.setItems([]);
+          return;
+        }
+
+        const works = (filter
+          ? activeCategory.works.filter((item) => {
+              const name = (item.work_name || item.description || "").toLowerCase();
+              return name.includes(filter);
+            })
+          : [...activeCategory.works]
+        ).sort((a, b) => getWorkSortValue(b) - getWorkSortValue(a));
+
+        this.elements.activeCategoryTitle.textContent = `Расшифровка работ по смете «${activeCategory.title}»`;
+
+        if (!works.length) {
+          this.elements.workEmptyState.style.display = "block";
+          this.elements.workEmptyState.textContent = filter
+            ? "Нет работ, подходящих под фильтр"
+            : "В этой смете нет строк для отображения";
+          this.elements.workList.classList.remove("has-data");
+          this.workHeaderEl.hidden = true;
+          this.elements.workListScroller.style.display = "none";
+          this.virtualizedList.setItems([]);
+          return;
+        }
+
+        this.elements.workEmptyState.style.display = "none";
+        this.elements.workList.classList.add("has-data");
+        this.workHeaderEl.hidden = false;
+        this.elements.workListScroller.style.display = "block";
+        this.virtualizedList.setItems(works);
+      }
+
+      createWorkRow(item, index, total) {
+        const workName = item.work_name || item.description || "Без названия";
+        const delta = calculateDelta(item);
+        const deltaClass = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
+        const arrow = delta < 0 ? "▼" : delta > 0 ? "▲" : "●";
+        const row = document.createElement("div");
+        row.className = "work-row";
+        if (index === total - 1) {
+          row.classList.add("work-row-last");
+        }
+        row.innerHTML = `
+          <div class="work-row-name">${workName}</div>
+          <div class="work-row-money work-row-plan">
+            <span class="work-row-label">План</span>
+            <span>${formatMoneyRub(item.planned_amount)}</span>
+          </div>
+          <div class="work-row-money work-row-fact">
+            <span class="work-row-label">Факт</span>
+            <span>${formatMoneyRub(item.fact_amount)}</span>
+          </div>
+          <div class="work-row-delta ${deltaClass}">
+            <span class="work-row-label">Отклонение</span>
+            <span class="work-row-delta-value">${arrow} ${formatMoneyRub(delta)}</span>
+          </div>
+        `;
+        return row;
+      }
+
+      renderPrintReport() {
+        const currentData = this.dataManager.getCurrentData();
+        const monthLabel = this.getSelectedMonthLabel() || "–";
+        this.elements.printMonth.textContent = monthLabel;
+        this.elements.printUpdated.textContent = currentData && currentData.has_data
+          ? formatDateTime(currentData.last_updated)
+          : "нет данных";
+        this.elements.printSubtitle.textContent = currentData && currentData.has_data
+          ? "Выгружены все строки со статусом «Рассмотрено»"
+          : "Данные по выбранному месяцу отсутствуют";
+
+        this.elements.printBody.innerHTML = "";
+
+        if (!currentData || !this.groupedCategories.length) {
+          const row = document.createElement("tr");
+          row.innerHTML = '<td colspan="5" style="text-align:center; font-style: italic;">Нет данных для печати</td>';
+          this.elements.printBody.appendChild(row);
+          this.elements.printTotalPlan.textContent = "–";
+          this.elements.printTotalFact.textContent = "–";
+          this.elements.printTotalDelta.textContent = "–";
+          this.elements.printTotalDelta.classList.remove("delta-positive", "delta-negative");
+          return;
+        }
+
+        let totalPlan = 0;
+        let totalFact = 0;
+        let totalDelta = 0;
+
+        this.groupedCategories.forEach((category) => {
+          const catDelta = category.delta ?? (category.fact - category.planned);
+          const catRow = document.createElement("tr");
+          const deltaClass = catDelta > 0 ? "delta-positive" : catDelta < 0 ? "delta-negative" : "";
+          catRow.className = "print-smeta-summary";
+          catRow.innerHTML = `
+            <td>${category.title}</td>
+            <td>Итого по смете</td>
+            <td class="num">${formatMoneyRub(category.planned)}</td>
+            <td class="num">${formatMoneyRub(category.fact)}</td>
+            <td class="num ${deltaClass}">${formatMoneyRub(catDelta)}</td>
+          `;
+          this.elements.printBody.appendChild(catRow);
+
+          category.works.forEach((item) => {
+            const delta = calculateDelta(item);
+            const deltaClassWork = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
+            const workRow = document.createElement("tr");
+            workRow.innerHTML = `
+              <td></td>
+              <td>${item.work_name || item.description || "Без названия"}</td>
+              <td class="num">${formatMoneyRub(item.planned_amount)}</td>
+              <td class="num">${formatMoneyRub(item.fact_amount)}</td>
+              <td class="num ${deltaClassWork}">${formatMoneyRub(delta)}</td>
+            `;
+            this.elements.printBody.appendChild(workRow);
+          });
+
+          totalPlan += category.planned ?? 0;
+          totalFact += category.fact ?? 0;
+          totalDelta += catDelta ?? 0;
+        });
+
+        this.elements.printTotalPlan.textContent = formatMoneyRub(totalPlan);
+        this.elements.printTotalFact.textContent = formatMoneyRub(totalFact);
+        this.elements.printTotalDelta.textContent = formatMoneyRub(totalDelta);
+        this.elements.printTotalDelta.classList.remove("delta-positive", "delta-negative");
+        if (totalDelta > 0) this.elements.printTotalDelta.classList.add("delta-positive");
+        if (totalDelta < 0) this.elements.printTotalDelta.classList.add("delta-negative");
+      }
+
+      getSelectedMonthLabel() {
+        const option = this.elements.monthSelect.options[this.elements.monthSelect.selectedIndex];
+        return option ? option.textContent.trim() : "";
+      }
+
+      async downloadPdfReport(event) {
+        event.preventDefault();
+        if (this.elements.pdfButton.disabled) {
+          return;
+        }
+        const selectedMonth = this.getSelectedMonthLabel() || this.elements.monthSelect.value || "period";
+        const fileNameSlug = selectedMonth
+          .toString()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^0-9A-Za-zА-Яа-я\-]+/g, "")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "");
+        const fileName = fileNameSlug ? `mad-podolsk-otchet-${fileNameSlug}.pdf` : "mad-podolsk-otchet.pdf";
+        this.elements.pdfButton.disabled = true;
+        this.elements.pdfButton.innerHTML = "Формируем PDF…";
+        try {
+          const pdfUrl = new URL(this.apiPdfUrl, window.location.origin);
+          pdfUrl.searchParams.set("month", this.elements.monthSelect.value);
+          const response = await fetch(pdfUrl.toString(), {
+            headers: { Accept: "application/pdf" },
+          });
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+          const blob = await response.blob();
+          const downloadUrl = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = downloadUrl;
+          anchor.download = fileName;
+          anchor.style.display = "none";
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+          this.announce("PDF-отчёт сформирован.");
+        } catch (error) {
+          console.error("PDF export error", error);
+          alert("Не удалось сформировать PDF. Попробуйте ещё раз позже.");
+          this.announce("Ошибка формирования PDF");
+        } finally {
+          this.elements.pdfButton.innerHTML = this.pdfButtonDefaultLabel;
+          this.elements.pdfButton.disabled = !this.groupedCategories.length;
+        }
+      }
+
+      enhanceAccessibility() {
+        const cards = this.elements.categoryGrid.querySelectorAll(".category-card");
+        cards.forEach((card, index) => {
+          const title = card.querySelector(".category-title span")?.textContent?.trim() || `Смета ${index + 1}`;
+          card.setAttribute("role", "button");
+          card.setAttribute("tabindex", "0");
+          card.setAttribute("aria-label", `Смета ${title}`);
+          card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              card.click();
+            }
+          });
+        });
+      }
+
+      createLiveRegion() {
+        const liveRegion = document.createElement("div");
+        liveRegion.setAttribute("aria-live", "polite");
+        liveRegion.setAttribute("aria-atomic", "true");
+        liveRegion.className = "sr-only";
+        document.body.appendChild(liveRegion);
+        return liveRegion;
+      }
+
+      announce(message) {
+        if (!this.liveRegion) return;
+        this.liveRegion.textContent = "";
+        requestAnimationFrame(() => {
+          this.liveRegion.textContent = message;
+        });
+      }
     }
-
-    searchInput.addEventListener("input", () => {
-      renderWorkList();
-    });
-
-    pdfButton.addEventListener("click", downloadPdfReport);
 
     document.addEventListener("DOMContentLoaded", () => {
-      initMonthSelect();
+      const dataManager = new DataManager(API_URL);
+      const uiManager = new UIManager({
+        dataManager,
+        elements,
+        apiPdfUrl: API_PDF_URL,
+        pdfButtonDefaultLabel,
+      });
+      uiManager.init();
     });
   </script>
+
 </body>
 </html>
