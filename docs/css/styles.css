@@ -730,6 +730,47 @@
       font-size: 0.98rem;
       font-weight: 400;
       color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .work-row-name-text {
+      display: block;
+      line-height: 1.4;
+    }
+
+    .work-row-name-toggle {
+      border: none;
+      background: none;
+      padding: 0;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .work-row-name-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .work-row-name-toggle-icon {
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+      margin-top: 2px;
+    }
+
+    .work-row-name-toggle[aria-expanded="true"] .work-row-name-toggle-icon {
+      transform: rotate(-135deg);
     }
 
     .work-row-money {
@@ -769,6 +810,15 @@
       }
       .work-row-name {
         grid-column: 1 / -1;
+      }
+      .work-row-name--collapsed .work-row-name-text {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .work-row-name--collapsible .work-row-name-toggle {
+        display: inline-flex;
       }
       .work-row-money,
       .work-row-delta {
