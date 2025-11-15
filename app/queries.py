@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
-import math
+from decimal import Decimal
 from typing import Any
 
 from psycopg2.extras import RealDictCursor
@@ -13,32 +12,8 @@ from .models import DashboardItem, DashboardSummary
 
 ITEMS_SQL = """
     SELECT
-        COALESCE(
-            NULLIF(TRIM(BOTH FROM rates.smeta_code), ''),
-            NULLIF(TRIM(BOTH FROM pvf.smeta), ''),
-            NULLIF(TRIM(BOTH FROM pvf.smeta_name), ''),
-            NULLIF(TRIM(BOTH FROM pvf.smeta_title), ''),
-            NULLIF(TRIM(BOTH FROM pvf.section), '')
-        ) AS category,
-        COALESCE(
-            NULLIF(TRIM(BOTH FROM pvf.smeta), ''),
-            NULLIF(TRIM(BOTH FROM pvf.smeta_name), ''),
-            NULLIF(TRIM(BOTH FROM pvf.smeta_title), ''),
-            NULLIF(TRIM(BOTH FROM pvf.section), '')
-        ) AS smeta,
-        COALESCE(
-            NULLIF(TRIM(BOTH FROM pvf.work_name), ''),
-            NULLIF(TRIM(BOTH FROM pvf.work_title), ''),
-            NULLIF(TRIM(BOTH FROM pvf.description), '')
-        ) AS work_name,
-        COALESCE(NULLIF(TRIM(BOTH FROM pvf.description), ''), '') AS description,
-        pvf.unit,
-        pvf.planned_volume,
-        pvf.planned_amount,
-        pvf.fact_volume_done AS fact_volume,
-        pvf.fact_amount_done AS fact_amount,
-        pvf.delta_amount_done AS delta_amount,
-        pvf.delta_amount_done_pct AS delta_pct
+        pvf.*, 
+        rates.smeta_code AS category_code
     FROM skpdi_plan_vs_fact_monthly AS pvf
     LEFT JOIN skpdi_rates AS rates
         ON TRIM(LOWER(rates.work_name)) = TRIM(LOWER(pvf.description))
@@ -71,24 +46,14 @@ SUMMARY_SQL = """
 
 
 def _to_float(value: Any) -> float | None:
-    """Преобразует значения из БД в float, убирая NaN/Inf."""
-
     if value is None:
         return None
-
-    numeric: float
     if isinstance(value, (int, float, Decimal)):
-        numeric = float(value)
-    else:
-        try:
-            numeric = float(value)
-        except (TypeError, ValueError, InvalidOperation):
-            return None
-
-    if not math.isfinite(numeric):
+        return float(value)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
         return None
-
-    return numeric
 
 
 def fetch_plan_vs_fact_for_month(
@@ -104,28 +69,31 @@ def fetch_plan_vs_fact_for_month(
     summary: DashboardSummary | None = None
     last_updated: datetime | None = None
 
-    month_value = month_start.isoformat()
-
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(ITEMS_SQL, (month_value,))
+            cur.execute(ITEMS_SQL, (month_start,))
             rows = cur.fetchall()
 
         items = []
         for row in rows:
+            description = row.get("description") or ""
             items.append(
                 DashboardItem(
-                    category=row.get("category") or row.get("smeta"),
-                    smeta=row.get("smeta"),
-                    work_name=row.get("work_name") or row.get("description"),
-                    description=row.get("description") or "",
+                    category=row.get("category_code") or row.get("smeta"),
+                    smeta=
+                        row.get("smeta")
+                        or row.get("smeta_name")
+                        or row.get("smeta_title")
+                        or row.get("section"),
+                    work_name=row.get("work_name") or row.get("work_title") or description,
+                    description=description,
                     unit=row.get("unit"),
                     planned_volume=_to_float(row.get("planned_volume")),
                     planned_amount=_to_float(row.get("planned_amount")),
-                    fact_volume=_to_float(row.get("fact_volume")),
-                    fact_amount=_to_float(row.get("fact_amount")),
-                    delta_amount=_to_float(row.get("delta_amount")),
-                    delta_pct=_to_float(row.get("delta_pct")),
+                    fact_volume=_to_float(row.get("fact_volume_done")),
+                    fact_amount=_to_float(row.get("fact_amount_done")),
+                    delta_amount=_to_float(row.get("delta_amount_done")),
+                    delta_pct=_to_float(row.get("delta_amount_done_pct")),
                 )
             )
 
@@ -136,7 +104,7 @@ def fetch_plan_vs_fact_for_month(
                 last_updated = res[0]
 
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(SUMMARY_SQL, (month_value,))
+            cur.execute(SUMMARY_SQL, (month_start,))
             summary_row = cur.fetchone()
             if summary_row and summary_row["planned_total"] is not None:
                 summary = DashboardSummary(
