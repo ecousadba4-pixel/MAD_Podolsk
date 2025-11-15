@@ -1,6 +1,5 @@
 fastapi
 uvicorn[standard]
-psycopg[binary]
-psycopg-pool
+psycopg2-binary
 python-dotenv
 pydantic-settings
