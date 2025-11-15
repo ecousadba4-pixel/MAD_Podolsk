@@ -564,8 +564,6 @@
 
     .work-list-scroller {
       width: 100%;
-      max-height: min(65vh, 560px);
-      overflow-y: auto;
     }
 
     .work-list.has-data {
@@ -586,11 +584,6 @@
       font-size: 0.88rem;
       background: #fff;
       font-variant-numeric: tabular-nums;
-    }
-
-    .virtualized-list-inner {
-      display: flex;
-      flex-direction: column;
     }
 
     .work-row-last {
@@ -1136,71 +1129,6 @@
       }
     }
 
-    class VirtualizedList {
-      constructor(container, { rowHeight = 86, buffer = 5, renderItem } = {}) {
-        this.container = container;
-        this.rowHeight = rowHeight;
-        this.buffer = buffer;
-        this.renderItem = renderItem;
-        this.items = [];
-        this.visibleStart = -1;
-        this.visibleEnd = -1;
-        this.topSpacer = document.createElement("div");
-        this.bottomSpacer = document.createElement("div");
-        this.inner = document.createElement("div");
-        this.inner.className = "virtualized-list-inner";
-        this.topSpacer.setAttribute("aria-hidden", "true");
-        this.bottomSpacer.setAttribute("aria-hidden", "true");
-        this.container.innerHTML = "";
-        this.container.appendChild(this.topSpacer);
-        this.container.appendChild(this.inner);
-        this.container.appendChild(this.bottomSpacer);
-        this.onScroll = this.onScroll.bind(this);
-        this.container.addEventListener("scroll", this.onScroll, { passive: true });
-        window.addEventListener("resize", this.onScroll);
-      }
-
-      setItems(items) {
-        this.items = Array.isArray(items) ? items : [];
-        this.visibleStart = -1;
-        this.visibleEnd = -1;
-        this.container.scrollTop = 0;
-        this.render(true);
-      }
-
-      onScroll() {
-        this.render();
-      }
-
-      render(force = false) {
-        const total = this.items.length;
-        if (!total) {
-          this.inner.innerHTML = "";
-          this.topSpacer.style.height = "0px";
-          this.bottomSpacer.style.height = "0px";
-          return;
-        }
-        const viewHeight = this.container.clientHeight || window.innerHeight || this.rowHeight;
-        const scrollTop = this.container.scrollTop;
-        const startIndex = Math.max(Math.floor(scrollTop / this.rowHeight) - this.buffer, 0);
-        const endIndex = Math.min(Math.ceil((scrollTop + viewHeight) / this.rowHeight) + this.buffer, total);
-        if (!force && startIndex === this.visibleStart && endIndex === this.visibleEnd) {
-          return;
-        }
-        this.visibleStart = startIndex;
-        this.visibleEnd = endIndex;
-        this.inner.innerHTML = "";
-        for (let i = startIndex; i < endIndex; i++) {
-          const node = this.renderItem(this.items[i], i, total);
-          if (node) {
-            this.inner.appendChild(node);
-          }
-        }
-        this.topSpacer.style.height = `${startIndex * this.rowHeight}px`;
-        this.bottomSpacer.style.height = `${Math.max(total - endIndex, 0) * this.rowHeight}px`;
-      }
-    }
-
     class UIManager {
       constructor({ dataManager, elements, apiPdfUrl, pdfButtonDefaultLabel }) {
         this.dataManager = dataManager;
@@ -1209,7 +1137,6 @@
         this.pdfButtonDefaultLabel = pdfButtonDefaultLabel;
         this.groupedCategories = [];
         this.activeCategoryKey = null;
-        this.virtualizedList = null;
         this.workHeaderEl = null;
         this.liveRegion = null;
         this.debouncedSearch = debounce(() => this.renderWorkList(), 300);
@@ -1238,10 +1165,24 @@
         this.elements.workListScroller.className = "work-list-scroller";
         this.elements.workList.appendChild(this.elements.workListScroller);
         this.elements.workListScroller.style.display = "none";
+      }
 
-        this.virtualizedList = new VirtualizedList(this.elements.workListScroller, {
-          rowHeight: 86,
-          renderItem: (item, index, total) => this.createWorkRow(item, index, total),
+      clearWorkRows() {
+        if (this.elements.workListScroller) {
+          this.elements.workListScroller.innerHTML = "";
+        }
+      }
+
+      renderWorkRows(works) {
+        this.clearWorkRows();
+        if (!Array.isArray(works) || !works.length) {
+          return;
+        }
+        works.forEach((item, index) => {
+          const row = this.createWorkRow(item, index, works.length);
+          if (row) {
+            this.elements.workListScroller.appendChild(row);
+          }
         });
       }
 
@@ -1322,7 +1263,7 @@
         this.elements.workList.classList.remove("has-data");
         this.workHeaderEl.hidden = true;
         this.elements.workListScroller.style.display = "none";
-        this.virtualizedList.setItems([]);
+        this.clearWorkRows();
         this.elements.searchInput.disabled = true;
         this.elements.pdfButton.disabled = true;
       }
@@ -1336,7 +1277,7 @@
         this.elements.workList.classList.remove("has-data");
         this.workHeaderEl.hidden = true;
         this.elements.workListScroller.style.display = "none";
-        this.virtualizedList.setItems([]);
+        this.clearWorkRows();
         this.elements.pdfButton.disabled = true;
         this.elements.categoryGrid.innerHTML = '<div class="empty-state">Ошибка загрузки данных</div>';
       }
@@ -1440,7 +1381,7 @@
           this.elements.workList.classList.remove("has-data");
           this.workHeaderEl.hidden = true;
           this.elements.workListScroller.style.display = "none";
-          this.virtualizedList.setItems([]);
+          this.clearWorkRows();
           return;
         }
 
@@ -1462,7 +1403,7 @@
           this.elements.workList.classList.remove("has-data");
           this.workHeaderEl.hidden = true;
           this.elements.workListScroller.style.display = "none";
-          this.virtualizedList.setItems([]);
+          this.clearWorkRows();
           return;
         }
 
@@ -1470,7 +1411,7 @@
         this.elements.workList.classList.add("has-data");
         this.workHeaderEl.hidden = false;
         this.elements.workListScroller.style.display = "block";
-        this.virtualizedList.setItems(works);
+        this.renderWorkRows(works);
       }
 
       createWorkRow(item, index, total) {
