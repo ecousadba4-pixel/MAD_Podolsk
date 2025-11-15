@@ -36,10 +36,7 @@ SUMMARY_SQL = """
         CASE WHEN SUM(planned_amount) <> 0
             THEN SUM(fact_amount_done) / SUM(planned_amount)
         END AS completion_pct,
-        SUM(fact_amount_done) - SUM(planned_amount) AS delta_amount,
-        CASE WHEN SUM(planned_amount) <> 0
-            THEN (SUM(fact_amount_done) - SUM(planned_amount)) / SUM(planned_amount)
-        END AS delta_pct
+        SUM(fact_amount_done) - SUM(planned_amount) AS delta_amount
     FROM skpdi_plan_vs_fact_monthly
     WHERE month_start = %s;
 """
@@ -87,13 +84,9 @@ def fetch_plan_vs_fact_for_month(
                         or row.get("section"),
                     work_name=row.get("work_name") or row.get("work_title") or description,
                     description=description,
-                    unit=row.get("unit"),
-                    planned_volume=_to_float(row.get("planned_volume")),
                     planned_amount=_to_float(row.get("planned_amount")),
-                    fact_volume=_to_float(row.get("fact_volume_done")),
                     fact_amount=_to_float(row.get("fact_amount_done")),
                     delta_amount=_to_float(row.get("delta_amount_done")),
-                    delta_pct=_to_float(row.get("delta_amount_done_pct")),
                 )
             )
 
@@ -112,7 +105,6 @@ def fetch_plan_vs_fact_for_month(
                     fact_amount=_to_float(summary_row["fact_total"]) or 0.0,
                     completion_pct=_to_float(summary_row["completion_pct"]),
                     delta_amount=_to_float(summary_row["delta_amount"]) or 0.0,
-                    delta_pct=_to_float(summary_row["delta_pct"]),
                 )
 
     return items, summary, last_updated

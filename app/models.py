@@ -10,16 +10,11 @@ class DashboardItem(BaseModel):
     smeta: str | None = None
     work_name: str | None = None
     description: str
-    unit: str | None = None
 
-    planned_volume: float | None = None
     planned_amount: float | None = None
-
-    fact_volume: float | None = None
     fact_amount: float | None = None
 
     delta_amount: float | None = None
-    delta_pct: float | None = None
 
 
 class DashboardSummary(BaseModel):
@@ -27,7 +22,6 @@ class DashboardSummary(BaseModel):
     fact_amount: float
     completion_pct: float | None = None
     delta_amount: float
-    delta_pct: float | None = None
 
 
 class DashboardResponse(BaseModel):
