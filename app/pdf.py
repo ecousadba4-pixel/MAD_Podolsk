@@ -1,20 +1,112 @@
 from __future__ import annotations
 
+import os
+import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from io import BytesIO
+from pathlib import Path
 from typing import Iterable, Sequence
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from .models import DashboardItem, DashboardSummary
 
-BODY_FONT = "Helvetica"
-BODY_FONT_BOLD = "Helvetica-Bold"
+logger = logging.getLogger(__name__)
+
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+BODY_FONT = "DejaVuSans"
+BODY_FONT_BOLD = "DejaVuSans-Bold"
+DEFAULT_BODY_FONT = "Helvetica"
+DEFAULT_BODY_FONT_BOLD = "Helvetica-Bold"
+
+FONT_ALTERNATIVES: dict[str, list[str]] = {
+    BODY_FONT: [
+        "DejaVuSans.ttf",
+        "FreeSans.ttf",
+        "LiberationSans-Regular.ttf",
+    ],
+    BODY_FONT_BOLD: [
+        "DejaVuSans-Bold.ttf",
+        "FreeSansBold.ttf",
+        "LiberationSans-Bold.ttf",
+    ],
+}
+
+
+def _font_search_roots() -> list[Path]:
+    env_paths = [
+        Path(p).expanduser()
+        for p in os.environ.get("MAD_PDF_FONT_PATHS", "").split(os.pathsep)
+        if p
+    ]
+    return env_paths + [
+        FONT_DIR,
+        Path("/usr/share/fonts/truetype/dejavu"),
+        Path("/usr/share/fonts/truetype/freefont"),
+        Path("/usr/share/fonts/truetype/liberation"),
+        Path("/usr/local/share/fonts"),
+        Path.home() / ".local/share/fonts",
+        Path.home() / ".fonts",
+    ]
+
+
+def _resolve_font_path(file_names: Sequence[str]) -> Path | None:
+    search_roots = _font_search_roots()
+    for file_name in file_names:
+        direct_candidate = Path(file_name).expanduser()
+        if direct_candidate.is_file():
+            return direct_candidate
+        for root in search_roots:
+            if root.exists() and root.is_file():
+                candidate = root
+            else:
+                candidate = root / file_name
+            if candidate.is_file():
+                return candidate
+    return None
+
+
+def _register_fonts() -> tuple[str, str]:
+    resolved: dict[str, str | None] = {
+        BODY_FONT: BODY_FONT if BODY_FONT in pdfmetrics.getRegisteredFontNames() else None,
+        BODY_FONT_BOLD: BODY_FONT_BOLD
+        if BODY_FONT_BOLD in pdfmetrics.getRegisteredFontNames()
+        else None,
+    }
+    missing_messages: list[str] = []
+    for font_name, file_candidates in FONT_ALTERNATIVES.items():
+        if resolved.get(font_name):
+            continue
+        font_path = _resolve_font_path(file_candidates)
+        if font_path is None:
+            readable_names = ", ".join(file_candidates)
+            missing_messages.append(
+                f"'{font_name}': {readable_names}"
+            )
+            continue
+        pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+        resolved[font_name] = font_name
+
+    if missing_messages:
+        logger.warning(
+            "Не удалось зарегистрировать кириллические шрифты (%s). "
+            "Используем стандартные Helvetica — PDF может отображать квадраты вместо текста.",
+            "; ".join(missing_messages),
+        )
+
+    body_font = resolved.get(BODY_FONT) or DEFAULT_BODY_FONT
+    body_font_bold = resolved.get(BODY_FONT_BOLD) or DEFAULT_BODY_FONT_BOLD
+    return body_font, body_font_bold
+
+
+ACTIVE_BODY_FONT, ACTIVE_BODY_FONT_BOLD = _register_fonts()
 
 MONTH_LABELS = [
     "январь",
@@ -111,7 +203,7 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
     table.setStyle(
         TableStyle(
             [
-                ("FONTNAME", (0, 0), (-1, -1), BODY_FONT),
+                ("FONTNAME", (0, 0), (-1, -1), ACTIVE_BODY_FONT),
                 ("FONTSIZE", (0, 0), (-1, -1), 10),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                 ("TOPPADDING", (0, 0), (-1, -1), 2),
@@ -163,11 +255,11 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         ],
     )
     style_commands: list[tuple] = [
-        ("FONTNAME", (0, 0), (-1, 0), BODY_FONT_BOLD),
+        ("FONTNAME", (0, 0), (-1, 0), ACTIVE_BODY_FONT_BOLD),
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f3f4f6")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
         ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
-        ("FONTNAME", (0, 1), (-1, -1), BODY_FONT),
+        ("FONTNAME", (0, 1), (-1, -1), ACTIVE_BODY_FONT),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#cbd5f5")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
@@ -180,7 +272,7 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
     for idx in category_rows:
         style_commands.extend(
             [
-                ("FONTNAME", (0, idx), (-1, idx), BODY_FONT_BOLD),
+                ("FONTNAME", (0, idx), (-1, idx), ACTIVE_BODY_FONT_BOLD),
                 ("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#eef2ff")),
             ]
         )
@@ -205,14 +297,14 @@ def build_dashboard_pdf(
     )
     title_style = ParagraphStyle(
         "Title",
-        fontName=BODY_FONT_BOLD,
+        fontName=ACTIVE_BODY_FONT_BOLD,
         fontSize=16,
         leading=20,
         spaceAfter=6,
     )
     meta_style = ParagraphStyle(
         "Meta",
-        fontName=BODY_FONT,
+        fontName=ACTIVE_BODY_FONT,
         fontSize=10,
         leading=13,
         spaceAfter=2,
