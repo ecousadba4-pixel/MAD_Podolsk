@@ -230,16 +230,60 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
     return table
 
 
+def _build_group_items_table(group: CategoryGroup, width: float) -> Table:
+    header = ["Работа", "План", "Факт", "Отклонение"]
+    rows: list[list[object]] = [header]
+    for item in group.items:
+        delta = _calculate_delta(item)
+        work_name = item.work_name or item.description or "Без названия"
+        rows.append(
+            [
+                _paragraph(work_name),
+                _format_money(item.planned_amount),
+                _format_money(item.fact_amount),
+                _format_money(delta),
+            ]
+        )
+    table = Table(
+        rows,
+        colWidths=[
+            width * 0.52,
+            width * 0.16,
+            width * 0.16,
+            width * 0.16,
+        ],
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, 0), BODY_FONT_BOLD_NAME),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f8fafc")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
+                ("FONTNAME", (0, 1), (-1, -1), BODY_FONT_NAME),
+                ("FONTSIZE", (0, 0), (-1, -1), 8.3),
+                ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 3),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f1f5f9")]),
+            ]
+        )
+    )
+    return table
+
+
 def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
-    header = ["Смета", "Работа", "План", "Факт", "Отклонение"]
+    header = ["Смета", "План", "Факт", "Отклонение"]
     data: list[list[object]] = [header]
     category_rows: list[int] = []
+    nested_rows: list[int] = []
     row_idx = 1
     for group in groups:
         data.append(
             [
                 _paragraph(group.title),
-                _paragraph("Итого по смете"),
                 _format_money(group.planned_total),
                 _format_money(group.fact_total),
                 _format_money(group.delta_total),
@@ -247,50 +291,53 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         )
         category_rows.append(row_idx)
         row_idx += 1
-        for item in group.items:
-            delta = _calculate_delta(item)
-            work_name = item.work_name or item.description or "Без названия"
-            data.append(
-                [
-                    "",
-                    _paragraph(work_name),
-                    _format_money(item.planned_amount),
-                    _format_money(item.fact_amount),
-                    _format_money(delta),
-                ]
-            )
+        if group.items:
+            nested_table = _build_group_items_table(group, width)
+            data.append([nested_table, "", "", ""])
+            nested_rows.append(row_idx)
             row_idx += 1
     table = Table(
         data,
         repeatRows=1,
         colWidths=[
-            width * 0.26,
-            width * 0.34,
-            width * 0.13,
-            width * 0.13,
-            width * 0.14,
+            width * 0.43,
+            width * 0.19,
+            width * 0.19,
+            width * 0.19,
         ],
     )
     style_commands: list[tuple] = [
         ("FONTNAME", (0, 0), (-1, 0), BODY_FONT_BOLD_NAME),
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f3f4f6")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
-        ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
+        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
         ("FONTNAME", (0, 1), (-1, -1), BODY_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+        ("FONTSIZE", (0, 0), (-1, -1), 8.6),
         ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#cbd5f5")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 3),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
     ]
     for idx in category_rows:
         style_commands.extend(
             [
                 ("FONTNAME", (0, idx), (-1, idx), BODY_FONT_BOLD_NAME),
                 ("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#eef2ff")),
+                ("LINEABOVE", (0, idx), (-1, idx), 0.25, colors.HexColor("#e0e7ff")),
+                ("LINEBELOW", (0, idx), (-1, idx), 0.25, colors.HexColor("#c7d2fe")),
+            ]
+        )
+    for idx in nested_rows:
+        style_commands.extend(
+            [
+                ("SPAN", (0, idx), (-1, idx)),
+                ("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#f8fafc")),
+                ("LEFTPADDING", (0, idx), (-1, idx), 2),
+                ("RIGHTPADDING", (0, idx), (-1, idx), 2),
+                ("TOPPADDING", (0, idx), (-1, idx), 2),
+                ("BOTTOMPADDING", (0, idx), (-1, idx), 4),
             ]
         )
     table.setStyle(TableStyle(style_commands))
