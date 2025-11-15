@@ -478,7 +478,7 @@
     .category-values {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
+      gap: 6px;
       font-size: 0.78rem;
     }
 
@@ -491,8 +491,8 @@
 
     .category-values span + span {
       border-left: 1px solid var(--border-soft);
-      padding-left: 10px;
-      margin-left: 4px;
+      padding-left: 8px;
+      margin-left: 2px;
     }
 
     @media (max-width: 640px) {
@@ -509,16 +509,19 @@
     }
 
     .category-values strong {
-      font-size: clamp(0.72rem, 1.4vw, 0.84rem);
+      font-size: clamp(0.7rem, 1.3vw, 0.82rem);
       display: inline-flex;
       align-items: baseline;
-      gap: 4px;
+      gap: 3px;
       flex-wrap: nowrap;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.15;
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
     }
 
     @media (min-width: 768px) {
