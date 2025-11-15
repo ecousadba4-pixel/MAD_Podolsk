@@ -11,18 +11,7 @@ from .models import DashboardItem, DashboardSummary
 
 
 ITEMS_SQL = """
-    SELECT
-        month_start,
-        description,
-        unit,
-        planned_volume,
-        planned_amount,
-        fact_volume_done,
-        fact_amount_done,
-        delta_volume_done,
-        delta_amount_done,
-        delta_volume_done_pct,
-        delta_amount_done_pct
+    SELECT *
     FROM skpdi_plan_vs_fact_monthly
     WHERE month_start = %s
     ORDER BY ABS(COALESCE(delta_amount_done, 0)) DESC, description;
@@ -81,19 +70,27 @@ def fetch_plan_vs_fact_for_month(
             cur.execute(ITEMS_SQL, (month_start,))
             rows = cur.fetchall()
 
-        items = [
-            DashboardItem(
-                description=row["description"],
-                unit=row["unit"],
-                planned_volume=_to_float(row["planned_volume"]),
-                planned_amount=_to_float(row["planned_amount"]),
-                fact_volume=_to_float(row["fact_volume_done"]),
-                fact_amount=_to_float(row["fact_amount_done"]),
-                delta_amount=_to_float(row["delta_amount_done"]),
-                delta_pct=_to_float(row["delta_amount_done_pct"]),
+        items = []
+        for row in rows:
+            description = row.get("description") or ""
+            items.append(
+                DashboardItem(
+                    smeta=
+                        row.get("smeta")
+                        or row.get("smeta_name")
+                        or row.get("smeta_title")
+                        or row.get("section"),
+                    work_name=row.get("work_name") or row.get("work_title") or description,
+                    description=description,
+                    unit=row.get("unit"),
+                    planned_volume=_to_float(row.get("planned_volume")),
+                    planned_amount=_to_float(row.get("planned_amount")),
+                    fact_volume=_to_float(row.get("fact_volume_done")),
+                    fact_amount=_to_float(row.get("fact_amount_done")),
+                    delta_amount=_to_float(row.get("delta_amount_done")),
+                    delta_pct=_to_float(row.get("delta_amount_done_pct")),
+                )
             )
-            for row in rows
-        ]
 
         with conn.cursor() as cur:
             cur.execute(LAST_UPDATED_SQL)

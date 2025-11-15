@@ -269,127 +269,257 @@
       white-space: nowrap;
     }
 
-    .table-wrapper {
-      overflow-x: auto;
-      margin-top: 8px;
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
     }
 
-    table {
+    .category-card {
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      border-top: 5px solid var(--accent-soft, #e0e7ff);
+      text-align: left;
       width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
+      color: inherit;
+      font: inherit;
     }
 
-    thead {
-      background: #f9fafb;
-      position: sticky;
-      top: 0;
-      z-index: 1;
+    .category-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-soft);
     }
 
-    th, td {
-      padding: 6px 8px;
-      text-align: right;
-      border-bottom: 1px solid #e5e7eb;
-      white-space: nowrap;
+    .category-card.active {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-soft);
     }
 
-    th:first-child,
-    td:first-child {
-      text-align: left;
+    .category-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
     }
 
-    th:nth-child(2),
-    td:nth-child(2) {
-      text-align: left;
-    }
-
-    th {
-      font-weight: 500;
+    .category-pill {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.1);
       color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .category-values {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
       font-size: 0.75rem;
     }
 
-    tr:nth-child(even) td {
-      background: #f9fafb;
+    .category-values span {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
-    .delta-pos {
+    .category-values .label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .category-values strong {
+      font-size: 0.95rem;
+    }
+
+    .category-delta {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .delta-positive {
       color: var(--success);
     }
 
-    .delta-neg {
+    .delta-negative {
       color: var(--danger);
     }
 
-    .muted {
+    .work-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .work-card {
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      background: #fff;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    .work-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+      background: var(--accent-soft, #c7d2fe);
+    }
+
+    .work-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .work-name {
+      font-size: 1rem;
+      font-weight: 600;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .work-meta {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.8rem;
       color: var(--text-muted);
+      text-align: right;
     }
 
-    /* Мобильный режим — карточки вместо таблицы */
-
-    @media (max-width: 640px) {
-      .table-wrapper {
-        display: none;
-      }
-
-      .mobile-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 8px;
-      }
-
-      .work-card {
-        border-radius: 14px;
-        border: 1px solid var(--border-soft);
-        background: #f9fafb;
-        padding: 8px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .work-title {
-        font-size: 0.85rem;
-        font-weight: 500;
-      }
-
-      .work-unit {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-      }
-
-      .work-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.78rem;
-      }
-
-      .work-row span.label {
-        color: var(--text-muted);
-      }
+    .work-meta strong {
+      color: var(--text-main);
+      font-size: 0.95rem;
     }
 
-    @media (min-width: 641px) {
-      .mobile-list {
-        display: none;
-      }
+    .work-delta {
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .work-toggle {
+      border: none;
+      background: rgba(99, 102, 241, 0.08);
+      color: var(--accent);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .work-details {
+      border-top: 1px dashed var(--border-soft);
+      padding-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .detail-item span.label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .mini-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+    }
+
+    .chart-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-track {
+      flex: 1;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .chart-value {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      min-width: 72px;
+      text-align: right;
+    }
+
+    .chart-bar {
+      height: 100%;
+      border-radius: inherit;
+    }
+
+    .chart-bar.plan {
+      background: #94a3b8;
+    }
+
+    .chart-bar.fact {
+      background: var(--accent);
     }
 
     .status-bar {
-      margin-top: 10px;
-      font-size: 0.75rem;
+      margin-top: 12px;
+      font-size: 0.8rem;
       color: var(--text-muted);
       display: flex;
       justify-content: space-between;
-      flex-wrap: wrap;
       gap: 6px;
+      flex-wrap: wrap;
       align-items: center;
     }
 
-    .status-bar strong {
-      color: var(--text-main);
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
     }
 
     /* Print: 1 страница A4 */
@@ -405,7 +535,7 @@
       header, .controls, .search {
         margin-bottom: 6px;
       }
-      .btn, .pill, .tag {
+      .btn, .pill, .tag, .work-toggle {
         display: none !important;
       }
       .panel {
@@ -413,17 +543,11 @@
         border-radius: 0;
         padding: 0;
       }
-      .table-wrapper {
-        display: block;
-        max-height: none;
-        overflow: visible;
+      .category-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
-      .mobile-list {
-        display: none !important;
-      }
-      th, td {
-        padding: 3px 4px;
-        font-size: 0.7rem;
+      .work-card {
+        box-shadow: none;
       }
       .summary-grid {
         grid-template-columns: repeat(4, 1fr);
@@ -489,46 +613,35 @@
       </div>
     </section>
 
-    <!-- Таблица / список -->
+    <!-- Сводка по сметам -->
     <section class="panel">
       <div class="panel-header">
         <div>
-          <div class="panel-title">Детализация по видам работ</div>
-          <div class="panel-subtitle">Отсортировано по сумме отклонения</div>
+          <div class="panel-title">Категории / сметы</div>
+          <div class="panel-subtitle">1 уровень: смета → 2 уровень: работы → 3 уровень: детали</div>
+        </div>
+      </div>
+      <div class="category-grid" id="category-grid"></div>
+    </section>
+
+    <!-- Список работ выбранной сметы -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" id="active-category-title">Выберите смету</div>
+          <div class="panel-subtitle" id="active-category-meta">Нажмите на карточку выше, чтобы увидеть работы</div>
         </div>
         <div class="search">
           🔍
-          <input type="text" id="search" placeholder="Фильтр по описанию..." />
+          <input type="text" id="search" placeholder="Найти работу в смете..." />
         </div>
       </div>
-
-      <div class="table-wrapper">
-        <table id="data-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Работа</th>
-              <th>План, объём</th>
-              <th>План, ₽</th>
-              <th>Факт, объём</th>
-              <th>Факт, ₽</th>
-              <th>Δ, ₽</th>
-              <th>Δ, %</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- заполним в JS -->
-          </tbody>
-        </table>
+      <div class="empty-state" id="work-empty-state">
+        Здесь появится список работ выбранной сметы.
       </div>
-
-      <!-- Мобильный список -->
-      <div class="mobile-list" id="mobile-list">
-        <!-- заполним в JS -->
-      </div>
-
+      <div class="work-list" id="work-list"></div>
       <div class="status-bar">
-        <div id="status-counts">Записей: 0</div>
+        <div id="status-counts">Смет: 0 · Работ: 0</div>
       </div>
     </section>
   </div>
@@ -542,18 +655,28 @@
     const sumFactEl = document.getElementById("sum-fact");
     const sumCompleteEl = document.getElementById("sum-complete");
     const sumDeltaEl = document.getElementById("sum-delta");
-    const tableBody = document.querySelector("#data-table tbody");
-    const mobileList = document.getElementById("mobile-list");
+    const categoryGrid = document.getElementById("category-grid");
+    const workList = document.getElementById("work-list");
     const searchInput = document.getElementById("search");
     const statusCountsEl = document.getElementById("status-counts");
+    const activeCategoryTitle = document.getElementById("active-category-title");
+    const activeCategoryMeta = document.getElementById("active-category-meta");
+    const workEmptyState = document.getElementById("work-empty-state");
+    searchInput.disabled = true;
 
     const monthCache = new Map();
     let currentData = null;
-    let filteredItems = [];
+    let groupedCategories = [];
+    let activeCategoryKey = null;
 
     function formatMoney(value) {
       if (value === null || value === undefined || isNaN(value)) return "–";
       return value.toLocaleString("ru-RU", { maximumFractionDigits: 0 });
+    }
+
+    function formatMoneyRub(value) {
+      const base = formatMoney(value);
+      return base === "–" ? base : `${base} ₽`;
     }
 
     function formatPercent(value) {
@@ -567,21 +690,69 @@
       return d.toLocaleString("ru-RU");
     }
 
-    function applyFilter() {
-      const q = searchInput.value.toLowerCase().trim();
-      if (!currentData) {
-        filteredItems = [];
-        renderItems();
-        return;
+    const CATEGORY_COLORS = [
+      { accent: "#22c55e", soft: "rgba(34, 197, 94, 0.25)" },
+      { accent: "#2563eb", soft: "rgba(37, 99, 235, 0.25)" },
+      { accent: "#f97316", soft: "rgba(249, 115, 22, 0.25)" },
+      { accent: "#dc2626", soft: "rgba(220, 38, 38, 0.25)" },
+      { accent: "#a855f7", soft: "rgba(168, 85, 247, 0.25)" },
+      { accent: "#0f766e", soft: "rgba(15, 118, 110, 0.25)" }
+    ];
+
+    function calculateDelta(item) {
+      if (item.delta_amount !== null && item.delta_amount !== undefined) {
+        return item.delta_amount;
       }
-      if (!q) {
-        filteredItems = [...currentData.items];
-      } else {
-        filteredItems = currentData.items.filter(item =>
-          item.description.toLowerCase().includes(q)
-        );
+      const planned = item.planned_amount ?? 0;
+      const fact = item.fact_amount ?? 0;
+      return fact - planned;
+    }
+
+    function calculateDeltaPct(item, delta) {
+      if (item.delta_pct !== null && item.delta_pct !== undefined) {
+        return item.delta_pct;
       }
-      renderItems();
+      const planned = item.planned_amount ?? 0;
+      return planned ? delta / planned : null;
+    }
+
+    function formatVolume(value, unit) {
+      if (value === null || value === undefined || isNaN(value)) return "–";
+      const formatted = value.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
+      return unit ? `${formatted} ${unit}` : formatted;
+    }
+
+    function getBarWidth(value, other) {
+      const primary = value ?? 0;
+      const secondary = other ?? 0;
+      const max = Math.max(primary, secondary, 0.0001);
+      return Math.round((primary / max) * 100);
+    }
+
+    function buildCategories(items) {
+      const map = new Map();
+      items.forEach((item) => {
+        const key = item.smeta || "Без категории";
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            title: key,
+            works: [],
+            planned: 0,
+            fact: 0,
+            delta: 0,
+          });
+        }
+        const group = map.get(key);
+        group.works.push(item);
+        const planned = item.planned_amount ?? 0;
+        const fact = item.fact_amount ?? 0;
+        const delta = calculateDelta(item);
+        if (!isNaN(planned)) group.planned += planned;
+        if (!isNaN(fact)) group.fact += fact;
+        if (!isNaN(delta)) group.delta += delta;
+      });
+      return Array.from(map.values());
     }
 
     function renderSummary() {
@@ -606,7 +777,6 @@
       const fact = s.fact_amount ?? 0;
       const completion = s.completion_pct ?? (planned ? fact / planned : null);
       const delta = s.delta_amount ?? (fact - planned);
-      const deltaPct = s.delta_pct ?? (planned ? delta / planned : null);
 
       sumPlannedEl.textContent = formatMoney(planned);
       sumFactEl.textContent = formatMoney(fact);
@@ -618,88 +788,197 @@
       if (delta < 0) sumDeltaEl.classList.add("negative");
     }
 
-    function renderItems() {
-      tableBody.innerHTML = "";
-      mobileList.innerHTML = "";
-
-      if (!filteredItems || filteredItems.length === 0) {
-        if (currentData && !currentData.has_data) {
-          statusCountsEl.textContent = "Данные для выбранного месяца отсутствуют";
-        } else if (searchInput.value.trim()) {
-          statusCountsEl.textContent = "Ничего не найдено";
-        } else {
-          statusCountsEl.textContent = "Записей: 0";
-        }
+    function renderCategories() {
+      categoryGrid.innerHTML = "";
+      if (!groupedCategories.length) {
+        const emptyText = currentData && !currentData.has_data
+          ? "Данные за выбранный месяц отсутствуют"
+          : "Нет данных для отображения";
+        categoryGrid.innerHTML = `<div class="empty-state">${emptyText}</div>`;
+        activeCategoryKey = null;
+        renderWorkList();
         return;
       }
 
-      // Сортируем по абсолютной величине отклонения (по деньгам)
-      const items = [...filteredItems].sort((a, b) =>
-        Math.abs(b.delta_amount || 0) - Math.abs(a.delta_amount || 0)
-      );
+      groupedCategories.forEach((category, idx) => {
+        const palette = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+        category.palette = palette;
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `category-card${category.key === activeCategoryKey ? " active" : ""}`;
+        card.style.setProperty("--accent", palette.accent);
+        card.style.setProperty("--accent-soft", palette.soft);
 
-      items.forEach((item, idx) => {
-        const tr = document.createElement("tr");
-
-        const delta = item.delta_amount ?? (item.fact_amount - item.planned_amount);
-        const deltaPct = item.delta_pct ?? (
-          item.planned_amount ? delta / item.planned_amount : null
-        );
-
-        tr.innerHTML = `
-          <td>${idx + 1}</td>
-          <td>${item.description}</td>
-          <td class="muted">${item.planned_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""}</td>
-          <td>${formatMoney(item.planned_amount)}</td>
-          <td class="muted">${item.fact_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""}</td>
-          <td>${formatMoney(item.fact_amount)}</td>
-          <td class="${delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : ""}">
-            ${formatMoney(delta)}
-          </td>
-          <td class="${delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : ""}">
-            ${formatPercent(deltaPct)}
-          </td>
-        `;
-
-        tableBody.appendChild(tr);
-
-        // Мобильная карточка
-        const card = document.createElement("div");
-        card.className = "work-card";
+        const deltaClass = category.delta > 0 ? "delta-positive" : category.delta < 0 ? "delta-negative" : "";
 
         card.innerHTML = `
-          <div class="work-title">${item.description}</div>
-          <div class="work-unit">${item.unit || ""}</div>
-          <div class="work-row">
-            <span class="label">План:</span>
-            <span>${item.planned_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""} · ${formatMoney(item.planned_amount)} ₽</span>
+          <div class="category-title">
+            <span>${category.title}</span>
+            <span class="category-pill">${category.works.length} работ</span>
           </div>
-          <div class="work-row">
-            <span class="label">Факт:</span>
-            <span>${item.fact_volume?.toLocaleString("ru-RU") ?? "–"} ${item.unit || ""} · ${formatMoney(item.fact_amount)} ₽</span>
-          </div>
-          <div class="work-row">
-            <span class="label">Δ:</span>
-            <span class="${delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : ""}">
-              ${formatMoney(delta)} ₽ (${formatPercent(deltaPct)})
-            </span>
+          <div class="category-values">
+            <span><span class="label">План</span><strong>${formatMoneyRub(category.planned)}</strong></span>
+            <span><span class="label">Факт</span><strong>${formatMoneyRub(category.fact)}</strong></span>
+            <span><span class="label">Отклонение</span><strong class="category-delta ${deltaClass}">${formatMoneyRub(category.delta)}</strong></span>
           </div>
         `;
 
-        mobileList.appendChild(card);
-      });
+        card.addEventListener("click", () => {
+          activeCategoryKey = category.key;
+          renderCategories();
+          renderWorkList();
+        });
 
-      statusCountsEl.textContent = `Записей: ${filteredItems.length}`;
+        categoryGrid.appendChild(card);
+      });
+    }
+
+    function renderWorkList() {
+      workList.innerHTML = "";
+      const activeCategory = groupedCategories.find((c) => c.key === activeCategoryKey) || null;
+      searchInput.disabled = !activeCategory;
+
+      if (!activeCategory) {
+        workEmptyState.style.display = "block";
+        workEmptyState.textContent = currentData && !currentData.has_data
+          ? "Данные за выбранный месяц отсутствуют"
+          : "Здесь появится список работ выбранной сметы.";
+        activeCategoryTitle.textContent = "Выберите смету";
+        activeCategoryMeta.textContent = "Нажмите на карточку выше, чтобы увидеть работы";
+        statusCountsEl.textContent = `Смет: ${groupedCategories.length} · Работ: 0`;
+        return;
+      }
+
+      workEmptyState.style.display = "none";
+      const filter = searchInput.value.toLowerCase().trim();
+      const works = !filter
+        ? [...activeCategory.works]
+        : activeCategory.works.filter((item) => {
+            const name = (item.work_name || item.description || "").toLowerCase();
+            return name.includes(filter);
+          });
+
+      const totalWorks = activeCategory.works.length;
+      const plannedText = formatMoneyRub(activeCategory.planned);
+      const factText = formatMoneyRub(activeCategory.fact);
+      activeCategoryTitle.textContent = activeCategory.title;
+      activeCategoryMeta.textContent = `Работ: ${works.length} / ${totalWorks}. План: ${plannedText} · Факт: ${factText}`;
+
+      if (!works.length) {
+        workEmptyState.style.display = "block";
+        workEmptyState.textContent = filter
+          ? "Нет работ, подходящих под фильтр"
+          : "В этой смете нет строк для отображения";
+      }
+
+      const palette = activeCategory.palette || CATEGORY_COLORS[0];
+      works
+        .sort((a, b) => Math.abs(calculateDelta(b)) - Math.abs(calculateDelta(a)))
+        .forEach((item) => {
+          const workName = item.work_name || item.description || "Без названия";
+          const delta = calculateDelta(item);
+          const deltaPct = calculateDeltaPct(item, delta);
+          const deltaClass = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
+          const volumeDelta = (item.fact_volume ?? null) !== null && (item.planned_volume ?? null) !== null
+            ? (item.fact_volume - item.planned_volume)
+            : null;
+
+          const card = document.createElement("article");
+          card.className = "work-card";
+          card.style.setProperty("--accent", palette.accent);
+          card.style.setProperty("--accent-soft", palette.soft);
+
+          const arrow = delta < 0 ? "🔻" : delta > 0 ? "🔺" : "⚪";
+
+          card.innerHTML = `
+            <div class="work-card-head">
+              <div class="work-name">${workName}</div>
+              <div class="work-meta">
+                <span>Объём факт</span>
+                <strong>${formatVolume(item.fact_volume, item.unit)}</strong>
+                <span>Факт: ${formatMoneyRub(item.fact_amount)}</span>
+              </div>
+            </div>
+            <div class="work-delta ${deltaClass}">${arrow} ${formatMoneyRub(delta)}</div>
+            <button class="work-toggle" type="button" aria-expanded="false">🞂 Детали</button>
+            <div class="work-details" hidden>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="label">Ед.</span>
+                  <strong>${item.unit || "–"}</strong>
+                </div>
+                <div class="detail-item">
+                  <span class="label">План, объём</span>
+                  <strong>${formatVolume(item.planned_volume, item.unit)}</strong>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Факт, объём</span>
+                  <strong>${formatVolume(item.fact_volume, item.unit)}</strong>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Откл. объём</span>
+                  <strong>${volumeDelta === null ? "–" : formatVolume(volumeDelta, item.unit)}</strong>
+                </div>
+                <div class="detail-item">
+                  <span class="label">План</span>
+                  <strong>${formatMoneyRub(item.planned_amount)}</strong>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Факт</span>
+                  <strong>${formatMoneyRub(item.fact_amount)}</strong>
+                </div>
+                <div class="detail-item">
+                  <span class="label">Отклонение</span>
+                  <strong class="${deltaClass}">${formatMoneyRub(delta)} (${formatPercent(deltaPct)})</strong>
+                </div>
+              </div>
+              <div class="mini-chart">
+                <div class="chart-row">
+                  <span>План</span>
+                  <div class="chart-track"><div class="chart-bar plan" style="width:${getBarWidth(item.planned_amount, item.fact_amount)}%"></div></div>
+                  <span class="chart-value">${formatMoneyRub(item.planned_amount)}</span>
+                </div>
+                <div class="chart-row">
+                  <span>Факт</span>
+                  <div class="chart-track"><div class="chart-bar fact" style="width:${getBarWidth(item.fact_amount, item.planned_amount)}%"></div></div>
+                  <span class="chart-value">${formatMoneyRub(item.fact_amount)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+
+          const toggleBtn = card.querySelector(".work-toggle");
+          const details = card.querySelector(".work-details");
+          toggleBtn.addEventListener("click", () => {
+            const expanded = toggleBtn.getAttribute("aria-expanded") === "true";
+            toggleBtn.setAttribute("aria-expanded", (!expanded).toString());
+            toggleBtn.textContent = expanded ? "🞂 Детали" : "🞀 Свернуть";
+            details.hidden = expanded;
+          });
+
+          workList.appendChild(card);
+        });
+
+      const visibleCount = works.length;
+      statusCountsEl.textContent = `Смет: ${groupedCategories.length} · Работ: ${visibleCount} / ${totalWorks}`;
     }
 
     function applyDataToUi(data) {
+      const previousKey = activeCategoryKey;
       currentData = data;
-      filteredItems = data.items || [];
+      const items = data.items || [];
+      groupedCategories = buildCategories(items);
+      if (previousKey && groupedCategories.some((cat) => cat.key === previousKey)) {
+        activeCategoryKey = previousKey;
+      } else {
+        activeCategoryKey = groupedCategories.length ? groupedCategories[0].key : null;
+      }
       lastUpdatedText.textContent = data.has_data
         ? "Обновлено: " + formatDateTime(data.last_updated)
         : "Данные за месяц отсутствуют";
       renderSummary();
-      applyFilter();
+      renderCategories();
+      renderWorkList();
     }
 
     async function loadMonthData(monthIso) {
@@ -707,9 +986,12 @@
       if (cached) {
         applyDataToUi(cached);
       } else {
-        tableBody.innerHTML = "";
-        mobileList.innerHTML = "";
-        statusCountsEl.textContent = "Загрузка...";
+        workList.innerHTML = "";
+        workEmptyState.style.display = "block";
+        workEmptyState.textContent = "Загрузка данных...";
+        activeCategoryTitle.textContent = "Загрузка...";
+        activeCategoryMeta.textContent = "";
+        statusCountsEl.textContent = "Смет: – · Работ: –";
         sumPlannedEl.textContent = "…";
         sumFactEl.textContent = "…";
         sumCompleteEl.textContent = "…";
@@ -730,6 +1012,8 @@
         console.error(e);
         if (!cached) {
           statusCountsEl.textContent = "Ошибка загрузки данных";
+          workEmptyState.style.display = "block";
+          workEmptyState.textContent = "Ошибка загрузки данных";
           lastUpdatedText.textContent = "Ошибка загрузки данных";
         } else {
           statusCountsEl.textContent = "Ошибка обновления, показаны кэшированные данные";
@@ -772,7 +1056,7 @@
     }
 
     searchInput.addEventListener("input", () => {
-      applyFilter();
+      renderWorkList();
     });
 
     document.addEventListener("DOMContentLoaded", () => {
