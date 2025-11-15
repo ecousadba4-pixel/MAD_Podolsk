@@ -629,39 +629,57 @@
     .print-report {
       display: none;
       font-family: 'Roboto Mono', 'IBM Plex Mono', 'PT Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      padding: 24px;
+      padding: 18px;
       color: #111827;
+      width: 210mm;
+      min-height: 297mm;
+      box-sizing: border-box;
+      background: #fff;
+      line-height: 1.2;
+    }
+
+    .print-report.print-visible {
+      display: block;
+      position: fixed;
+      top: -10000px;
+      left: 0;
+      right: 0;
+      z-index: -1;
     }
 
     .print-report h1 {
-      font-size: 1.2rem;
-      margin: 0 0 4px;
+      font-size: 1.08rem;
+      margin: 0 0 2px;
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
     .print-report .print-meta {
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       color: #4b5563;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
     }
 
     .print-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.75rem;
+      font-size: 0.68rem;
+      table-layout: fixed;
     }
 
     .print-table th,
     .print-table td {
       border: 1px solid #d1d5db;
-      padding: 6px 8px;
+      padding: 4px 6px;
       vertical-align: top;
     }
 
     .print-table th {
       text-transform: uppercase;
-      font-size: 0.7rem;
+      font-size: 0.62rem;
       letter-spacing: 0.04em;
       background: #f3f4f6;
     }
@@ -689,6 +707,10 @@
       font-weight: 700;
       background: #e5e7eb;
       text-transform: uppercase;
+    }
+
+    .print-table tbody tr {
+      page-break-inside: avoid;
     }
 
     /* Print: 1 страница A4 */
@@ -840,7 +862,8 @@
     </table>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNa5m1RUpZ4KlaYpkFFitvolG/GpNZgbf+5Q5e0siJmq9VcZRrrodpJX4Bz2T14cX+ASzqSe6hOGaLT8yIy5xg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-6Qrsr4bl12Dcrk4D7hIFlC1OnApdA9rbAiT9g7wKFF+qGIDViml0zHlqQRJReNzHw+wH2wJ/xZ3coN+QwHAlaQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     const API_URL = "https://mad-podolsk-karinausadba.amvera.io/api/dashboard"; // ← тут вставишь свой URL
 
@@ -1226,52 +1249,61 @@
 
       renderPrintReport();
 
-      if (window.html2pdf) {
-        const temporaryNode = printReportEl.cloneNode(true);
-        temporaryNode.style.display = "block";
-        temporaryNode.style.position = "fixed";
-        temporaryNode.style.top = "0";
-        temporaryNode.style.left = "0";
-        temporaryNode.style.right = "0";
-        temporaryNode.style.zIndex = "-1";
-        temporaryNode.setAttribute("aria-hidden", "false");
-        document.body.appendChild(temporaryNode);
+      const selectedMonth = getSelectedMonthLabel() || monthSelect.value || "period";
+      const fileNameSlug = selectedMonth
+        .toString()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^0-9A-Za-zА-Яа-я\-]+/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      const fileName = fileNameSlug ? `mad-podolsk-otchet-${fileNameSlug}.pdf` : "mad-podolsk-otchet.pdf";
 
-        const selectedMonth = getSelectedMonthLabel() || monthSelect.value || "period";
-        const fileNameSlug = selectedMonth
-          .toString()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^0-9A-Za-zА-Яа-я\-]+/g, "")
-          .replace(/-+/g, "-")
-          .replace(/^-|-$/g, "");
-        const fileName = fileNameSlug ? `mad-podolsk-otchet-${fileNameSlug}.pdf` : "mad-podolsk-otchet.pdf";
+      pdfButton.disabled = true;
+      pdfButton.innerHTML = "Формируем PDF…";
 
-        const options = {
-          margin: [10, 10, 10, 10],
-          filename: fileName,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        };
+      const restoreDisplay = () => {
+        printReportEl.classList.remove("print-visible");
+        printReportEl.setAttribute("aria-hidden", "true");
+      };
 
-        pdfButton.disabled = true;
-        pdfButton.innerHTML = "Формируем PDF…";
+      printReportEl.classList.add("print-visible");
+      printReportEl.setAttribute("aria-hidden", "false");
 
-        try {
-          await html2pdf().set(options).from(temporaryNode).save();
-        } catch (error) {
-          console.error("PDF export error", error);
-          alert("Не удалось сформировать PDF. Попробуйте ещё раз или воспользуйтесь печатью браузера.");
-        } finally {
-          pdfButton.innerHTML = pdfButtonDefaultLabel;
-          document.body.removeChild(temporaryNode);
-          pdfButton.disabled = !groupedCategories.length;
+      try {
+        if (window.html2canvas && window.jspdf && window.jspdf.jsPDF) {
+          const canvas = await window.html2canvas(printReportEl, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            windowWidth: printReportEl.scrollWidth,
+            windowHeight: printReportEl.scrollHeight,
+          });
+
+          const imgData = canvas.toDataURL("image/jpeg", 0.95);
+          const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const widthRatio = pageWidth / canvas.width;
+          const heightRatio = pageHeight / canvas.height;
+          const ratio = Math.min(widthRatio, heightRatio);
+          const imgWidth = canvas.width * ratio;
+          const imgHeight = canvas.height * ratio;
+          const offsetX = (pageWidth - imgWidth) / 2;
+          const offsetY = (pageHeight - imgHeight) / 2;
+          pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgWidth, imgHeight);
+          pdf.save(fileName);
+        } else {
+          window.print();
         }
-        return;
+      } catch (error) {
+        console.error("PDF export error", error);
+        alert("Не удалось сформировать PDF. Попробуйте ещё раз или воспользуйтесь печатью браузера.");
+      } finally {
+        restoreDisplay();
+        pdfButton.innerHTML = pdfButtonDefaultLabel;
+        pdfButton.disabled = !groupedCategories.length;
       }
-
-      window.print();
     }
 
     function applyDataToUi(data) {
