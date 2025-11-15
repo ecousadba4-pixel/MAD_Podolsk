@@ -482,6 +482,11 @@
       font-weight: 600;
     }
 
+    .work-row-money span:last-child,
+    .work-row-delta-value {
+      white-space: nowrap;
+    }
+
     .work-row-label {
       display: none;
       font-size: 0.7rem;
@@ -498,39 +503,31 @@
       text-align: right;
     }
 
-    .work-row-delta small {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
 
     @media (max-width: 767px) {
       .work-row-header {
         display: none;
       }
       .work-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: flex-start;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: center;
       }
       .work-row-name {
         grid-column: 1 / -1;
       }
       .work-row-money,
       .work-row-delta {
-        text-align: left;
-        align-items: flex-start;
-      }
-      .work-row-money {
         display: flex;
-        flex-direction: row;
-        align-items: baseline;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         gap: 6px;
-        flex-wrap: wrap;
-      }
-      .work-row-delta {
-        grid-column: 1 / -1;
+        text-align: center;
       }
       .work-row-label {
         display: block;
+        width: 100%;
+        text-align: center;
       }
     }
 
@@ -833,14 +830,6 @@
       return fact - planned;
     }
 
-    function calculateDeltaPct(item, delta) {
-      if (item.delta_pct !== null && item.delta_pct !== undefined) {
-        return item.delta_pct;
-      }
-      const planned = item.planned_amount ?? 0;
-      return planned ? delta / planned : null;
-    }
-
     function buildCategories(items) {
       const map = new Map();
       items.forEach((item) => {
@@ -1045,7 +1034,6 @@
         .forEach((item) => {
           const workName = item.work_name || item.description || "Без названия";
           const delta = calculateDelta(item);
-          const deltaPct = calculateDeltaPct(item, delta);
           const deltaClass = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
           const row = document.createElement("div");
           row.className = "work-row";
@@ -1065,7 +1053,6 @@
             <div class="work-row-delta ${deltaClass}">
               <span class="work-row-label">Отклонение</span>
               <span class="work-row-delta-value">${arrow} ${formatMoneyRub(delta)}</span>
-              <small>${formatPercent(deltaPct)}</small>
             </div>
           `;
 
