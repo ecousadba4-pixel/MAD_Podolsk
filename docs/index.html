@@ -495,6 +495,20 @@
       overflow-wrap: normal;
     }
 
+    @media (min-width: 768px) {
+      .category-values {
+        column-gap: 14px;
+      }
+      .category-values span {
+        min-width: 0;
+      }
+      .category-values strong {
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.25;
+      }
+    }
+
     @media (max-width: 480px) {
       .category-values strong {
         font-size: clamp(0.78rem, 4vw, 0.9rem);
