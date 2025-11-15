@@ -104,9 +104,11 @@ def fetch_plan_vs_fact_for_month(
     summary: DashboardSummary | None = None
     last_updated: datetime | None = None
 
+    month_value = month_start.isoformat()
+
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(ITEMS_SQL, (month_start,))
+            cur.execute(ITEMS_SQL, (month_value,))
             rows = cur.fetchall()
 
         items = []
@@ -134,7 +136,7 @@ def fetch_plan_vs_fact_for_month(
                 last_updated = res[0]
 
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(SUMMARY_SQL, (month_start,))
+            cur.execute(SUMMARY_SQL, (month_value,))
             summary_row = cur.fetchone()
             if summary_row and summary_row["planned_total"] is not None:
                 summary = DashboardSummary(
