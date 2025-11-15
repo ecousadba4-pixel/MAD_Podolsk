@@ -7,6 +7,7 @@ from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Iterable, Sequence
+from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -110,6 +111,15 @@ REGISTERED_FONTS = _register_fonts()
 BODY_FONT_NAME = REGISTERED_FONTS[BODY_FONT]
 BODY_FONT_BOLD_NAME = REGISTERED_FONTS[BODY_FONT_BOLD]
 
+TABLE_TEXT_STYLE = ParagraphStyle(
+    "TableText",
+    fontName=BODY_FONT_NAME,
+    fontSize=8.5,
+    leading=10,
+    spaceAfter=0,
+    spaceBefore=0,
+)
+
 MONTH_LABELS = [
     "январь",
     "февраль",
@@ -179,6 +189,11 @@ def _group_items(items: Sequence[DashboardItem]) -> list[CategoryGroup]:
     )
 
 
+def _paragraph(text: str, style: ParagraphStyle = TABLE_TEXT_STYLE) -> Paragraph:
+    sanitized = escape(text or "").replace("\n", "<br/>")
+    return Paragraph(sanitized, style)
+
+
 def _format_month(month: date) -> str:
     name = MONTH_LABELS[month.month - 1]
     return f"{name.capitalize()} {month.year}"
@@ -217,14 +232,14 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
 
 def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
     header = ["Смета", "Работа", "План", "Факт", "Отклонение"]
-    data: list[list[str]] = [header]
+    data: list[list[object]] = [header]
     category_rows: list[int] = []
     row_idx = 1
     for group in groups:
         data.append(
             [
-                group.title,
-                "Итого по смете",
+                _paragraph(group.title),
+                _paragraph("Итого по смете"),
                 _format_money(group.planned_total),
                 _format_money(group.fact_total),
                 _format_money(group.delta_total),
@@ -238,7 +253,7 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
             data.append(
                 [
                     "",
-                    work_name,
+                    _paragraph(work_name),
                     _format_money(item.planned_amount),
                     _format_money(item.fact_amount),
                     _format_money(delta),
@@ -262,14 +277,14 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
         ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
         ("FONTNAME", (0, 1), (-1, -1), BODY_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
         ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#cbd5f5")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
     ]
     for idx in category_rows:
         style_commands.extend(
@@ -292,33 +307,33 @@ def build_dashboard_pdf(
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        leftMargin=18 * mm,
-        rightMargin=18 * mm,
-        topMargin=20 * mm,
-        bottomMargin=20 * mm,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm,
     )
     title_style = ParagraphStyle(
         "Title",
         fontName=BODY_FONT_BOLD_NAME,
-        fontSize=16,
-        leading=20,
-        spaceAfter=6,
+        fontSize=15,
+        leading=18,
+        spaceAfter=4,
     )
     meta_style = ParagraphStyle(
         "Meta",
         fontName=BODY_FONT_NAME,
         fontSize=10,
-        leading=13,
-        spaceAfter=2,
+        leading=12,
+        spaceAfter=1,
     )
     story: list = []
     story.append(Paragraph("Сводный отчёт по работам", title_style))
     story.append(Paragraph(f"Месяц: <b>{_format_month(month)}</b>", meta_style))
     story.append(Paragraph(f"Данные обновлены: {_format_last_updated(last_updated)}", meta_style))
     story.append(Paragraph("Факт содержит только заявки в статусе «Рассмотрено».", meta_style))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 6))
     story.append(_build_summary_table(summary, doc.width))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
     groups = _group_items(items)
     if not groups:
         story.append(Paragraph("Нет данных по выбранному месяцу.", meta_style))
