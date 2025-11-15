@@ -424,7 +424,7 @@
 
     @media (min-width: 1024px) {
       .category-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
 
@@ -509,7 +509,7 @@
     }
 
     .category-values strong {
-      font-size: clamp(0.82rem, 2.8vw, 0.95rem);
+      font-size: clamp(0.8rem, 2.2vw, 0.92rem);
       white-space: nowrap;
       overflow-wrap: normal;
       display: inline-flex;
@@ -525,7 +525,8 @@
         min-width: 0;
       }
       .category-values strong {
-        word-break: break-word;
+        word-break: normal;
+        white-space: nowrap;
         line-height: 1.25;
       }
     }
@@ -937,6 +938,11 @@
       { accent: "#0f766e", soft: "rgba(15, 118, 110, 0.25)" }
     ];
 
+    const MERGED_SMETA_OVERRIDES = {
+      "внерегл_ч_1": { key: "внерегламент", title: "внерегламент" },
+      "внерегл_ч_2": { key: "внерегламент", title: "внерегламент" },
+    };
+
     const elements = {
       monthSelect: document.getElementById("month"),
       lastUpdatedText: document.getElementById("last-updated-text"),
@@ -991,6 +997,18 @@
       const planned = item.planned_amount ?? 0;
       const fact = item.fact_amount ?? 0;
       return fact - planned;
+    }
+
+    function resolveCategoryMeta(rawKey, smetaValue) {
+      const keyCandidate = (rawKey || "").trim();
+      const override = MERGED_SMETA_OVERRIDES[keyCandidate.toLowerCase()];
+      if (override) {
+        return { ...override };
+      }
+      const fallbackTitle = (smetaValue || "").trim();
+      const resolvedKey = keyCandidate || fallbackTitle || "Прочее";
+      const resolvedTitle = fallbackTitle || resolvedKey;
+      return { key: resolvedKey, title: resolvedTitle };
     }
 
     function getWorkSortValue(item) {
@@ -1092,8 +1110,7 @@
           const trimmedKey = rawKey ? rawKey.trim() : "";
           if (!trimmedKey) return;
           if (trimmedKey.toLowerCase() === "без категории") return;
-          const key = trimmedKey;
-          const title = (item.smeta && item.smeta.trim()) || key;
+          const { key, title } = resolveCategoryMeta(trimmedKey, item.smeta);
           if (!map.has(key)) {
             map.set(key, {
               key,
