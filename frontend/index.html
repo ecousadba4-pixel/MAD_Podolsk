@@ -742,9 +742,15 @@
       const months = [];
 
       // последние 6 месяцев
+      const formatMonthIso = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        return `${year}-${month}-01`;
+      };
+
       for (let i = 0; i < 6; i++) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const iso = d.toISOString().slice(0, 10);
+        const iso = formatMonthIso(d);
         const label = d.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
         months.push({ iso, label });
       }
