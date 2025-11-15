@@ -5,6 +5,26 @@ const MERGED_SMETA_OVERRIDES = {
   "внерегл_ч_2": { key: "внерегламент", title: "внерегламент" },
 };
 
+function normalizeAmount(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function hasMeaningfulAmount(value) {
+  const normalized = normalizeAmount(value);
+  return normalized !== null && normalized !== 0;
+}
+
+function shouldIncludeItem(item) {
+  if (!item) {
+    return false;
+  }
+  return hasMeaningfulAmount(item.planned_amount) || hasMeaningfulAmount(item.fact_amount);
+}
+
 function resolveCategoryMeta(rawKey, smetaValue) {
   const keyCandidate = (rawKey || "").trim();
   const override = MERGED_SMETA_OVERRIDES[keyCandidate.toLowerCase()];
@@ -90,6 +110,9 @@ export class DataManager {
   buildCategories(items = []) {
     const map = new Map();
     items.forEach((item) => {
+      if (!shouldIncludeItem(item)) {
+        return;
+      }
       const rawKey = item.category || item.smeta || "";
       const trimmedKey = rawKey ? rawKey.trim() : "";
       if (!trimmedKey) return;
