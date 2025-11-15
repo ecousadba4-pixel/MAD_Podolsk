@@ -52,6 +52,25 @@
         justify-content: space-between;
         align-items: flex-end;
       }
+      .controls {
+        flex-wrap: nowrap;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .month-info {
+        width: 100%;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .month-info .pill {
+        flex: 1;
+        justify-content: center;
+      }
     }
 
     .title-block {
@@ -77,6 +96,13 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+    }
+
+    .month-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
     }
 
     .month-select {
@@ -368,12 +394,12 @@
     .work-card {
       border: 1px solid var(--border-soft);
       border-radius: var(--radius-lg);
-      padding: 12px;
+      padding: 10px 12px;
       background: #fff;
       box-shadow: var(--shadow-soft);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       position: relative;
     }
 
@@ -396,112 +422,61 @@
     }
 
     .work-name {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       flex: 1;
-      min-width: 200px;
+      min-width: 160px;
     }
 
     .work-meta {
       display: flex;
       flex-direction: column;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
       text-align: right;
     }
 
     .work-meta strong {
       color: var(--text-main);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
 
-    .work-delta {
-      font-size: 0.95rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .work-toggle {
-      border: none;
-      background: rgba(99, 102, 241, 0.08);
-      color: var(--accent);
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      align-self: flex-start;
-    }
-
-    .work-details {
-      border-top: 1px dashed var(--border-soft);
-      padding-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .detail-grid {
+    .work-values {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 8px;
-      font-size: 0.8rem;
     }
 
-    .detail-item {
+    .work-value {
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 8px;
+      background: #f9fafb;
       display: flex;
       flex-direction: column;
       gap: 2px;
-      padding: 6px;
-      border-radius: 10px;
-      background: #f8fafc;
-    }
-
-    .detail-item span.label {
-      color: var(--text-muted);
-      font-size: 0.75rem;
-    }
-
-    .mini-chart {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
       font-size: 0.8rem;
     }
 
-    .chart-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .chart-track {
-      flex: 1;
-      height: 8px;
-      background: #e5e7eb;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .chart-value {
-      font-size: 0.75rem;
+    .work-value .label {
+      font-size: 0.7rem;
       color: var(--text-muted);
-      min-width: 72px;
-      text-align: right;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
-    .chart-bar {
-      height: 100%;
-      border-radius: inherit;
+    .work-value strong {
+      font-size: 0.95rem;
+      color: var(--text-main);
     }
 
-    .chart-bar.plan {
-      background: #94a3b8;
+    .work-value small {
+      font-size: 0.7rem;
+      color: var(--text-muted);
     }
 
-    .chart-bar.fact {
-      background: var(--accent);
+    .work-value.delta {
+      background: rgba(99, 102, 241, 0.04);
     }
 
     .status-bar {
@@ -614,19 +589,21 @@
       <div class="title-block">
         <div class="title">СКПДИ · МАД · Подольск</div>
         <div class="subtitle" id="subtitle">
-          Месячный отчёт по работам. Факт: только строки со статусом «Рассмотрено».
+          Факт: только заявки в статусе «Рассмотрено».
         </div>
       </div>
       <div class="controls">
-        <div class="month-select">
-          <label for="month">Месяц:</label>
-          <select id="month">
-            <!-- заполним в JS -->
-          </select>
-        </div>
-        <div class="pill" id="last-updated-pill">
-          <span class="pill-dot"></span>
-          <span id="last-updated-text">Обновление данных…</span>
+        <div class="month-info">
+          <div class="month-select">
+            <label for="month">Месяц:</label>
+            <select id="month">
+              <!-- заполним в JS -->
+            </select>
+          </div>
+          <div class="pill" id="last-updated-pill">
+            <span class="pill-dot"></span>
+            <span id="last-updated-text">Обновление данных…</span>
+          </div>
         </div>
         <button class="btn-outline btn" type="button" onclick="window.print()">
           📄 Отчёт в PDF
@@ -807,20 +784,15 @@
       return unit ? `${formatted} ${unit}` : formatted;
     }
 
-    function getBarWidth(value, other) {
-      const primary = value ?? 0;
-      const secondary = other ?? 0;
-      const max = Math.max(primary, secondary, 0.0001);
-      return Math.round((primary / max) * 100);
-    }
-
     function buildCategories(items) {
       const map = new Map();
       items.forEach((item) => {
-        const rawKey = item.category || item.smeta || "Без категории";
+        const rawKey = item.category || item.smeta || "";
         const trimmedKey = rawKey ? rawKey.trim() : "";
-        const key = trimmedKey || "Без категории";
-        const title = item.smeta || key || "Без категории";
+        if (!trimmedKey) return;
+        if (trimmedKey.toLowerCase() === "без категории") return;
+        const key = trimmedKey;
+        const title = (item.smeta && item.smeta.trim()) || key;
         if (!map.has(key)) {
           map.set(key, {
             key,
@@ -846,6 +818,33 @@
       return Array.from(map.values());
     }
 
+    function summarizeItems(items) {
+      return items.reduce(
+        (acc, item) => {
+          if (item.planned_amount !== null && item.planned_amount !== undefined) {
+            acc.planned += item.planned_amount;
+            acc.hasPlanned = true;
+          }
+          if (item.fact_amount !== null && item.fact_amount !== undefined) {
+            acc.fact += item.fact_amount;
+            acc.hasFact = true;
+          }
+          return acc;
+        },
+        { planned: 0, fact: 0, hasPlanned: false, hasFact: false }
+      );
+    }
+
+    function getWorkSortValue(item) {
+      if (item.planned_amount !== null && item.planned_amount !== undefined) {
+        return item.planned_amount;
+      }
+      if (item.fact_amount !== null && item.fact_amount !== undefined) {
+        return item.fact_amount;
+      }
+      return 0;
+    }
+
     function renderSummary() {
       if (!currentData) {
         sumPlannedEl.textContent = "–";
@@ -855,19 +854,18 @@
         return;
       }
 
-      if (!currentData.summary) {
-        sumPlannedEl.textContent = "–";
-        sumFactEl.textContent = "–";
-        sumCompleteEl.textContent = "–";
-        sumDeltaEl.textContent = "–";
-        return;
-      }
-
-      const s = currentData.summary;
-      const planned = s.planned_amount ?? 0;
-      const fact = s.fact_amount ?? 0;
-      const completion = s.completion_pct ?? (planned ? fact / planned : null);
-      const delta = s.delta_amount ?? (fact - planned);
+      const items = currentData.items || [];
+      const totals = summarizeItems(items);
+      const s = currentData.summary || {};
+      const planned = s.planned_amount ?? (totals.hasPlanned ? totals.planned : null);
+      const fact = s.fact_amount ?? (totals.hasFact ? totals.fact : null);
+      const completion = s.completion_pct ?? (planned ? (fact ?? 0) / planned : null);
+      const hasDeltaSource = s.delta_amount !== null && s.delta_amount !== undefined;
+      const delta = hasDeltaSource
+        ? s.delta_amount
+        : planned !== null || fact !== null
+          ? (fact ?? 0) - (planned ?? 0)
+          : null;
 
       sumPlannedEl.textContent = formatMoney(planned);
       sumFactEl.textContent = formatMoney(fact);
@@ -964,88 +962,48 @@
 
       const palette = activeCategory.palette || CATEGORY_COLORS[0];
       works
-        .sort((a, b) => Math.abs(calculateDelta(b)) - Math.abs(calculateDelta(a)))
+        .sort((a, b) => getWorkSortValue(b) - getWorkSortValue(a))
         .forEach((item) => {
           const workName = item.work_name || item.description || "Без названия";
           const delta = calculateDelta(item);
           const deltaPct = calculateDeltaPct(item, delta);
           const deltaClass = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
-          const volumeDelta = (item.fact_volume ?? null) !== null && (item.planned_volume ?? null) !== null
-            ? (item.fact_volume - item.planned_volume)
-            : null;
-
           const card = document.createElement("article");
           card.className = "work-card";
           card.style.setProperty("--accent", palette.accent);
           card.style.setProperty("--accent-soft", palette.soft);
 
-          const arrow = delta < 0 ? "🔻" : delta > 0 ? "🔺" : "⚪";
+          const arrow = delta < 0 ? "▼" : delta > 0 ? "▲" : "●";
+          const plannedVolume = formatVolume(item.planned_volume, item.unit);
+          const factVolume = formatVolume(item.fact_volume, item.unit);
 
           card.innerHTML = `
             <div class="work-card-head">
               <div class="work-name">${workName}</div>
               <div class="work-meta">
-                <span>Объём факт</span>
-                <strong>${formatVolume(item.fact_volume, item.unit)}</strong>
-                <span>Факт: ${formatMoneyRub(item.fact_amount)}</span>
+                <span>Ед. изм.</span>
+                <strong>${item.unit || "–"}</strong>
+                <span>Факт. объём: ${factVolume}</span>
               </div>
             </div>
-            <div class="work-delta ${deltaClass}">${arrow} ${formatMoneyRub(delta)}</div>
-            <button class="work-toggle" type="button" aria-expanded="false">🞂 Детали</button>
-            <div class="work-details" hidden>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span class="label">Ед.</span>
-                  <strong>${item.unit || "–"}</strong>
-                </div>
-                <div class="detail-item">
-                  <span class="label">План, объём</span>
-                  <strong>${formatVolume(item.planned_volume, item.unit)}</strong>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Факт, объём</span>
-                  <strong>${formatVolume(item.fact_volume, item.unit)}</strong>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Откл. объём</span>
-                  <strong>${volumeDelta === null ? "–" : formatVolume(volumeDelta, item.unit)}</strong>
-                </div>
-                <div class="detail-item">
-                  <span class="label">План</span>
-                  <strong>${formatMoneyRub(item.planned_amount)}</strong>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Факт</span>
-                  <strong>${formatMoneyRub(item.fact_amount)}</strong>
-                </div>
-                <div class="detail-item">
-                  <span class="label">Отклонение</span>
-                  <strong class="${deltaClass}">${formatMoneyRub(delta)} (${formatPercent(deltaPct)})</strong>
-                </div>
+            <div class="work-values">
+              <div class="work-value">
+                <span class="label">План</span>
+                <strong>${formatMoneyRub(item.planned_amount)}</strong>
+                <small>Объём: ${plannedVolume}</small>
               </div>
-              <div class="mini-chart">
-                <div class="chart-row">
-                  <span>План</span>
-                  <div class="chart-track"><div class="chart-bar plan" style="width:${getBarWidth(item.planned_amount, item.fact_amount)}%"></div></div>
-                  <span class="chart-value">${formatMoneyRub(item.planned_amount)}</span>
-                </div>
-                <div class="chart-row">
-                  <span>Факт</span>
-                  <div class="chart-track"><div class="chart-bar fact" style="width:${getBarWidth(item.fact_amount, item.planned_amount)}%"></div></div>
-                  <span class="chart-value">${formatMoneyRub(item.fact_amount)}</span>
-                </div>
+              <div class="work-value">
+                <span class="label">Факт</span>
+                <strong>${formatMoneyRub(item.fact_amount)}</strong>
+                <small>Объём: ${factVolume}</small>
+              </div>
+              <div class="work-value delta ${deltaClass}">
+                <span class="label">Отклонение</span>
+                <strong>${arrow} ${formatMoneyRub(delta)}</strong>
+                <small>${formatPercent(deltaPct)}</small>
               </div>
             </div>
           `;
-
-          const toggleBtn = card.querySelector(".work-toggle");
-          const details = card.querySelector(".work-details");
-          toggleBtn.addEventListener("click", () => {
-            const expanded = toggleBtn.getAttribute("aria-expanded") === "true";
-            toggleBtn.setAttribute("aria-expanded", (!expanded).toString());
-            toggleBtn.textContent = expanded ? "🞂 Детали" : "🞀 Свернуть";
-            details.hidden = expanded;
-          });
 
           workList.appendChild(card);
         });
