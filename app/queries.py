@@ -80,9 +80,59 @@ def _extract_strings(row: dict[str, Any]) -> tuple[str | None, str | None, str |
 
 
 def _aggregate_items(rows: list[dict[str, Any]]) -> list[DashboardItem]:
+    """Агрегирует строки в DashboardItem. Принимает список для обратной совместимости."""
     items_map: dict[tuple[str | None, str | None, str | None, str], dict[str, Any]] = {}
 
     for row in rows:
+        category, smeta, work_name, description = _extract_strings(row)
+        key = (category, smeta, work_name, description)
+
+        item = items_map.get(key)
+        if item is None:
+            item = {
+                "category": category,
+                "smeta": smeta,
+                "work_name": work_name,
+                "description": description,
+                "planned_amount": None,
+                "fact_amount": None,
+            }
+            items_map[key] = item
+
+        planned_value = _to_float(row.get("planned_amount"))
+        if planned_value is not None:
+            item["planned_amount"] = (item["planned_amount"] or 0.0) + planned_value
+
+        fact_value = _to_float(row.get("fact_amount_done"))
+        if fact_value is not None:
+            item["fact_amount"] = (item["fact_amount"] or 0.0) + fact_value
+
+    aggregated_items = []
+    for item in items_map.values():
+        aggregated_items.append(
+            DashboardItem(
+                category=item["category"],
+                smeta=item["smeta"],
+                work_name=item["work_name"],
+                description=item["description"],
+                planned_amount=item["planned_amount"],
+                fact_amount=item["fact_amount"],
+                delta_amount=_calc_delta(item["planned_amount"], item["fact_amount"]),
+            )
+        )
+
+    return aggregated_items
+
+
+def _aggregate_items_streaming(cursor) -> list[DashboardItem]:
+    """
+    Агрегирует строки запроса используя курсор напрямую (потоковая обработка).
+    Минимизирует использование памяти для больших результатов.
+    Cursor должен быть RealDictCursor и находиться в контексте транзакции.
+    """
+    items_map: dict[tuple[str | None, str | None, str | None, str], dict[str, Any]] = {}
+    
+    for row in cursor:
         category, smeta, work_name, description = _extract_strings(row)
         key = (category, smeta, work_name, description)
 
@@ -128,7 +178,7 @@ def fetch_plan_vs_fact_for_month(
 ) -> tuple[list[DashboardItem], DashboardSummary | None, datetime | None]:
     """
     Читает данные из view skpdi_plan_vs_fact_monthly для конкретного месяца
-    и собирает summary.
+    и собирает summary. Использует потоковую обработку для оптимизации памяти.
     Возвращает: (items, summary, last_updated)
     """
 
@@ -137,11 +187,10 @@ def fetch_plan_vs_fact_for_month(
     last_updated: datetime | None = None
 
     with get_connection() as conn:
+        # Потоковая обработка основных данных - не загружаем всё в память
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(ITEMS_SQL, (month_start,))
-            rows = cur.fetchall()
-
-        items = _aggregate_items(rows)
+            items = _aggregate_items_streaming(cur)
 
         with conn.cursor() as cur:
             cur.execute(LAST_UPDATED_SQL)
