@@ -82,7 +82,9 @@ def _resolve_font_path(file_names: Sequence[str]) -> Path | None:
         if direct_candidate.is_file():
             return direct_candidate
         for root in search_roots:
-            if root.exists() and root.is_file():
+            if not root.exists():
+                continue
+            if root.is_file():
                 candidate = root
             else:
                 candidate = root / file_name
