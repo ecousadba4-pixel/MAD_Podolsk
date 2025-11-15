@@ -64,12 +64,27 @@
       }
       .month-info {
         width: 100%;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 6px;
       }
-      .month-info .pill {
-        flex: 1;
-        justify-content: center;
+      .month-select,
+      .pill {
+        width: 100%;
+      }
+      .month-select {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .month-select select {
+        width: 100%;
+      }
+      .pill {
+        justify-content: flex-start;
+      }
+      .pill-info {
+        align-items: flex-start;
       }
     }
 
@@ -138,8 +153,26 @@
       color: var(--accent);
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      white-space: nowrap;
+      gap: 8px;
+    }
+
+    .pill-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+
+    .pill-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .pill-value {
+      font-weight: 600;
+      color: var(--accent);
+      word-break: break-word;
     }
 
     .pill-dot {
@@ -387,96 +420,110 @@
     .work-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 0;
       margin-top: 12px;
     }
 
-    .work-card {
+    .work-list.has-data {
       border: 1px solid var(--border-soft);
       border-radius: var(--radius-lg);
-      padding: 10px 12px;
-      background: #fff;
+      overflow: hidden;
+      background: rgba(255,255,255,0.95);
       box-shadow: var(--shadow-soft);
-      display: flex;
-      flex-direction: column;
+    }
+
+    .work-row {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr));
       gap: 8px;
-      position: relative;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-soft);
+      align-items: center;
+      font-size: 0.85rem;
+      background: #fff;
+      font-variant-numeric: tabular-nums;
     }
 
-    .work-card::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-      background: var(--accent-soft, #c7d2fe);
+    .work-row:last-child {
+      border-bottom: none;
     }
 
-    .work-card-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .work-name {
-      font-size: 0.95rem;
+    .work-row-header {
+      background: #eef2ff;
+      font-size: 0.7rem;
       font-weight: 600;
-      flex: 1;
-      min-width: 160px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
     }
 
-    .work-meta {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.75rem;
-      color: var(--text-muted);
+    .work-row-header div:first-child {
+      text-align: left;
+    }
+
+    .work-row-header div {
       text-align: right;
     }
 
-    .work-meta strong {
+    .work-row-name {
+      font-size: 0.95rem;
+      font-weight: 600;
       color: var(--text-main);
-      font-size: 0.9rem;
     }
 
-    .work-values {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 8px;
+    .work-row-money {
+      text-align: right;
+      font-weight: 600;
     }
 
-    .work-value {
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      padding: 8px;
-      background: #f9fafb;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-size: 0.8rem;
-    }
-
-    .work-value .label {
+    .work-row-label {
+      display: none;
       font-size: 0.7rem;
-      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
-    }
-
-    .work-value strong {
-      font-size: 0.95rem;
-      color: var(--text-main);
-    }
-
-    .work-value small {
-      font-size: 0.7rem;
       color: var(--text-muted);
     }
 
-    .work-value.delta {
-      background: rgba(99, 102, 241, 0.04);
+    .work-row-delta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      text-align: right;
+    }
+
+    .work-row-delta small {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 767px) {
+      .work-row-header {
+        display: none;
+      }
+      .work-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: flex-start;
+      }
+      .work-row-name {
+        grid-column: 1 / -1;
+      }
+      .work-row-money,
+      .work-row-delta {
+        text-align: left;
+        align-items: flex-start;
+      }
+      .work-row-money {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .work-row-delta {
+        grid-column: 1 / -1;
+      }
+      .work-row-label {
+        display: block;
+      }
     }
 
     .status-bar {
@@ -602,7 +649,10 @@
           </div>
           <div class="pill" id="last-updated-pill">
             <span class="pill-dot"></span>
-            <span id="last-updated-text">Обновление данных…</span>
+            <div class="pill-info">
+              <span class="pill-label">Обновлено</span>
+              <span class="pill-value" id="last-updated-text">Обновление данных…</span>
+            </div>
           </div>
         </div>
         <button class="btn-outline btn" type="button" onclick="window.print()">
@@ -776,12 +826,6 @@
       }
       const planned = item.planned_amount ?? 0;
       return planned ? delta / planned : null;
-    }
-
-    function formatVolume(value, unit) {
-      if (value === null || value === undefined || isNaN(value)) return "–";
-      const formatted = value.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
-      return unit ? `${formatted} ${unit}` : formatted;
     }
 
     function buildCategories(items) {
@@ -969,7 +1013,20 @@
           : "В этой смете нет строк для отображения";
       }
 
-      const palette = activeCategory.palette || CATEGORY_COLORS[0];
+      workList.classList.toggle("has-data", works.length > 0);
+
+      if (works.length) {
+        const header = document.createElement("div");
+        header.className = "work-row work-row-header";
+        header.innerHTML = `
+          <div>Работа</div>
+          <div>План, ₽</div>
+          <div>Факт, ₽</div>
+          <div>Отклонение</div>
+        `;
+        workList.appendChild(header);
+      }
+
       works
         .sort((a, b) => getWorkSortValue(b) - getWorkSortValue(a))
         .forEach((item) => {
@@ -977,44 +1034,29 @@
           const delta = calculateDelta(item);
           const deltaPct = calculateDeltaPct(item, delta);
           const deltaClass = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
-          const card = document.createElement("article");
-          card.className = "work-card";
-          card.style.setProperty("--accent", palette.accent);
-          card.style.setProperty("--accent-soft", palette.soft);
+          const row = document.createElement("div");
+          row.className = "work-row";
 
           const arrow = delta < 0 ? "▼" : delta > 0 ? "▲" : "●";
-          const plannedVolume = formatVolume(item.planned_volume, item.unit);
-          const factVolume = formatVolume(item.fact_volume, item.unit);
 
-          card.innerHTML = `
-            <div class="work-card-head">
-              <div class="work-name">${workName}</div>
-              <div class="work-meta">
-                <span>Ед. изм.</span>
-                <strong>${item.unit || "–"}</strong>
-                <span>Факт. объём: ${factVolume}</span>
-              </div>
+          row.innerHTML = `
+            <div class="work-row-name">${workName}</div>
+            <div class="work-row-money work-row-plan">
+              <span class="work-row-label">План</span>
+              <span>${formatMoneyRub(item.planned_amount)}</span>
             </div>
-            <div class="work-values">
-              <div class="work-value">
-                <span class="label">План</span>
-                <strong>${formatMoneyRub(item.planned_amount)}</strong>
-                <small>Объём: ${plannedVolume}</small>
-              </div>
-              <div class="work-value">
-                <span class="label">Факт</span>
-                <strong>${formatMoneyRub(item.fact_amount)}</strong>
-                <small>Объём: ${factVolume}</small>
-              </div>
-              <div class="work-value delta ${deltaClass}">
-                <span class="label">Отклонение</span>
-                <strong>${arrow} ${formatMoneyRub(delta)}</strong>
-                <small>${formatPercent(deltaPct)}</small>
-              </div>
+            <div class="work-row-money work-row-fact">
+              <span class="work-row-label">Факт</span>
+              <span>${formatMoneyRub(item.fact_amount)}</span>
+            </div>
+            <div class="work-row-delta ${deltaClass}">
+              <span class="work-row-label">Отклонение</span>
+              <span class="work-row-delta-value">${arrow} ${formatMoneyRub(delta)}</span>
+              <small>${formatPercent(deltaPct)}</small>
             </div>
           `;
 
-          workList.appendChild(card);
+          workList.appendChild(row);
         });
 
       const visibleCount = works.length;
@@ -1100,8 +1142,8 @@
         activeCategoryKey = groupedCategories.length ? groupedCategories[0].key : null;
       }
       lastUpdatedText.textContent = data.has_data
-        ? "Обновлено: " + formatDateTime(data.last_updated)
-        : "Данные за месяц отсутствуют";
+        ? formatDateTime(data.last_updated)
+        : "Нет данных";
       renderSummary();
       renderCategories();
       renderWorkList();
