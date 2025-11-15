@@ -22,23 +22,28 @@ ITEMS_SQL = """
 """
 
 LAST_UPDATED_SQL = """
-    SELECT
-        GREATEST(
-            COALESCE((SELECT MAX(loaded_at) FROM skpdi_fact_agg), 'epoch'::timestamptz),
-            COALESCE((SELECT MAX(loaded_at) FROM skpdi_plan_agg), 'epoch'::timestamptz)
-        ) AS last_updated;
+    SELECT COALESCE(MAX(loaded_at), 'epoch'::timestamptz) AS last_updated
+    FROM (
+        SELECT loaded_at FROM skpdi_fact_agg
+        UNION ALL
+        SELECT loaded_at FROM skpdi_plan_agg
+    ) AS loads;
 """
 
 SUMMARY_SQL = """
+    WITH agg AS (
+        SELECT
+            SUM(planned_amount) AS planned_total,
+            SUM(fact_amount_done) AS fact_total
+        FROM skpdi_plan_vs_fact_monthly
+        WHERE month_start = %s
+    )
     SELECT
-        SUM(planned_amount) AS planned_total,
-        SUM(fact_amount_done) AS fact_total,
-        CASE WHEN SUM(planned_amount) <> 0
-            THEN SUM(fact_amount_done) / SUM(planned_amount)
-        END AS completion_pct,
-        SUM(fact_amount_done) - SUM(planned_amount) AS delta_amount
-    FROM skpdi_plan_vs_fact_monthly
-    WHERE month_start = %s;
+        planned_total,
+        fact_total,
+        CASE WHEN planned_total <> 0 THEN fact_total / planned_total END AS completion_pct,
+        fact_total - planned_total AS delta_amount
+    FROM agg;
 """
 
 
