@@ -12,8 +12,32 @@ from .models import DashboardItem, DashboardSummary
 
 ITEMS_SQL = """
     SELECT
-        pvf.*, 
-        rates.smeta_code AS category_code
+        COALESCE(
+            NULLIF(TRIM(BOTH FROM rates.smeta_code), ''),
+            NULLIF(TRIM(BOTH FROM pvf.smeta), ''),
+            NULLIF(TRIM(BOTH FROM pvf.smeta_name), ''),
+            NULLIF(TRIM(BOTH FROM pvf.smeta_title), ''),
+            NULLIF(TRIM(BOTH FROM pvf.section), '')
+        ) AS category,
+        COALESCE(
+            NULLIF(TRIM(BOTH FROM pvf.smeta), ''),
+            NULLIF(TRIM(BOTH FROM pvf.smeta_name), ''),
+            NULLIF(TRIM(BOTH FROM pvf.smeta_title), ''),
+            NULLIF(TRIM(BOTH FROM pvf.section), '')
+        ) AS smeta,
+        COALESCE(
+            NULLIF(TRIM(BOTH FROM pvf.work_name), ''),
+            NULLIF(TRIM(BOTH FROM pvf.work_title), ''),
+            NULLIF(TRIM(BOTH FROM pvf.description), '')
+        ) AS work_name,
+        COALESCE(NULLIF(TRIM(BOTH FROM pvf.description), ''), '') AS description,
+        pvf.unit,
+        pvf.planned_volume,
+        pvf.planned_amount,
+        pvf.fact_volume_done AS fact_volume,
+        pvf.fact_amount_done AS fact_amount,
+        pvf.delta_amount_done AS delta_amount,
+        pvf.delta_amount_done_pct AS delta_pct
     FROM skpdi_plan_vs_fact_monthly AS pvf
     LEFT JOIN skpdi_rates AS rates
         ON TRIM(LOWER(rates.work_name)) = TRIM(LOWER(pvf.description))
@@ -76,24 +100,19 @@ def fetch_plan_vs_fact_for_month(
 
         items = []
         for row in rows:
-            description = row.get("description") or ""
             items.append(
                 DashboardItem(
-                    category=row.get("category_code") or row.get("smeta"),
-                    smeta=
-                        row.get("smeta")
-                        or row.get("smeta_name")
-                        or row.get("smeta_title")
-                        or row.get("section"),
-                    work_name=row.get("work_name") or row.get("work_title") or description,
-                    description=description,
+                    category=row.get("category") or row.get("smeta"),
+                    smeta=row.get("smeta"),
+                    work_name=row.get("work_name") or row.get("description"),
+                    description=row.get("description") or "",
                     unit=row.get("unit"),
                     planned_volume=_to_float(row.get("planned_volume")),
                     planned_amount=_to_float(row.get("planned_amount")),
-                    fact_volume=_to_float(row.get("fact_volume_done")),
-                    fact_amount=_to_float(row.get("fact_amount_done")),
-                    delta_amount=_to_float(row.get("delta_amount_done")),
-                    delta_pct=_to_float(row.get("delta_amount_done_pct")),
+                    fact_volume=_to_float(row.get("fact_volume")),
+                    fact_amount=_to_float(row.get("fact_amount")),
+                    delta_amount=_to_float(row.get("delta_amount")),
+                    delta_pct=_to_float(row.get("delta_pct")),
                 )
             )
 
