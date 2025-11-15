@@ -1,16 +1,23 @@
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone, timedelta
-from html import escape
 from io import BytesIO
 from pathlib import Path
-from typing import Sequence
+from typing import Iterable, Sequence
+from xml.sax.saxutils import escape
 
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from weasyprint import HTML
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from .font_storage import ensure_embedded_fonts
 from .models import DashboardItem, DashboardSummary
@@ -19,6 +26,28 @@ LOGGER = logging.getLogger(__name__)
 
 FONT_DIR = Path(__file__).resolve().parent / "fonts"
 ensure_embedded_fonts(FONT_DIR)
+BODY_FONT = "DejaVuSans"
+BODY_FONT_BOLD = "DejaVuSans-Bold"
+DEFAULT_FONT = "Helvetica"
+DEFAULT_FONT_BOLD = "Helvetica-Bold"
+
+FONT_ALTERNATIVES: dict[str, list[str]] = {
+    BODY_FONT: [
+        "DejaVuSans.ttf",
+        "FreeSans.ttf",
+        "LiberationSans-Regular.ttf",
+    ],
+    BODY_FONT_BOLD: [
+        "DejaVuSans-Bold.ttf",
+        "FreeSansBold.ttf",
+        "LiberationSans-Bold.ttf",
+    ],
+}
+
+FONT_FALLBACKS: dict[str, str] = {
+    BODY_FONT: DEFAULT_FONT,
+    BODY_FONT_BOLD: DEFAULT_FONT_BOLD,
+}
 
 try:
     MOSCOW_TZ = ZoneInfo("Europe/Moscow")
@@ -28,6 +57,102 @@ except ZoneInfoNotFoundError:
         "Используется фиксированное смещение UTC+3."
     )
     MOSCOW_TZ = timezone(timedelta(hours=3))
+
+def _font_search_roots() -> list[Path]:
+    env_paths = [
+        Path(p).expanduser()
+        for p in os.environ.get("MAD_PDF_FONT_PATHS", "").split(os.pathsep)
+        if p
+    ]
+    return env_paths + [
+        FONT_DIR,
+        Path("/usr/share/fonts/truetype/dejavu"),
+        Path("/usr/share/fonts/truetype/freefont"),
+        Path("/usr/share/fonts/truetype/liberation"),
+        Path("/usr/local/share/fonts"),
+        Path.home() / ".local/share/fonts",
+        Path.home() / ".fonts",
+    ]
+
+
+def _resolve_font_path(file_names: Sequence[str]) -> Path | None:
+    search_roots = _font_search_roots()
+    for file_name in file_names:
+        direct_candidate = Path(file_name).expanduser()
+        if direct_candidate.is_file():
+            return direct_candidate
+        for root in search_roots:
+            if not root.exists():
+                continue
+            if root.is_file():
+                candidate = root
+            else:
+                candidate = root / file_name
+            if candidate.is_file():
+                return candidate
+    return None
+
+
+def _register_fonts() -> dict[str, str]:
+    resolved: dict[str, str] = {}
+    registered = set(pdfmetrics.getRegisteredFontNames())
+    for font_name, file_candidates in FONT_ALTERNATIVES.items():
+        if font_name in registered:
+            resolved[font_name] = font_name
+            continue
+        font_path = _resolve_font_path(file_candidates)
+        if font_path is None:
+            fallback = FONT_FALLBACKS.get(font_name, DEFAULT_FONT)
+            readable_names = ", ".join(file_candidates)
+            LOGGER.warning(
+                "Не удалось найти подходящий файл шрифта для '%s'. "
+                "Ожидались файлы: %s. Используется встроенный шрифт '%s'.",
+                font_name,
+                readable_names,
+                fallback,
+            )
+            resolved[font_name] = fallback
+            continue
+        pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+        registered.add(font_name)
+        resolved[font_name] = font_name
+    return resolved
+
+
+REGISTERED_FONTS = _register_fonts()
+BODY_FONT_NAME = REGISTERED_FONTS[BODY_FONT]
+BODY_FONT_BOLD_NAME = REGISTERED_FONTS[BODY_FONT_BOLD]
+
+TABLE_TEXT_STYLE = ParagraphStyle(
+    "TableText",
+    fontName=BODY_FONT_NAME,
+    fontSize=8.5,
+    leading=10,
+    spaceAfter=0,
+    spaceBefore=0,
+)
+
+NESTED_TABLE_TEXT_STYLE = ParagraphStyle(
+    "NestedTableText",
+    parent=TABLE_TEXT_STYLE,
+    leftIndent=8,
+)
+
+TITLE_STYLE = ParagraphStyle(
+    "Title",
+    fontName=BODY_FONT_BOLD_NAME,
+    fontSize=15,
+    leading=18,
+    spaceAfter=4,
+)
+
+META_STYLE = ParagraphStyle(
+    "Meta",
+    fontName=BODY_FONT_NAME,
+    fontSize=10,
+    leading=12,
+    spaceAfter=1,
+)
 
 MONTH_LABELS = [
     "январь",
@@ -139,6 +264,11 @@ def _work_sort_key(item: DashboardItem) -> tuple:
     )
 
 
+def _paragraph(text: str, style: ParagraphStyle = TABLE_TEXT_STYLE) -> Paragraph:
+    sanitized = escape(text or "").replace("\n", "<br/>")
+    return Paragraph(sanitized, style)
+
+
 def _format_month(month: date) -> str:
     name = MONTH_LABELS[month.month - 1]
     return f"{name.capitalize()} {month.year}"
@@ -154,174 +284,136 @@ def _format_last_updated(value: datetime | None) -> str:
     return dt.strftime("%d.%m.%Y %H:%M МСК")
 
 
+def _build_summary_table(summary: DashboardSummary | None, width: float) -> Table:
+    planned = summary.planned_amount if summary else None
+    fact = summary.fact_amount if summary else None
+    completion = summary.completion_pct if summary else None
+    delta = summary.delta_amount if summary else None
+    data = [
+        ["План", _format_money(planned)],
+        ["Факт", _format_money(fact)],
+        ["Выполнение", _format_percent(completion)],
+        ["Отклонение", _format_money(delta)],
+    ]
+    table = Table(data, colWidths=[width * 0.35, width * 0.65])
+    table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, -1), BODY_FONT_NAME),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
+    )
+    return table
+
+
+def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
+    header = ["Смета", "План", "Факт", "Отклонение"]
+    data: list[list[object]] = [header]
+    category_rows: list[int] = []
+    item_rows: list[int] = []
+    item_row_backgrounds: list[tuple[int, colors.Color]] = []
+    row_idx = 1
+    for group in groups:
+        data.append(
+            [
+                _paragraph(group.title),
+                _format_money(group.planned_total),
+                _format_money(group.fact_total),
+                _format_money(group.delta_total),
+            ]
+        )
+        category_rows.append(row_idx)
+        row_idx += 1
+        if group.items:
+            for idx, item in enumerate(group.items):
+                delta = _calculate_delta(item)
+                work_name = item.work_name or item.description or "Без названия"
+                data.append(
+                    [
+                        _paragraph(work_name, NESTED_TABLE_TEXT_STYLE),
+                        _format_money(item.planned_amount),
+                        _format_money(item.fact_amount),
+                        _format_money(delta),
+                    ]
+                )
+                item_rows.append(row_idx)
+                if idx % 2:
+                    bg = colors.HexColor("#f8fafc")
+                else:
+                    bg = colors.white
+                item_row_backgrounds.append((row_idx, bg))
+                row_idx += 1
+    table = Table(
+        data,
+        repeatRows=1,
+        colWidths=[
+            width * 0.43,
+            width * 0.19,
+            width * 0.19,
+            width * 0.19,
+        ],
+    )
+    style_commands: list[tuple] = [
+        ("FONTNAME", (0, 0), (-1, 0), BODY_FONT_BOLD_NAME),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f3f4f6")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
+        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("FONTNAME", (0, 1), (-1, -1), BODY_FONT_NAME),
+        ("FONTSIZE", (0, 0), (-1, -1), 8.6),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#cbd5f5")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+    ]
+    for idx in category_rows:
+        style_commands.extend(
+            [
+                ("FONTNAME", (0, idx), (-1, idx), BODY_FONT_BOLD_NAME),
+                ("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#eef2ff")),
+                ("LINEABOVE", (0, idx), (-1, idx), 0.25, colors.HexColor("#e0e7ff")),
+                ("LINEBELOW", (0, idx), (-1, idx), 0.25, colors.HexColor("#c7d2fe")),
+            ]
+        )
+    for idx, background in item_row_backgrounds:
+        style_commands.append(("BACKGROUND", (0, idx), (-1, idx), background))
+    for idx in item_rows:
+        style_commands.append(("LEFTPADDING", (0, idx), (0, idx), 10))
+    table.setStyle(TableStyle(style_commands))
+    return table
+
+
 def build_dashboard_pdf(
     month: date,
     last_updated: datetime | None,
     items: Sequence[DashboardItem],
     summary: DashboardSummary | None,
 ) -> bytes:
-    groups = _group_items(items)
-    html = _render_html(month, last_updated, summary, groups)
     buffer = BytesIO()
-    HTML(string=html, base_url=str(Path(__file__).resolve().parent)).write_pdf(buffer)
-    return buffer.getvalue()
-
-
-def _render_html(
-    month: date,
-    last_updated: datetime | None,
-    summary: DashboardSummary | None,
-    groups: Sequence[CategoryGroup],
-) -> str:
-    month_label = escape(_format_month(month))
-    updated_label = escape(_format_last_updated(last_updated))
-    summary_html = _render_summary_section(summary)
-    items_html = _render_items_table(groups)
-    return f"""
-<!DOCTYPE html>
-<html lang=\"ru\">
-  <head>
-    <meta charset=\"utf-8\" />
-    <style>
-      @font-face {{
-        font-family: 'MADDejaVu';
-        src: url('fonts/DejaVuSans.ttf') format('truetype');
-        font-weight: 400;
-      }}
-      @font-face {{
-        font-family: 'MADDejaVu';
-        src: url('fonts/DejaVuSans-Bold.ttf') format('truetype');
-        font-weight: 600;
-      }}
-      body {{
-        font-family: 'MADDejaVu', 'DejaVu Sans', 'Arial', sans-serif;
-        margin: 24px 32px;
-        color: #111827;
-        font-size: 12px;
-      }}
-      h1 {{
-        font-size: 22px;
-        margin: 0 0 6px 0;
-      }}
-      .meta {{
-        margin: 2px 0;
-        color: #374151;
-      }}
-      .notice {{
-        margin-top: 4px;
-      }}
-      .summary-table {{
-        width: 280px;
-        border-collapse: collapse;
-        margin: 14px 0;
-      }}
-      .summary-table th {{
-        text-align: left;
-        font-weight: 600;
-        padding: 4px 6px;
-      }}
-      .summary-table td {{
-        text-align: right;
-        padding: 4px 6px;
-      }}
-      .items-table {{
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-        font-size: 11px;
-      }}
-      .items-table th {{
-        text-align: left;
-        padding: 6px 6px;
-        background: #f3f4f6;
-        border-bottom: 1px solid #cbd5f5;
-      }}
-      .items-table th.numeric {{
-        text-align: right;
-      }}
-      .items-table td {{
-        padding: 5px 6px;
-        vertical-align: top;
-      }}
-      .items-table td.numeric {{
-        text-align: right;
-      }}
-      .category-row {{
-        background: #eef2ff;
-        font-weight: 600;
-        border-top: 1px solid #e0e7ff;
-        border-bottom: 1px solid #c7d2fe;
-      }}
-      .item-row-alt {{
-        background: #f8fafc;
-      }}
-      .item-name {{
-        padding-left: 16px;
-      }}
-    </style>
-  </head>
-  <body>
-    <h1>Сводный отчёт по работам Подольск</h1>
-    <p class=\"meta\">Месяц: <strong>{month_label}</strong></p>
-    <p class=\"meta\">Данные обновлены: {updated_label}</p>
-    <p class=\"meta notice\">Факт содержит только заявки в статусе «Рассмотрено».</p>
-    {summary_html}
-    {items_html}
-  </body>
-</html>
-"""
-
-
-def _render_summary_section(summary: DashboardSummary | None) -> str:
-    planned = summary.planned_amount if summary else None
-    fact = summary.fact_amount if summary else None
-    completion = summary.completion_pct if summary else None
-    delta = summary.delta_amount if summary else None
-    rows = [
-        ("План", _format_money(planned)),
-        ("Факт", _format_money(fact)),
-        ("Выполнение", _format_percent(completion)),
-        ("Отклонение", _format_money(delta)),
-    ]
-    rendered_rows = "".join(
-        f"<tr><th>{escape(title)}</th><td>{escape(value)}</td></tr>" for title, value in rows
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=15 * mm,
+        rightMargin=15 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm,
     )
-    return f"<table class=\"summary-table\"><tbody>{rendered_rows}</tbody></table>"
-
-
-def _render_items_table(groups: Sequence[CategoryGroup]) -> str:
+    story: list = []
+    story.append(Paragraph("Сводный отчёт по работам Подольск", TITLE_STYLE))
+    story.append(Paragraph(f"Месяц: <b>{_format_month(month)}</b>", META_STYLE))
+    story.append(Paragraph(f"Данные обновлены: {_format_last_updated(last_updated)}", META_STYLE))
+    story.append(Paragraph("Факт содержит только заявки в статусе «Рассмотрено».", META_STYLE))
+    story.append(Spacer(1, 6))
+    story.append(_build_summary_table(summary, doc.width))
+    story.append(Spacer(1, 8))
+    groups = _group_items(items)
     if not groups:
-        return "<p class=\"meta\">Нет данных по выбранному месяцу.</p>"
-    header = (
-        "<thead><tr>"
-        "<th>Смета</th>"
-        "<th class=\"numeric\">План</th>"
-        "<th class=\"numeric\">Факт</th>"
-        "<th class=\"numeric\">Отклонение</th>"
-        "</tr></thead>"
-    )
-    body_rows: list[str] = []
-    for group in groups:
-        body_rows.append(
-            "<tr class=\"category-row\">"
-            f"<td>{escape(group.title)}</td>"
-            f"<td class=\"numeric\">{escape(_format_money(group.planned_total))}</td>"
-            f"<td class=\"numeric\">{escape(_format_money(group.fact_total))}</td>"
-            f"<td class=\"numeric\">{escape(_format_money(group.delta_total))}</td>"
-            "</tr>"
-        )
-        for idx, item in enumerate(group.items):
-            delta = _calculate_delta(item)
-            work_name = item.work_name or item.description or "Без названия"
-            row_class = "item-row-alt" if idx % 2 else ""
-            class_attr = "item-row" if not row_class else f"item-row {row_class}"
-            body_rows.append(
-                f"<tr class=\"{class_attr}\">"
-                f"<td class=\"item-name\">{escape(work_name)}</td>"
-                f"<td class=\"numeric\">{escape(_format_money(item.planned_amount))}</td>"
-                f"<td class=\"numeric\">{escape(_format_money(item.fact_amount))}</td>"
-                f"<td class=\"numeric\">{escape(_format_money(delta))}</td>"
-                "</tr>"
-            )
-    body = "<tbody>" + "".join(body_rows) + "</tbody>"
-    return f"<table class=\"items-table\">{header}{body}</table>"
+        story.append(Paragraph("Нет данных по выбранному месяцу.", META_STYLE))
+    else:
+        story.append(_build_items_table(groups, doc.width))
+    doc.build(story)
+    return buffer.getvalue()
