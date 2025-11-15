@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class DashboardItem(BaseModel):
@@ -13,8 +13,24 @@ class DashboardItem(BaseModel):
 
     planned_amount: float | None = None
     fact_amount: float | None = None
-
     delta_amount: float | None = None
+
+    @field_validator("delta_amount", mode="before")
+    @classmethod
+    def compute_delta_if_missing(cls, v: float | None, info) -> float | None:
+        """Автоматически вычисляет delta_amount если он не задан."""
+        if v is not None:
+            return v
+        
+        planned = info.data.get("planned_amount")
+        fact = info.data.get("fact_amount")
+        
+        if planned is None and fact is None:
+            return None
+        
+        plan_val = planned or 0.0
+        fact_val = fact or 0.0
+        return fact_val - plan_val
 
 
 class DashboardSummary(BaseModel):

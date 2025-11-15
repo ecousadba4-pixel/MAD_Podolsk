@@ -28,6 +28,7 @@
       background: linear-gradient(180deg, #f6f8fd 0%, #eef2fb 60%, #edf1fb 100%);
       color: var(--text-main);
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
     .sr-only {
@@ -54,6 +55,7 @@
       background-size: 200% 100%;
       animation: loading 1.5s infinite;
       border-radius: var(--radius-sm);
+      will-change: background-position;
     }
 
     .skeleton-line {
@@ -208,6 +210,7 @@
       }
       .month-select select {
         width: 100%;
+        cursor: pointer;
       }
       .pill {
         justify-content: flex-start;
@@ -335,6 +338,7 @@
       white-space: nowrap;
       font-weight: 600;
       letter-spacing: 0.02em;
+      will-change: transform, box-shadow;
     }
 
     .btn svg {
@@ -550,6 +554,8 @@
       color: inherit;
       font: inherit;
       box-shadow: var(--shadow-card);
+      will-change: transform, box-shadow;
+      contain: layout style paint;
     }
 
     .category-card:hover {
@@ -696,6 +702,7 @@
       font-size: 0.88rem;
       background: #fff;
       font-variant-numeric: tabular-nums;
+      contain: layout style paint;
     }
 
     .work-row-last {
@@ -873,11 +880,11 @@
       background: #f9fafb;
     }
 
-    .delta-positive {
+    .print-table .delta-positive {
       color: #166534;
     }
 
-    .delta-negative {
+    .print-table .delta-negative {
       color: #b91c1c;
     }
 
@@ -894,6 +901,11 @@
     /* Print: 1 страница A4 */
 
     @media print {
+      :root {
+        --text-main: #111827;
+        --text-muted: #4b5563;
+        --border-soft: #d1d5db;
+      }
       body {
         background: #ffffff;
       }

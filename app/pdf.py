@@ -138,6 +138,22 @@ NESTED_TABLE_TEXT_STYLE = ParagraphStyle(
     leftIndent=8,
 )
 
+TITLE_STYLE = ParagraphStyle(
+    "Title",
+    fontName=BODY_FONT_BOLD_NAME,
+    fontSize=15,
+    leading=18,
+    spaceAfter=4,
+)
+
+META_STYLE = ParagraphStyle(
+    "Meta",
+    fontName=BODY_FONT_NAME,
+    fontSize=10,
+    leading=12,
+    spaceAfter=1,
+)
+
 MONTH_LABELS = [
     "январь",
     "февраль",
@@ -312,8 +328,7 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         category_rows.append(row_idx)
         row_idx += 1
         if group.items:
-            background_toggle = 0
-            for item in group.items:
+            for idx, item in enumerate(group.items):
                 delta = _calculate_delta(item)
                 work_name = item.work_name or item.description or "Без названия"
                 data.append(
@@ -325,12 +340,11 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
                     ]
                 )
                 item_rows.append(row_idx)
-                if background_toggle:
+                if idx % 2:
                     bg = colors.HexColor("#f8fafc")
                 else:
                     bg = colors.white
                 item_row_backgrounds.append((row_idx, bg))
-                background_toggle = 1 - background_toggle
                 row_idx += 1
     table = Table(
         data,
@@ -388,31 +402,17 @@ def build_dashboard_pdf(
         topMargin=18 * mm,
         bottomMargin=18 * mm,
     )
-    title_style = ParagraphStyle(
-        "Title",
-        fontName=BODY_FONT_BOLD_NAME,
-        fontSize=15,
-        leading=18,
-        spaceAfter=4,
-    )
-    meta_style = ParagraphStyle(
-        "Meta",
-        fontName=BODY_FONT_NAME,
-        fontSize=10,
-        leading=12,
-        spaceAfter=1,
-    )
     story: list = []
-    story.append(Paragraph("Сводный отчёт по работам Подольск", title_style))
-    story.append(Paragraph(f"Месяц: <b>{_format_month(month)}</b>", meta_style))
-    story.append(Paragraph(f"Данные обновлены: {_format_last_updated(last_updated)}", meta_style))
-    story.append(Paragraph("Факт содержит только заявки в статусе «Рассмотрено».", meta_style))
+    story.append(Paragraph("Сводный отчёт по работам Подольск", TITLE_STYLE))
+    story.append(Paragraph(f"Месяц: <b>{_format_month(month)}</b>", META_STYLE))
+    story.append(Paragraph(f"Данные обновлены: {_format_last_updated(last_updated)}", META_STYLE))
+    story.append(Paragraph("Факт содержит только заявки в статусе «Рассмотрено».", META_STYLE))
     story.append(Spacer(1, 6))
     story.append(_build_summary_table(summary, doc.width))
     story.append(Spacer(1, 8))
     groups = _group_items(items)
     if not groups:
-        story.append(Paragraph("Нет данных по выбранному месяцу.", meta_style))
+        story.append(Paragraph("Нет данных по выбранному месяцу.", META_STYLE))
     else:
         story.append(_build_items_table(groups, doc.width))
     doc.build(story)
