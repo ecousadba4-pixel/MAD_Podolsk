@@ -33,6 +33,7 @@ export class UIManager {
       this.currentSearchTerm = (value || "").toLowerCase().trim();
       this.renderWorkList();
     }, 300);
+    this.handleResize = debounce(() => this.updateMobileWorkNameCollapsers(), 150);
   }
 
   init() {
@@ -40,6 +41,7 @@ export class UIManager {
     this.liveRegion = this.createLiveRegion();
     this.bindEvents();
     this.initMonthSelect();
+    window.addEventListener("resize", this.handleResize);
   }
 
   toggleSkeletons(isLoading) {
@@ -100,6 +102,7 @@ export class UIManager {
       }
     });
     this.elements.workListScroller.appendChild(fragment);
+    requestAnimationFrame(() => this.updateMobileWorkNameCollapsers());
   }
 
   bindEvents() {
@@ -355,7 +358,13 @@ export class UIManager {
       row.classList.add("work-row-last");
     }
     row.innerHTML = `
-      <div class="work-row-name">${workName}</div>
+      <div class="work-row-name work-row-name--collapsed" data-expanded="false">
+        <span class="work-row-name-text">${workName}</span>
+        <button type="button" class="work-row-name-toggle" aria-expanded="false">
+          <span class="work-row-name-toggle-text">Показать полностью</span>
+          <span class="work-row-name-toggle-icon" aria-hidden="true"></span>
+        </button>
+      </div>
       <div class="work-row-money work-row-plan">
         <span class="work-row-label">План</span>
         <span>${formatMoneyRub(item.planned_amount)}</span>
@@ -369,7 +378,72 @@ export class UIManager {
         <span class="work-row-delta-value">${arrow} ${formatMoneyRub(delta)}</span>
       </div>
     `;
+    const nameWrapper = row.querySelector(".work-row-name");
+    const toggleBtn = row.querySelector(".work-row-name-toggle");
+    const toggleText = row.querySelector(".work-row-name-toggle-text");
+    if (nameWrapper && toggleBtn && toggleText) {
+      nameWrapper.dataset.expanded = "false";
+      toggleBtn.addEventListener("click", () => {
+        const isExpanded = nameWrapper.classList.toggle("work-row-name--expanded");
+        if (isExpanded) {
+          nameWrapper.classList.remove("work-row-name--collapsed");
+        } else {
+          nameWrapper.classList.add("work-row-name--collapsed");
+        }
+        nameWrapper.dataset.expanded = String(isExpanded);
+        toggleBtn.setAttribute("aria-expanded", String(isExpanded));
+        toggleText.textContent = isExpanded ? "Свернуть" : "Показать полностью";
+      });
+    }
     return row;
+  }
+
+  updateMobileWorkNameCollapsers() {
+    if (!this.elements.workListScroller) {
+      return;
+    }
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    const nameWrappers = this.elements.workListScroller.querySelectorAll(".work-row-name");
+    nameWrappers.forEach((wrapper) => {
+      const textEl = wrapper.querySelector(".work-row-name-text");
+      const toggleBtn = wrapper.querySelector(".work-row-name-toggle");
+      const toggleText = wrapper.querySelector(".work-row-name-toggle-text");
+      if (!textEl || !toggleBtn || !toggleText) {
+        return;
+      }
+
+      if (!isMobile) {
+        wrapper.classList.remove("work-row-name--collapsed", "work-row-name--expanded", "work-row-name--collapsible");
+        wrapper.dataset.expanded = "";
+        toggleBtn.hidden = true;
+        toggleBtn.setAttribute("aria-expanded", "false");
+        toggleText.textContent = "Показать полностью";
+        return;
+      }
+
+      const isExpanded = wrapper.dataset.expanded === "true";
+      if (isExpanded) {
+        wrapper.classList.add("work-row-name--expanded");
+        wrapper.classList.remove("work-row-name--collapsed");
+      } else {
+        wrapper.classList.add("work-row-name--collapsed");
+        wrapper.classList.remove("work-row-name--expanded");
+      }
+      toggleBtn.setAttribute("aria-expanded", String(isExpanded));
+      toggleText.textContent = isExpanded ? "Свернуть" : "Показать полностью";
+      wrapper.classList.remove("work-row-name--collapsible");
+      toggleBtn.hidden = true;
+
+      const lineHeight = parseFloat(window.getComputedStyle(textEl).lineHeight || "0");
+      const maxHeight = lineHeight && !Number.isNaN(lineHeight) ? lineHeight * 2 : null;
+      const isOverflowing = maxHeight ? textEl.scrollHeight > maxHeight + 1 : textEl.scrollHeight > textEl.offsetHeight + 1;
+      if (isOverflowing) {
+        wrapper.classList.add("work-row-name--collapsible");
+        toggleBtn.hidden = false;
+      } else if (!isExpanded) {
+        wrapper.classList.remove("work-row-name--collapsed");
+      }
+    });
   }
 
   renderPrintReport() {
