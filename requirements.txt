@@ -3,4 +3,4 @@ uvicorn[standard]
 psycopg2-binary
 python-dotenv
 pydantic-settings
-reportlab
+weasyprint
