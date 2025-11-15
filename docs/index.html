@@ -404,9 +404,15 @@
 
     .category-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 16px;
+    }
+
+    @media (min-width: 1024px) {
+      .category-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     .category-card {
@@ -493,6 +499,9 @@
       font-size: clamp(0.82rem, 2.8vw, 0.95rem);
       white-space: nowrap;
       overflow-wrap: normal;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
     }
 
     @media (min-width: 768px) {
@@ -503,7 +512,6 @@
         min-width: 0;
       }
       .category-values strong {
-        white-space: normal;
         word-break: break-word;
         line-height: 1.25;
       }
