@@ -11,10 +11,14 @@ from .models import DashboardItem, DashboardSummary
 
 
 ITEMS_SQL = """
-    SELECT *
-    FROM skpdi_plan_vs_fact_monthly
-    WHERE month_start = %s
-    ORDER BY ABS(COALESCE(delta_amount_done, 0)) DESC, description;
+    SELECT
+        pvf.*, 
+        rates.smeta_code AS category_code
+    FROM skpdi_plan_vs_fact_monthly AS pvf
+    LEFT JOIN skpdi_rates AS rates
+        ON TRIM(LOWER(rates.work_name)) = TRIM(LOWER(pvf.description))
+    WHERE pvf.month_start = %s
+    ORDER BY ABS(COALESCE(pvf.delta_amount_done, 0)) DESC, pvf.description;
 """
 
 LAST_UPDATED_SQL = """
@@ -75,6 +79,7 @@ def fetch_plan_vs_fact_for_month(
             description = row.get("description") or ""
             items.append(
                 DashboardItem(
+                    category=row.get("category_code") or row.get("smeta"),
                     smeta=
                         row.get("smeta")
                         or row.get("smeta_name")

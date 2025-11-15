@@ -641,7 +641,7 @@
       </div>
       <div class="work-list" id="work-list"></div>
       <div class="status-bar">
-        <div id="status-counts">Смет: 0 · Работ: 0</div>
+        <div id="status-counts">Категорий: 0 · Работ: 0</div>
       </div>
     </section>
   </div>
@@ -732,11 +732,14 @@
     function buildCategories(items) {
       const map = new Map();
       items.forEach((item) => {
-        const key = item.smeta || "Без категории";
+        const rawKey = item.category || item.smeta || "Без категории";
+        const trimmedKey = rawKey ? rawKey.trim() : "";
+        const key = trimmedKey || "Без категории";
+        const title = item.smeta || key || "Без категории";
         if (!map.has(key)) {
           map.set(key, {
             key,
-            title: key,
+            title,
             works: [],
             planned: 0,
             fact: 0,
@@ -744,6 +747,9 @@
           });
         }
         const group = map.get(key);
+        if (!group.title && title) {
+          group.title = title;
+        }
         group.works.push(item);
         const planned = item.planned_amount ?? 0;
         const fact = item.fact_amount ?? 0;
@@ -845,7 +851,7 @@
           : "Здесь появится список работ выбранной сметы.";
         activeCategoryTitle.textContent = "Выберите смету";
         activeCategoryMeta.textContent = "Нажмите на карточку выше, чтобы увидеть работы";
-        statusCountsEl.textContent = `Смет: ${groupedCategories.length} · Работ: 0`;
+        statusCountsEl.textContent = `Категорий: ${groupedCategories.length} · Работ: 0`;
         return;
       }
 
@@ -960,7 +966,7 @@
         });
 
       const visibleCount = works.length;
-      statusCountsEl.textContent = `Смет: ${groupedCategories.length} · Работ: ${visibleCount} / ${totalWorks}`;
+      statusCountsEl.textContent = `Категорий: ${groupedCategories.length} · Работ: ${visibleCount} / ${totalWorks}`;
     }
 
     function applyDataToUi(data) {
@@ -991,7 +997,7 @@
         workEmptyState.textContent = "Загрузка данных...";
         activeCategoryTitle.textContent = "Загрузка...";
         activeCategoryMeta.textContent = "";
-        statusCountsEl.textContent = "Смет: – · Работ: –";
+        statusCountsEl.textContent = "Категорий: – · Работ: –";
         sumPlannedEl.textContent = "…";
         sumFactEl.textContent = "…";
         sumCompleteEl.textContent = "…";

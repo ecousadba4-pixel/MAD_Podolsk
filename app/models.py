@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 
 class DashboardItem(BaseModel):
+    category: str | None = None
     smeta: str | None = None
     work_name: str | None = None
     description: str
