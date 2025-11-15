@@ -277,9 +277,9 @@ export class UIManager {
           <span class="category-pill">${category.works.length} работ</span>
         </div>
         <div class="category-values">
-          <span><span class="label">План</span><strong>${formatMoneyRub(category.planned)}</strong></span>
-          <span><span class="label">Факт</span><strong>${formatMoneyRub(category.fact)}</strong></span>
-          <span><span class="label">Отклонение</span><strong class="category-delta ${deltaClass}">${formatMoneyRub(category.delta)}</strong></span>
+          <span><span class="label">План</span><strong>${formatMoney(category.planned)}</strong></span>
+          <span><span class="label">Факт</span><strong>${formatMoney(category.fact)}</strong></span>
+          <span><span class="label">Отклонение</span><strong class="category-delta ${deltaClass}">${formatMoney(category.delta)}</strong></span>
         </div>
       `;
       card.setAttribute("aria-pressed", category.key === this.activeCategoryKey ? "true" : "false");
