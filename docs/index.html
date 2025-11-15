@@ -52,6 +52,37 @@
       border: 0;
     }
 
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-card);
+      padding: 16px 24px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-soft);
+      animation: slideIn 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
     .page {
       max-width: 1180px;
       margin: 0 auto;
@@ -995,6 +1026,18 @@
       return d.toLocaleString("ru-RU");
     }
 
+    function showToast(message, type = "success") {
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = "slideIn 0.3s ease reverse";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
     function calculateDelta(item) {
       if (item.delta_amount !== null && item.delta_amount !== undefined) {
         return item.delta_amount;
@@ -1578,7 +1621,7 @@
           this.announce("PDF-отчёт сформирован.");
         } catch (error) {
           console.error("PDF export error", error);
-          alert("Не удалось сформировать PDF. Попробуйте ещё раз позже.");
+          showToast("Не удалось сформировать PDF. Попробуйте ещё раз позже.", "error");
           this.announce("Ошибка формирования PDF");
         } finally {
           this.elements.pdfButton.innerHTML = this.pdfButtonDefaultLabel;
