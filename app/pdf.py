@@ -1,20 +1,89 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from io import BytesIO
+from pathlib import Path
 from typing import Iterable, Sequence
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from .models import DashboardItem, DashboardSummary
 
-BODY_FONT = "Helvetica"
-BODY_FONT_BOLD = "Helvetica-Bold"
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+BODY_FONT = "DejaVuSans"
+BODY_FONT_BOLD = "DejaVuSans-Bold"
+
+FONT_ALTERNATIVES: dict[str, list[str]] = {
+    BODY_FONT: [
+        "DejaVuSans.ttf",
+        "FreeSans.ttf",
+        "LiberationSans-Regular.ttf",
+    ],
+    BODY_FONT_BOLD: [
+        "DejaVuSans-Bold.ttf",
+        "FreeSansBold.ttf",
+        "LiberationSans-Bold.ttf",
+    ],
+}
+
+
+def _font_search_roots() -> list[Path]:
+    env_paths = [
+        Path(p).expanduser()
+        for p in os.environ.get("MAD_PDF_FONT_PATHS", "").split(os.pathsep)
+        if p
+    ]
+    return env_paths + [
+        FONT_DIR,
+        Path("/usr/share/fonts/truetype/dejavu"),
+        Path("/usr/share/fonts/truetype/freefont"),
+        Path("/usr/share/fonts/truetype/liberation"),
+        Path("/usr/local/share/fonts"),
+        Path.home() / ".local/share/fonts",
+        Path.home() / ".fonts",
+    ]
+
+
+def _resolve_font_path(file_names: Sequence[str]) -> Path | None:
+    search_roots = _font_search_roots()
+    for file_name in file_names:
+        direct_candidate = Path(file_name).expanduser()
+        if direct_candidate.is_file():
+            return direct_candidate
+        for root in search_roots:
+            if root.exists() and root.is_file():
+                candidate = root
+            else:
+                candidate = root / file_name
+            if candidate.is_file():
+                return candidate
+    return None
+
+
+def _register_fonts() -> None:
+    for font_name, file_candidates in FONT_ALTERNATIVES.items():
+        if font_name in pdfmetrics.getRegisteredFontNames():
+            continue
+        font_path = _resolve_font_path(file_candidates)
+        if font_path is None:
+            readable_names = ", ".join(file_candidates)
+            raise FileNotFoundError(
+                "Не удалось найти подходящий файл шрифта для "
+                f"'{font_name}'. Добавьте файл ({readable_names}) в каталог app/fonts "
+                "или укажите путь к шрифтам через переменную окружения MAD_PDF_FONT_PATHS."
+            )
+        pdfmetrics.registerFont(TTFont(font_name, str(font_path)))
+
+
+_register_fonts()
 
 MONTH_LABELS = [
     "январь",

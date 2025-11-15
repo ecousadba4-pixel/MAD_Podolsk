@@ -23,3 +23,7 @@ env/
 # Misc
 .DS_Store
 *.log
+
+# Fonts
+app/fonts/*.ttf
+app/fonts/*.otf
