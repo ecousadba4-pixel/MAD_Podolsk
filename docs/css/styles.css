@@ -1099,9 +1099,10 @@
       }
       .work-panel-header .panel-title-group {
         grid-area: title;
-        min-height: 64px;
+        min-height: 0;
         min-width: 0;
         max-width: 100%;
+        align-self: center;
       }
       .work-panel-header .panel-title {
         font-size: 1rem;
