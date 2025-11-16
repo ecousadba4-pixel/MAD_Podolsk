@@ -304,7 +304,7 @@
     }
 
     .pill-label {
-      font-size: 0.72rem;
+      font-size: 0.64rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
