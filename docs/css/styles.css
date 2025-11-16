@@ -764,6 +764,28 @@
       box-shadow: 0 6px 16px rgba(34, 197, 94, 0.25);
     }
 
+    @media (max-width: 640px) {
+      .category-card {
+        gap: 0;
+        justify-content: space-evenly;
+      }
+      .category-card > .category-title,
+      .category-card > .category-values,
+      .category-card > .category-progress {
+        margin: 0;
+      }
+      .category-title {
+        margin-bottom: 0;
+      }
+      .category-values {
+        margin-top: 0;
+      }
+      .category-progress {
+        margin-top: 0;
+        padding-top: 0;
+      }
+    }
+
     .delta-positive {
       color: var(--success);
     }
