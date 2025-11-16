@@ -456,7 +456,7 @@ export class UIManager {
     let value;
     switch (this.workSort.column) {
       case "fact":
-        value = item.fact_amount ?? item.planned_amount;
+        value = item.fact_amount;
         break;
       case "delta":
         value = calculateDelta(item);
@@ -474,6 +474,36 @@ export class UIManager {
     if (!Array.isArray(works)) {
       return works;
     }
+    if (this.workSort.column === "delta") {
+      works.sort((a, b) => {
+        const deltaA = calculateDelta(a);
+        const deltaB = calculateDelta(b);
+        const isNegativeA = deltaA < 0;
+        const isNegativeB = deltaB < 0;
+
+        if (isNegativeA !== isNegativeB) {
+          return isNegativeA ? -1 : 1;
+        }
+
+        if (isNegativeA && isNegativeB) {
+          const diff = deltaA - deltaB;
+          if (diff !== 0) {
+            return diff;
+          }
+        } else {
+          const diff = deltaB - deltaA;
+          if (diff !== 0) {
+            return diff;
+          }
+        }
+
+        const nameA = (a?.work_name || a?.description || "").toLowerCase();
+        const nameB = (b?.work_name || b?.description || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      return works;
+    }
+
     works.sort((a, b) => {
       const valueA = this.getSortValueForWork(a);
       const valueB = this.getSortValueForWork(b);
