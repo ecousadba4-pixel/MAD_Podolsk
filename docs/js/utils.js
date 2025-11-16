@@ -48,16 +48,6 @@ export function calculateDelta(item) {
   return fact - planned;
 }
 
-export function getWorkSortValue(item) {
-  if (item.planned_amount !== null && item.planned_amount !== undefined) {
-    return item.planned_amount;
-  }
-  if (item.fact_amount !== null && item.fact_amount !== undefined) {
-    return item.fact_amount;
-  }
-  return 0;
-}
-
 export function debounce(func, wait) {
   let timeout;
   return function debounced(...args) {
