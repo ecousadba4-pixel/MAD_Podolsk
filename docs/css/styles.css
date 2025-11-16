@@ -24,7 +24,7 @@
 
     body {
       margin: 0;
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: linear-gradient(180deg, #f6f8fd 0%, #eef2fb 60%, #edf1fb 100%);
       color: var(--text-main);
       -webkit-font-smoothing: antialiased;
@@ -867,7 +867,7 @@
 
     .print-report {
       display: none;
-      font-family: 'Roboto Mono', 'IBM Plex Mono', 'PT Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: 'Roboto', 'Roboto Mono', 'IBM Plex Mono', 'PT Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       padding: 18px;
       color: #111827;
       width: 210mm;
