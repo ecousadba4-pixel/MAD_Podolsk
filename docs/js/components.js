@@ -40,6 +40,18 @@ export class UIManager {
     this.monthOptionsLoaded = false;
   }
 
+  setActiveCategoryTitle(desktopText, mobileValueText = desktopText) {
+    if (this.elements.activeCategoryTitleDesktop) {
+      this.elements.activeCategoryTitleDesktop.textContent = desktopText;
+    } else if (this.elements.activeCategoryTitle) {
+      this.elements.activeCategoryTitle.textContent = desktopText;
+    }
+
+    if (this.elements.activeCategoryTitleMobileValue) {
+      this.elements.activeCategoryTitleMobileValue.textContent = mobileValueText;
+    }
+  }
+
   init() {
     this.prepareWorkList();
     this.liveRegion = this.createLiveRegion();
@@ -248,7 +260,7 @@ export class UIManager {
     this.elements.sumFact.textContent = "…";
     this.elements.sumComplete.textContent = "…";
     this.elements.sumDelta.textContent = "…";
-    this.elements.activeCategoryTitle.textContent = "Загрузка...";
+    this.setActiveCategoryTitle("Загрузка...");
     this.elements.workEmptyState.style.display = "none";
     this.elements.workList.classList.remove("has-data");
     this.workHeaderEl.hidden = true;
@@ -268,7 +280,7 @@ export class UIManager {
     this.elements.sumComplete.textContent = "–";
     this.elements.sumDelta.textContent = "–";
     this.elements.sumDelta.classList.remove("positive", "negative");
-    this.elements.activeCategoryTitle.textContent = "Смета не выбрана";
+    this.setActiveCategoryTitle("Смета не выбрана");
     this.elements.searchInput.disabled = true;
     this.elements.workList.classList.remove("has-data");
     this.workHeaderEl.hidden = true;
@@ -403,7 +415,7 @@ export class UIManager {
       this.elements.workEmptyState.textContent = currentData && !currentData.has_data
         ? "Данные за выбранный месяц отсутствуют"
         : "Здесь появится список работ выбранной сметы.";
-      this.elements.activeCategoryTitle.textContent = "Смета не выбрана";
+      this.setActiveCategoryTitle("Смета не выбрана");
       this.elements.workList.classList.remove("has-data");
       this.workHeaderEl.hidden = true;
       this.elements.workListScroller.style.display = "none";
@@ -420,7 +432,10 @@ export class UIManager {
 
     this.sortWorks(works);
 
-    this.elements.activeCategoryTitle.textContent = `Расшифровка работ по смете «${activeCategory.title}»`;
+    this.setActiveCategoryTitle(
+      `Расшифровка работ по смете «${activeCategory.title}»`,
+      activeCategory.title
+    );
 
     if (!works.length) {
       this.elements.workEmptyState.style.display = "block";

@@ -525,6 +525,29 @@
       font-weight: 600;
     }
 
+    .panel-title-text-desktop {
+      display: inline;
+    }
+
+    .panel-title-mobile {
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .panel-title-mobile-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .panel-title-mobile-value {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
     .panel-title-group {
       flex: 1;
       min-width: 260px;
@@ -1063,6 +1086,16 @@
         column-gap: clamp(16px, 4vw, 24px);
         row-gap: clamp(12px, 3vw, 18px);
         align-items: start;
+      }
+      .panel-title-text-desktop {
+        display: none;
+      }
+      .panel-title-mobile {
+        display: flex;
+      }
+      .panel-title-mobile-value {
+        font-size: clamp(1rem, 4vw, 1.2rem);
+        line-height: 1.2;
       }
       .work-panel-header .panel-title-group {
         grid-area: title;
