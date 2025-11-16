@@ -5,7 +5,6 @@ import {
   formatDateTime,
   showToast,
   calculateDelta,
-  getWorkSortValue,
   debounce,
 } from "./utils.js";
 
@@ -29,6 +28,7 @@ export class UIManager {
     this.workHeaderEl = null;
     this.liveRegion = null;
     this.currentSearchTerm = "";
+    this.workSort = { column: "planned" };
     this.debouncedSearch = debounce((value) => {
       this.currentSearchTerm = (value || "").toLowerCase().trim();
       this.renderWorkList();
@@ -71,12 +71,39 @@ export class UIManager {
     this.workHeaderEl.className = "work-row work-row-header";
     this.workHeaderEl.innerHTML = `
       <div>Работа</div>
-      <div>План, ₽</div>
-      <div>Факт, ₽</div>
-      <div>Отклонение</div>
+      <div>
+        <button type="button" class="work-sort-button" data-sort="planned">
+          <span>План, ₽</span>
+          <span class="sort-indicator" aria-hidden="true"></span>
+          <span class="sr-only">Сортировка по плану (по убыванию)</span>
+        </button>
+      </div>
+      <div>
+        <button type="button" class="work-sort-button" data-sort="fact">
+          <span>Факт, ₽</span>
+          <span class="sort-indicator" aria-hidden="true"></span>
+          <span class="sr-only">Сортировка по факту (по убыванию)</span>
+        </button>
+      </div>
+      <div>
+        <button type="button" class="work-sort-button" data-sort="delta">
+          <span>Отклонение</span>
+          <span class="sort-indicator" aria-hidden="true"></span>
+          <span class="sr-only">Сортировка по отклонению (по убыванию)</span>
+        </button>
+      </div>
     `;
     this.workHeaderEl.hidden = true;
     this.elements.workList.appendChild(this.workHeaderEl);
+
+    this.workSortButtons = Array.from(this.workHeaderEl.querySelectorAll(".work-sort-button"));
+    this.workSortButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const column = button.dataset.sort;
+        this.handleWorkSortChange(column);
+      });
+    });
+    this.updateWorkSortButtons();
 
     this.elements.workListScroller = document.createElement("div");
     this.elements.workListScroller.className = "work-list-scroller";
@@ -372,13 +399,14 @@ export class UIManager {
       return;
     }
 
-    const works = (filter
+    const works = filter
       ? activeCategory.works.filter((item) => {
           const name = (item.work_name || item.description || "").toLowerCase();
           return name.includes(filter);
         })
-      : [...activeCategory.works]
-    ).sort((a, b) => getWorkSortValue(b) - getWorkSortValue(a));
+      : [...activeCategory.works];
+
+    this.sortWorks(works);
 
     this.elements.activeCategoryTitle.textContent = `Расшифровка работ по смете «${activeCategory.title}»`;
 
@@ -399,6 +427,65 @@ export class UIManager {
     this.workHeaderEl.hidden = false;
     this.elements.workListScroller.style.display = "block";
     this.renderWorkRows(works);
+  }
+
+  handleWorkSortChange(column) {
+    if (!column || this.workSort.column === column) {
+      return;
+    }
+    this.workSort.column = column;
+    this.updateWorkSortButtons();
+    this.renderWorkList();
+  }
+
+  updateWorkSortButtons() {
+    if (!this.workSortButtons) {
+      return;
+    }
+    this.workSortButtons.forEach((button) => {
+      const isActive = button.dataset.sort === this.workSort.column;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+  }
+
+  getSortValueForWork(item) {
+    if (!item) {
+      return Number.NEGATIVE_INFINITY;
+    }
+    let value;
+    switch (this.workSort.column) {
+      case "fact":
+        value = item.fact_amount ?? item.planned_amount;
+        break;
+      case "delta":
+        value = calculateDelta(item);
+        break;
+      case "planned":
+      default:
+        value = item.planned_amount ?? item.fact_amount;
+        break;
+    }
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : Number.NEGATIVE_INFINITY;
+  }
+
+  sortWorks(works) {
+    if (!Array.isArray(works)) {
+      return works;
+    }
+    works.sort((a, b) => {
+      const valueA = this.getSortValueForWork(a);
+      const valueB = this.getSortValueForWork(b);
+      const diff = valueB - valueA;
+      if (diff !== 0) {
+        return diff;
+      }
+      const nameA = (a?.work_name || a?.description || "").toLowerCase();
+      const nameB = (b?.work_name || b?.description || "").toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+    return works;
   }
 
   createWorkRow(item, index, total) {
