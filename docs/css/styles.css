@@ -621,7 +621,7 @@
     }
 
     .category-values strong {
-      font-size: clamp(0.7rem, 1.3vw, 0.82rem);
+      font-size: clamp(0.78rem, 1.5vw, 0.94rem);
       display: inline-flex;
       align-items: baseline;
       justify-content: flex-end;
@@ -693,7 +693,7 @@
 
     .work-row {
       display: grid;
-      grid-template-columns: minmax(0, 3.4fr) repeat(3, minmax(0, 0.9fr));
+      grid-template-columns: minmax(0, 4fr) repeat(3, minmax(0, 0.7fr));
       gap: 10px;
       padding: 12px 18px;
       border-bottom: 1px solid var(--border-soft);
