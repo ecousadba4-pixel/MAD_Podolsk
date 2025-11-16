@@ -563,7 +563,7 @@
       border: 1px solid var(--border-soft);
       border-radius: 18px;
       padding: var(--card-padding);
-      padding-bottom: calc(var(--card-padding) - 12px);
+      padding-bottom: calc((var(--card-padding) - 12px) / 2);
       background: var(--bg-card);
       display: flex;
       flex-direction: column;
