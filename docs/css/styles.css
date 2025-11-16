@@ -478,6 +478,10 @@
       }
     }
 
+    .panel + .panel {
+      margin-top: clamp(18px, 3vw, 32px);
+    }
+
     .panel-header {
       display: flex;
       justify-content: space-between;
@@ -705,7 +709,7 @@
     }
 
     .work-row-last {
-      border-bottom: none;
+      border-bottom: 1px solid var(--border-soft);
     }
 
     .work-row-header {
