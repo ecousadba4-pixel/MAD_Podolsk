@@ -567,7 +567,7 @@
       background: var(--bg-card);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.15s ease;
       border-left: 4px solid transparent;
@@ -578,7 +578,7 @@
       box-shadow: var(--shadow-card);
       will-change: transform, box-shadow;
       contain: layout style paint;
-      min-height: 148px;
+      min-height: 141px;
     }
 
     .category-card:hover {
@@ -599,6 +599,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
+      margin-bottom: 4px;
     }
 
     .category-pill {
@@ -692,7 +693,7 @@
       display: flex;
       flex-direction: column;
       gap: 3px;
-      padding-top: 6px;
+      padding-top: 3px;
     }
 
     .category-progress-labels {
