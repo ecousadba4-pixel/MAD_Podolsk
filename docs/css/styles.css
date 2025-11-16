@@ -763,6 +763,17 @@
       padding-right: 28px;
     }
 
+    .work-row-name--collapsed .work-row-name-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .work-row-name--collapsible .work-row-name-toggle {
+      display: inline-flex;
+    }
+
     .work-row-name-toggle {
       border: none;
       background: none;
@@ -836,15 +847,6 @@
       }
       .work-row-name {
         grid-column: 1 / -1;
-      }
-      .work-row-name--collapsed .work-row-name-text {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-      .work-row-name--collapsible .work-row-name-toggle {
-        display: inline-flex;
       }
       .work-row-money,
       .work-row-delta {

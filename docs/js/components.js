@@ -33,7 +33,7 @@ export class UIManager {
       this.currentSearchTerm = (value || "").toLowerCase().trim();
       this.renderWorkList();
     }, 300);
-    this.handleResize = debounce(() => this.updateMobileWorkNameCollapsers(), 150);
+    this.handleResize = debounce(() => this.updateWorkNameCollapsers(), 150);
   }
 
   init() {
@@ -102,7 +102,7 @@ export class UIManager {
       }
     });
     this.elements.workListScroller.appendChild(fragment);
-    requestAnimationFrame(() => this.updateMobileWorkNameCollapsers());
+    requestAnimationFrame(() => this.updateWorkNameCollapsers());
   }
 
   bindEvents() {
@@ -406,11 +406,10 @@ export class UIManager {
     return row;
   }
 
-  updateMobileWorkNameCollapsers() {
+  updateWorkNameCollapsers() {
     if (!this.elements.workListScroller) {
       return;
     }
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const nameWrappers = this.elements.workListScroller.querySelectorAll(".work-row-name");
     nameWrappers.forEach((wrapper) => {
       const textEl = wrapper.querySelector(".work-row-name-text");
@@ -419,22 +418,12 @@ export class UIManager {
         return;
       }
 
-      if (!isMobile) {
-        wrapper.classList.remove("work-row-name--collapsed", "work-row-name--expanded", "work-row-name--collapsible");
-        wrapper.dataset.expanded = "";
-        toggleBtn.hidden = true;
-        toggleBtn.setAttribute("aria-expanded", "false");
-        toggleBtn.setAttribute("aria-label", "Развернуть полное название");
-        return;
-      }
-
       const isExpanded = wrapper.dataset.expanded === "true";
+      wrapper.classList.toggle("work-row-name--expanded", isExpanded);
       if (isExpanded) {
-        wrapper.classList.add("work-row-name--expanded");
         wrapper.classList.remove("work-row-name--collapsed");
       } else {
         wrapper.classList.add("work-row-name--collapsed");
-        wrapper.classList.remove("work-row-name--expanded");
       }
       toggleBtn.setAttribute("aria-expanded", String(isExpanded));
       toggleBtn.setAttribute(
@@ -446,7 +435,9 @@ export class UIManager {
 
       const lineHeight = parseFloat(window.getComputedStyle(textEl).lineHeight || "0");
       const maxHeight = lineHeight && !Number.isNaN(lineHeight) ? lineHeight * 2 : null;
-      const isOverflowing = maxHeight ? textEl.scrollHeight > maxHeight + 1 : textEl.scrollHeight > textEl.offsetHeight + 1;
+      const isOverflowing = maxHeight
+        ? textEl.scrollHeight > maxHeight + 1
+        : textEl.scrollHeight > textEl.offsetHeight + 1;
       if (isOverflowing) {
         wrapper.classList.add("work-row-name--collapsible");
         toggleBtn.hidden = false;
