@@ -30,6 +30,7 @@ export class UIManager {
     this.liveRegion = null;
     this.metrics = null;
     this.dailyRevenue = [];
+    this.dailyChartInstance = null;
     this.currentSearchTerm = "";
     this.workSort = { column: "planned" };
     this.initialMonth = new URLSearchParams(window.location.search).get("month");
@@ -419,7 +420,7 @@ export class UIManager {
     if (!this.dailyRevenue.length || !this.elements.dailyModal) {
       return;
     }
-    this.renderDailyModalList();
+    this.renderDailyModalChart();
     this.elements.dailyModal.classList.add("visible");
     this.elements.dailyModal.setAttribute("aria-hidden", "false");
   }
@@ -428,41 +429,129 @@ export class UIManager {
     if (!this.elements.dailyModal) return;
     this.elements.dailyModal.classList.remove("visible");
     this.elements.dailyModal.setAttribute("aria-hidden", "true");
+    this.destroyDailyChart();
   }
 
-  renderDailyModalList() {
-    if (!this.elements.dailyModalList || !this.elements.dailyModalEmpty) return;
+  renderDailyModalChart() {
+    if (!this.elements.dailyModalEmpty || !this.elements.dailyModalChart) return;
 
     const monthLabel = this.getSelectedMonthLabel() || "выбранный месяц";
     if (this.elements.dailyModalSubtitle) {
       this.elements.dailyModalSubtitle.textContent = `По дням за ${monthLabel.toLowerCase()}`;
     }
 
-    this.elements.dailyModalList.innerHTML = "";
     const sorted = [...this.dailyRevenue].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const chartWrapper = this.elements.dailyModalChartWrapper;
+    const chartContainer = this.elements.dailyModalChart;
+
+    this.elements.dailyModalEmpty.textContent = "Нет данных по дням";
+    chartContainer.innerHTML = "";
 
     if (!sorted.length) {
       this.elements.dailyModalEmpty.style.display = "block";
-      this.elements.dailyModalList.style.display = "none";
+      if (chartWrapper) chartWrapper.style.display = "none";
       return;
     }
 
     this.elements.dailyModalEmpty.style.display = "none";
-    this.elements.dailyModalList.style.display = "grid";
+    if (chartWrapper) chartWrapper.style.display = "block";
 
-    const fragment = document.createDocumentFragment();
-    sorted.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "modal-row";
-      const dateLabel = formatDate(item.date);
-      row.innerHTML = `
-        <div class="modal-row-date">${dateLabel}</div>
-        <div class="modal-row-value">${formatMoneyRub(item.amount)}</div>
-      `;
-      fragment.appendChild(row);
+    const total = sorted.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    if (this.elements.dailyModalTotal) {
+      this.elements.dailyModalTotal.textContent = formatMoneyRub(total);
+    }
+
+    if (typeof Chart === "undefined") {
+      this.elements.dailyModalEmpty.style.display = "block";
+      this.elements.dailyModalEmpty.textContent = "Не удалось загрузить график: нет Chart.js";
+      if (chartWrapper) chartWrapper.style.display = "none";
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("aria-label", "График дневной выручки");
+    chartContainer.appendChild(canvas);
+
+    const labels = sorted.map((item) => formatDate(item.date, { day: "2-digit", month: "2-digit" }));
+    const values = sorted.map((item) => Number(item.amount) || 0);
+
+    const ctx = canvas.getContext("2d");
+    const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+    gradient.addColorStop(0, "rgba(47, 128, 237, 0.35)");
+    gradient.addColorStop(1, "rgba(47, 128, 237, 0)");
+
+    this.destroyDailyChart();
+    this.dailyChartInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Поступления",
+            data: values,
+            borderColor: "#2f80ed",
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: "#2f80ed",
+            pointBorderColor: "#e6f0ff",
+            pointBorderWidth: 2,
+            borderWidth: 3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            padding: 12,
+            backgroundColor: "#111827",
+            titleFont: { family: "Roboto", size: 14, weight: "700" },
+            bodyFont: { family: "Roboto", size: 13 },
+            callbacks: {
+              title: (items) => items[0]?.label ?? "",
+              label: (item) => ` ${formatMoneyRub(item.parsed.y)}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 8,
+              color: "#6b7280",
+              font: { family: "Roboto", size: 12 },
+            },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: "rgba(17, 24, 39, 0.08)" },
+            ticks: {
+              count: 4,
+              color: "#6b7280",
+              font: { family: "Roboto", size: 12 },
+              callback: (value) => formatMoneyRub(value),
+            },
+          },
+        },
+        layout: {
+          padding: { top: 6, right: 6, left: 6, bottom: 0 },
+        },
+      },
     });
+  }
 
-    this.elements.dailyModalList.appendChild(fragment);
+  destroyDailyChart() {
+    if (this.dailyChartInstance) {
+      this.dailyChartInstance.destroy();
+      this.dailyChartInstance = null;
+    }
   }
 
   renderCategories() {
