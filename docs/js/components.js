@@ -404,11 +404,6 @@ export class UIManager {
         ? formatMoney(averageValue)
         : "–";
     }
-    if (this.elements.sumDailyDays) {
-      this.elements.sumDailyDays.textContent = hasData
-        ? `За ${daysWithData} дн. с фактом`
-        : "Нет данных по дням";
-    }
     if (this.elements.dailyAverageCard) {
       this.elements.dailyAverageCard.classList.toggle("is-disabled", !hasData);
       this.elements.dailyAverageCard.setAttribute("aria-disabled", String(!hasData));
