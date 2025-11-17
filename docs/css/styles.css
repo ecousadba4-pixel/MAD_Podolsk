@@ -1490,18 +1490,22 @@
 
     .modal-list {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 10px;
+      grid-template-columns: 1fr;
+      row-gap: 6px;
+      padding: 4px 0;
     }
 
     .modal-row {
-      padding: 12px 14px;
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
-      justify-content: space-between;
-      background: var(--bg-muted);
+      column-gap: 16px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .modal-row:last-child {
+      border-bottom: none;
     }
 
     .modal-row-date {
@@ -1512,6 +1516,7 @@
     .modal-row-value {
       font-weight: 700;
       color: var(--text-main);
+      text-align: right;
     }
 
     /* Print: 1 страница A4 */
