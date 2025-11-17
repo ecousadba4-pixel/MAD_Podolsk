@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -8,6 +9,8 @@ from psycopg2.extras import RealDictCursor
 
 from .db import get_connection
 from .models import DashboardItem, DashboardSummary, DailyRevenue
+
+logger = logging.getLogger(__name__)
 
 
 ITEMS_SQL = """
@@ -141,6 +144,7 @@ def _aggregate_items_streaming(cursor) -> list[DashboardItem]:
 
 
 def _fetch_daily_fact_totals(conn, month_start: date) -> list[DailyRevenue]:
+    """Извлекает дневные суммы фактических работ. При ошибке логирует и возвращает пусто."""
     daily_rows: list[DailyRevenue] = []
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         try:
@@ -151,9 +155,14 @@ def _fetch_daily_fact_totals(conn, month_start: date) -> list[DailyRevenue]:
                 if amount is None or work_date is None:
                     continue
                 daily_rows.append(DailyRevenue(date=work_date, amount=amount))
-        except Exception:
-            # Если таблицы или поля отсутствуют, просто возвращаем пустой список,
-            # чтобы не ломать основной сценарий.
+        except Exception as exc:
+            # Логируем ошибку для отладки (может быть отсутствие таблицы или полей)
+            logger.warning(
+                "Не удалось загрузить дневные суммы за %s: %s. Используется пустой список.",
+                month_start,
+                exc,
+                exc_info=True,
+            )
             conn.rollback()
             return []
 
