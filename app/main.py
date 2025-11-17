@@ -1,11 +1,36 @@
 from __future__ import annotations
+from __future__ import annotations
+
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .db import close_pool
 from .routers import dashboard
+
+
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
+def _apply_no_cache(response):
+    response.headers.update(NO_CACHE_HEADERS)
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """StaticFiles, принуждающий браузер всегда запрашивать свежие ассеты."""
+
+    async def get_response(self, path, scope):  # noqa: WPS110 - переопределение API Starlette
+        response = await super().get_response(path, scope)
+        if response.status_code < 400:
+            _apply_no_cache(response)
+        return response
 
 
 def create_app() -> FastAPI:
@@ -30,9 +55,7 @@ def create_app() -> FastAPI:
         # Чтобы новый фронтенд загружался сразу после деплоя,
         # отключаем кеширование HTML-оболочки (она содержит ссылки на свежие ассеты).
         if content_type.startswith("text/html") and "cache-control" not in response.headers:
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-            response.headers["Pragma"] = "no-cache"
-            response.headers["Expires"] = "0"
+            _apply_no_cache(response)
 
         return response
 
@@ -41,6 +64,13 @@ def create_app() -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    static_root = Path(__file__).resolve().parent.parent / "docs"
+    app.mount(
+        "/",
+        NoCacheStaticFiles(directory=str(static_root), html=True),
+        name="frontend",
+    )
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:  # noqa: WPS430 - FastAPI hook
