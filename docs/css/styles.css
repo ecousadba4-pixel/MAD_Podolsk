@@ -1465,7 +1465,7 @@
       border-radius: 18px;
       box-shadow: var(--shadow-soft);
       padding: 18px;
-      width: min(720px, 100%);
+      width: min(620px, 100%);
       border: 1px solid var(--border-soft);
       max-height: calc(100vh - 32px);
       display: flex;
@@ -1513,14 +1513,15 @@
     }
 
     .modal-body {
-      max-height: min(60vh, 540px);
+      max-height: min(72vh, 700px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       position: relative;
       scrollbar-width: thin;
-      scrollbar-color: var(--accent) rgba(47, 111, 237, 0.12);
+      scrollbar-color: var(--accent) var(--accent-soft);
       flex: 1;
       min-height: 0;
+      padding-right: 12px;
     }
 
     .modal-body::-webkit-scrollbar {
@@ -1528,7 +1529,7 @@
     }
 
     .modal-body::-webkit-scrollbar-track {
-      background: rgba(47, 111, 237, 0.08);
+      background: var(--accent-soft);
       border-radius: 12px;
     }
 
