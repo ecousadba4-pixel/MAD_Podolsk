@@ -56,12 +56,12 @@ SUMMARY_SQL = """
 
 DAILY_FACT_SQL = """
     SELECT
-        work_date::date AS work_date,
-        SUM(fact_amount_done) AS fact_total
-    FROM skpdi_fact_agg
-    WHERE date_trunc('month', work_date) = %s
+        date_done::date AS work_date,
+        SUM(total_amount) AS fact_total
+    FROM skpdi_fact_with_money
+    WHERE month_start = %s
     GROUP BY work_date
-    HAVING SUM(fact_amount_done) IS NOT NULL
+    HAVING SUM(total_amount) IS NOT NULL
     ORDER BY work_date;
 """
 
@@ -162,10 +162,13 @@ def _fetch_daily_fact_totals(conn, month_start: date) -> list[DailyRevenue]:
 def _calculate_daily_average(daily_rows: list[DailyRevenue]) -> float | None:
     if not daily_rows:
         return None
-    positive_rows = [row.amount for row in daily_rows if row.amount is not None]
-    if not positive_rows:
+    today = date.today()
+    amounts_without_today = [
+        row.amount for row in daily_rows if row.amount is not None and row.date != today
+    ]
+    if not amounts_without_today:
         return None
-    return sum(positive_rows) / len(positive_rows)
+    return sum(amounts_without_today) / len(amounts_without_today)
 
 
 def fetch_plan_vs_fact_for_month(
@@ -198,13 +201,18 @@ def fetch_plan_vs_fact_for_month(
 
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(SUMMARY_SQL, (month_start,))
-            summary_row = cur.fetchone()
-            if summary_row and summary_row["planned_total"] is not None:
+            summary_row = cur.fetchone() or {}
+            has_financial_data = (
+                summary_row.get("planned_total") is not None
+                or summary_row.get("fact_total") is not None
+                or bool(daily_revenue)
+            )
+            if has_financial_data:
                 summary = DashboardSummary(
-                    planned_amount=_to_float(summary_row["planned_total"]) or 0.0,
-                    fact_amount=_to_float(summary_row["fact_total"]) or 0.0,
-                    completion_pct=_to_float(summary_row["completion_pct"]),
-                    delta_amount=_to_float(summary_row["delta_amount"]) or 0.0,
+                    planned_amount=_to_float(summary_row.get("planned_total")) or 0.0,
+                    fact_amount=_to_float(summary_row.get("fact_total")) or 0.0,
+                    completion_pct=_to_float(summary_row.get("completion_pct")),
+                    delta_amount=_to_float(summary_row.get("delta_amount")) or 0.0,
                     average_daily_revenue=average_daily_revenue,
                     daily_revenue=daily_revenue,
                 )
