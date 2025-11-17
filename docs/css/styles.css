@@ -476,6 +476,13 @@
       .summary-sub {
         font-size: 0.68rem;
       }
+
+      .summary-label {
+        min-height: 2.1em;
+        line-height: 1.15;
+        display: flex;
+        align-items: flex-start;
+      }
     }
 
     @media (min-width: 768px) {
