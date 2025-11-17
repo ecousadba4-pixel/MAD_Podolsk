@@ -1,9 +1,10 @@
 export function cacheDomElements(selectorMap) {
-  const result = {};
-  Object.entries(selectorMap).forEach(([key, selector]) => {
-    result[key] = document.querySelector(selector);
-  });
-  return result;
+  return Object.fromEntries(
+    Object.entries(selectorMap).map(([key, selector]) => [
+      key,
+      document.querySelector(selector),
+    ])
+  );
 }
 
 export function formatMoney(value) {
@@ -57,12 +58,8 @@ export function calculateDelta(item) {
 
 export function debounce(func, wait) {
   let timeout;
-  return function debounced(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
+  return (...args) => {
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+    timeout = setTimeout(() => func(...args), wait);
   };
 }
