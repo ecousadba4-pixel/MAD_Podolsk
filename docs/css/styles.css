@@ -1488,37 +1488,30 @@
       padding: 8px 0;
     }
 
-    .daily-chart-wrapper {
-      padding: 8px 2px 4px;
-    }
-
-    .daily-chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 10px;
+    .modal-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 10px;
     }
 
-    .daily-chart-title {
-      font-weight: 700;
-      font-size: 1.05rem;
+    .modal-row {
+      padding: 12px 14px;
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-muted);
+    }
+
+    .modal-row-date {
+      font-weight: 600;
       color: var(--text-main);
     }
 
-    .daily-chart {
-      position: relative;
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      background: var(--bg-muted);
-      padding: 10px 12px 14px;
-      min-height: 260px;
-    }
-
-    .daily-chart canvas {
-      width: 100% !important;
-      height: 100% !important;
-      display: block;
+    .modal-row-value {
+      font-weight: 700;
+      color: var(--text-main);
     }
 
     /* Print: 1 страница A4 */
