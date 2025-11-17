@@ -1467,6 +1467,9 @@
       padding: 18px;
       width: min(720px, 100%);
       border: 1px solid var(--border-soft);
+      max-height: calc(100vh - 32px);
+      display: flex;
+      flex-direction: column;
     }
 
     .modal-header {
@@ -1511,7 +1514,54 @@
 
     .modal-body {
       max-height: min(60vh, 540px);
-      overflow: auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent) rgba(47, 111, 237, 0.12);
+      flex: 1;
+      min-height: 0;
+    }
+
+    .modal-body::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .modal-body::-webkit-scrollbar-track {
+      background: rgba(47, 111, 237, 0.08);
+      border-radius: 12px;
+    }
+
+    .modal-body::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+      border-radius: 12px;
+      box-shadow: inset 0 0 0 2px var(--bg-card);
+    }
+
+    @media (max-width: 767px) {
+      .modal {
+        width: 100%;
+      }
+
+      .modal-body {
+        max-height: none;
+        padding-right: 6px;
+      }
+
+      /* Визуальный индикатор прокрутки для мобильных, чтобы подсказать пользователю, что контент скроллится */
+      .modal-body::after {
+        content: "";
+        position: absolute;
+        top: 12px;
+        bottom: 12px;
+        right: 2px;
+        width: 4px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(47, 111, 237, 0.55), rgba(30, 79, 216, 0.5));
+        box-shadow: 0 0 0 1px rgba(47, 111, 237, 0.1);
+        opacity: 0.8;
+        pointer-events: none;
+      }
     }
 
     .modal-empty {
