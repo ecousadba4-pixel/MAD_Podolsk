@@ -419,6 +419,28 @@
       box-shadow: 0 8px 22px rgba(47, 111, 237, 0.14);
     }
 
+    @media (min-width: 768px) {
+      .pdf-action-desktop .btn-airy {
+        background: linear-gradient(180deg, #ffffff 0%, #f5f6fb 100%);
+        color: var(--text-main);
+        border: 1px solid var(--border-soft);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+        min-height: 54px;
+        padding: 0 18px;
+      }
+
+      .pdf-action-desktop .btn-airy:hover:not(:disabled) {
+        background: linear-gradient(180deg, #ffffff 0%, #f1f4fa 100%);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .pdf-action-desktop .btn-airy:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      }
+    }
+
     .btn:active {
       transform: translateY(1px);
       box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
