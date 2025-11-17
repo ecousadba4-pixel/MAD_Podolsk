@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -22,8 +23,17 @@ def _apply_no_cache(response):
     response.headers.update(NO_CACHE_HEADERS)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Управление lifecycle приложения: инициализация и чистка ресурсов."""
+    # Startup: подготовка при запуске приложения
+    yield
+    # Shutdown: очистка при завершении приложения
+    close_pool()
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="SKPDI Dashboard API")
+    app = FastAPI(title="SKPDI Dashboard API", lifespan=lifespan)
 
     allow_all_origins = "*" in settings.allowed_origins_list
     allow_origins = ["*"] if allow_all_origins else settings.allowed_origins_list
@@ -60,10 +70,6 @@ def create_app() -> FastAPI:
         StaticFiles(directory=str(static_root), html=True),
         name="frontend",
     )
-
-    @app.on_event("shutdown")
-    async def _shutdown() -> None:  # noqa: WPS430 - FastAPI hook
-        close_pool()
 
     return app
 
