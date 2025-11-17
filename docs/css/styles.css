@@ -910,6 +910,16 @@
       box-shadow: var(--shadow-soft);
     }
 
+    @media (min-width: 768px) {
+      .work-list.has-data .work-list-scroller .work-row:nth-child(odd) {
+        background: #fff;
+      }
+
+      .work-list.has-data .work-list-scroller .work-row:nth-child(even) {
+        background: linear-gradient(90deg, rgba(47, 111, 237, 0.03) 0%, rgba(47, 111, 237, 0.05) 100%);
+      }
+    }
+
     .work-row {
       display: grid;
       grid-template-columns: minmax(0, 4fr) repeat(3, minmax(0, 0.7fr));
