@@ -49,17 +49,26 @@
         <div class="summary-label">Факт, ₽</div>
         <div class="summary-value" id="sum-fact">–</div>
         <div class="summary-sub">Сумма принятых работ</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">% исполнения</div>
-        <div class="summary-value" id="sum-complete">–</div>
-        <div class="summary-sub">Факт / План</div>
+        <div class="summary-progress" id="fact-progress" aria-live="polite">
+          <div class="summary-progress-labels">
+            <span>Исполнение</span>
+            <strong id="sum-fact-progress-label">–</strong>
+          </div>
+          <div class="summary-progress-bar">
+            <div class="summary-progress-fill" id="sum-fact-progress"></div>
+          </div>
+        </div>
       </div>
       <div class="summary-card">
         <div class="summary-label">Отклонение, ₽</div>
         <div class="summary-value" id="sum-delta">–</div>
         <div class="summary-sub">Факт − План</div>
       </div>
+      <button class="summary-card summary-card-interactive" id="daily-average-card" type="button">
+        <div class="summary-label">Среднедневная выручка, ₽</div>
+        <div class="summary-value" id="sum-daily-average">–</div>
+        <div class="summary-sub" id="sum-daily-days">Нет данных по дням</div>
+      </button>
     </section>
     <section class="summary-grid skeleton-grid" id="summary-skeleton" aria-hidden="true">
       <div class="summary-card summary-card-skeleton">
@@ -188,6 +197,26 @@
       </button>
     </div>
 
+  </div>
+
+  <div class="modal-backdrop" id="daily-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="daily-modal-title">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="daily-modal-title">Дневная выручка</div>
+          <div class="modal-subtitle" id="daily-modal-subtitle">По дням выбранного месяца</div>
+        </div>
+        <button class="modal-close" type="button" id="daily-modal-close" aria-label="Закрыть">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke="currentColor">
+            <path d="M6 6l12 12M6 18 18 6" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="daily-modal-body">
+        <div class="modal-empty" id="daily-modal-empty">Нет данных по дням</div>
+        <div class="modal-list" id="daily-modal-list"></div>
+      </div>
+    </div>
   </div>
 
   <div class="print-report" id="print-report" aria-hidden="true">

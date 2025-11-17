@@ -33,11 +33,18 @@ class DashboardItem(BaseModel):
         return fact_val - plan_val
 
 
+class DailyRevenue(BaseModel):
+    date: date
+    amount: float
+
+
 class DashboardSummary(BaseModel):
     planned_amount: float
     fact_amount: float
     completion_pct: float | None = None
     delta_amount: float
+    average_daily_revenue: float | None = None
+    daily_revenue: list[DailyRevenue] | None = None
 
 
 class DashboardResponse(BaseModel):

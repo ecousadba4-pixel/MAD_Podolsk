@@ -124,7 +124,19 @@ export class DataManager {
       : planned !== null || fact !== null
         ? (fact ?? 0) - (planned ?? 0)
         : null;
-    return { planned, fact, completion, delta };
+    const dailyRevenue = Array.isArray(summary.daily_revenue)
+      ? summary.daily_revenue
+          .map((item) => {
+            const amount = normalizeAmount(item?.amount ?? item?.fact_total ?? item?.value);
+            const date = item?.date || item?.work_date || item?.day;
+            if (!date || amount === null) return null;
+            return { date, amount };
+          })
+          .filter(Boolean)
+      : [];
+    const averageDailyRevenue = normalizeAmount(summary.average_daily_revenue)
+      ?? (dailyRevenue.length ? dailyRevenue.reduce((acc, item) => acc + item.amount, 0) / dailyRevenue.length : null);
+    return { planned, fact, completion, delta, dailyRevenue, averageDailyRevenue };
   }
 
   buildCategories(items = []) {

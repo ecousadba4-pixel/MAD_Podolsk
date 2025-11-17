@@ -7,7 +7,7 @@ from typing import Any
 from psycopg2.extras import RealDictCursor
 
 from .db import get_connection
-from .models import DashboardItem, DashboardSummary
+from .models import DashboardItem, DashboardSummary, DailyRevenue
 
 
 ITEMS_SQL = """
@@ -52,6 +52,17 @@ SUMMARY_SQL = """
         CASE WHEN planned_total <> 0 THEN fact_total / planned_total END AS completion_pct,
         fact_total - planned_total AS delta_amount
     FROM agg;
+"""
+
+DAILY_FACT_SQL = """
+    SELECT
+        work_date::date AS work_date,
+        SUM(fact_amount_done) AS fact_total
+    FROM skpdi_fact_agg
+    WHERE date_trunc('month', work_date) = %s
+    GROUP BY work_date
+    HAVING SUM(fact_amount_done) IS NOT NULL
+    ORDER BY work_date;
 """
 
 
@@ -128,6 +139,34 @@ def _aggregate_items_streaming(cursor) -> list[DashboardItem]:
     return aggregated_items
 
 
+def _fetch_daily_fact_totals(conn, month_start: date) -> list[DailyRevenue]:
+    daily_rows: list[DailyRevenue] = []
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        try:
+            cur.execute(DAILY_FACT_SQL, (month_start,))
+            for row in cur.fetchall() or []:
+                amount = _to_float(row.get("fact_total"))
+                work_date = row.get("work_date")
+                if amount is None or work_date is None:
+                    continue
+                daily_rows.append(DailyRevenue(date=work_date, amount=amount))
+        except Exception:
+            # Если таблицы или поля отсутствуют, просто возвращаем пустой список,
+            # чтобы не ломать основной сценарий.
+            return []
+
+    return daily_rows
+
+
+def _calculate_daily_average(daily_rows: list[DailyRevenue]) -> float | None:
+    if not daily_rows:
+        return None
+    positive_rows = [row.amount for row in daily_rows if row.amount is not None]
+    if not positive_rows:
+        return None
+    return sum(positive_rows) / len(positive_rows)
+
+
 def fetch_plan_vs_fact_for_month(
     month_start: date,
 ) -> tuple[list[DashboardItem], DashboardSummary | None, datetime | None]:
@@ -147,6 +186,9 @@ def fetch_plan_vs_fact_for_month(
             cur.execute(ITEMS_SQL, (month_start,))
             items = _aggregate_items_streaming(cur)
 
+        daily_revenue = _fetch_daily_fact_totals(conn, month_start)
+        average_daily_revenue = _calculate_daily_average(daily_revenue)
+
         with conn.cursor() as cur:
             cur.execute(LAST_UPDATED_SQL)
             res = cur.fetchone()
@@ -162,6 +204,8 @@ def fetch_plan_vs_fact_for_month(
                     fact_amount=_to_float(summary_row["fact_total"]) or 0.0,
                     completion_pct=_to_float(summary_row["completion_pct"]),
                     delta_amount=_to_float(summary_row["delta_amount"]) or 0.0,
+                    average_daily_revenue=average_daily_revenue,
+                    daily_revenue=daily_revenue,
                 )
 
     return items, summary, last_updated

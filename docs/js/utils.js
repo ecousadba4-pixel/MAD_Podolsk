@@ -27,6 +27,13 @@ export function formatDateTime(iso) {
   return d.toLocaleString("ru-RU");
 }
 
+export function formatDate(value, options = { day: "2-digit", month: "long" }) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("ru-RU", options);
+}
+
 export function showToast(message, type = "success") {
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;

@@ -3,6 +3,7 @@ import {
   formatPercent,
   formatMoneyRub,
   formatDateTime,
+  formatDate,
   showToast,
   calculateDelta,
   debounce,
@@ -27,6 +28,8 @@ export class UIManager {
     this.activeCategoryKey = null;
     this.workHeaderEl = null;
     this.liveRegion = null;
+    this.metrics = null;
+    this.dailyRevenue = [];
     this.currentSearchTerm = "";
     this.workSort = { column: "planned" };
     if (this.elements.workSortSelect) {
@@ -159,6 +162,19 @@ export class UIManager {
       });
     }
     this.elements.pdfButton.addEventListener("click", (event) => this.downloadPdfReport(event));
+    if (this.elements.dailyAverageCard) {
+      this.elements.dailyAverageCard.addEventListener("click", () => this.openDailyModal());
+    }
+    if (this.elements.dailyModalClose) {
+      this.elements.dailyModalClose.addEventListener("click", () => this.closeDailyModal());
+    }
+    if (this.elements.dailyModal) {
+      this.elements.dailyModal.addEventListener("click", (event) => {
+        if (event.target === this.elements.dailyModal) {
+          this.closeDailyModal();
+        }
+      });
+    }
   }
 
   async initMonthSelect() {
@@ -258,8 +274,9 @@ export class UIManager {
     this.elements.lastUpdatedText.textContent = "Загрузка данных…";
     this.elements.sumPlanned.textContent = "…";
     this.elements.sumFact.textContent = "…";
-    this.elements.sumComplete.textContent = "…";
     this.elements.sumDelta.textContent = "…";
+    this.updateSummaryProgress(null, "…");
+    this.updateDailyAverage(null, 0);
     this.setActiveCategoryTitle("Загрузка...");
     this.elements.workEmptyState.style.display = "none";
     this.elements.workList.classList.remove("has-data");
@@ -277,9 +294,10 @@ export class UIManager {
     this.elements.lastUpdatedText.textContent = "Ошибка загрузки данных";
     this.elements.sumPlanned.textContent = "–";
     this.elements.sumFact.textContent = "–";
-    this.elements.sumComplete.textContent = "–";
     this.elements.sumDelta.textContent = "–";
     this.elements.sumDelta.classList.remove("positive", "negative");
+    this.updateSummaryProgress(null, "–");
+    this.updateDailyAverage(null, 0);
     this.setActiveCategoryTitle("Смета не выбрана");
     this.elements.searchInput.disabled = true;
     this.elements.workList.classList.remove("has-data");
@@ -316,21 +334,121 @@ export class UIManager {
 
   renderSummary() {
     const metrics = this.dataManager.calculateMetrics(this.dataManager.getCurrentData());
+    this.metrics = metrics;
     if (!metrics) {
       this.elements.sumPlanned.textContent = "–";
       this.elements.sumFact.textContent = "–";
-      this.elements.sumComplete.textContent = "–";
       this.elements.sumDelta.textContent = "–";
       this.elements.sumDelta.classList.remove("positive", "negative");
+      this.dailyRevenue = [];
+      this.updateSummaryProgress(null, "–");
+      this.updateDailyAverage(null, 0);
       return;
     }
+
+    this.dailyRevenue = Array.isArray(metrics.dailyRevenue) ? metrics.dailyRevenue : [];
     this.elements.sumPlanned.textContent = formatMoney(metrics.planned);
     this.elements.sumFact.textContent = formatMoney(metrics.fact);
-    this.elements.sumComplete.textContent = formatPercent(metrics.completion);
     this.elements.sumDelta.textContent = formatMoney(metrics.delta);
     this.elements.sumDelta.classList.remove("positive", "negative");
     if (metrics.delta > 0) this.elements.sumDelta.classList.add("positive");
     if (metrics.delta < 0) this.elements.sumDelta.classList.add("negative");
+
+    const completionLabel = metrics.completion !== null && metrics.completion !== undefined
+      ? formatPercent(metrics.completion)
+      : "–";
+    this.updateSummaryProgress(metrics.completion, completionLabel);
+    this.updateDailyAverage(metrics.averageDailyRevenue, this.dailyRevenue.length);
+  }
+
+  updateSummaryProgress(completion, label) {
+    const percent = completion !== null && completion !== undefined && !Number.isNaN(completion)
+      ? Math.max(0, completion * 100)
+      : 0;
+    const progressWidth = Math.min(115, percent);
+    const cappedHue = Math.min(120, Math.max(0, percent));
+    const progressColor = percent > 100
+      ? "#16a34a"
+      : `hsl(${cappedHue}, 78%, ${percent >= 50 ? 43 : 47}%)`;
+
+    if (this.elements.sumFactProgress) {
+      this.elements.sumFactProgress.style.width = `${progressWidth}%`;
+      this.elements.sumFactProgress.classList.toggle("overflow", percent > 100);
+      this.elements.sumFactProgress.style.setProperty("--progress-color", progressColor);
+    }
+    if (this.elements.sumFactProgressLabel) {
+      this.elements.sumFactProgressLabel.textContent = label;
+    }
+  }
+
+  updateDailyAverage(averageValue, daysWithData) {
+    const hasData = Number.isFinite(daysWithData) && daysWithData > 0;
+    if (this.elements.sumDailyAverage) {
+      this.elements.sumDailyAverage.textContent = averageValue !== null
+        && averageValue !== undefined
+        && !Number.isNaN(averageValue)
+        ? formatMoney(averageValue)
+        : "–";
+    }
+    if (this.elements.sumDailyDays) {
+      this.elements.sumDailyDays.textContent = hasData
+        ? `За ${daysWithData} дн. с фактом`
+        : "Нет данных по дням";
+    }
+    if (this.elements.dailyAverageCard) {
+      this.elements.dailyAverageCard.classList.toggle("is-disabled", !hasData);
+      this.elements.dailyAverageCard.setAttribute("aria-disabled", String(!hasData));
+    }
+  }
+
+  openDailyModal() {
+    if (!this.dailyRevenue.length || !this.elements.dailyModal) {
+      return;
+    }
+    this.renderDailyModalList();
+    this.elements.dailyModal.classList.add("visible");
+    this.elements.dailyModal.setAttribute("aria-hidden", "false");
+  }
+
+  closeDailyModal() {
+    if (!this.elements.dailyModal) return;
+    this.elements.dailyModal.classList.remove("visible");
+    this.elements.dailyModal.setAttribute("aria-hidden", "true");
+  }
+
+  renderDailyModalList() {
+    if (!this.elements.dailyModalList || !this.elements.dailyModalEmpty) return;
+
+    const monthLabel = this.getSelectedMonthLabel() || "выбранный месяц";
+    if (this.elements.dailyModalSubtitle) {
+      this.elements.dailyModalSubtitle.textContent = `По дням за ${monthLabel.toLowerCase()}`;
+    }
+
+    this.elements.dailyModalList.innerHTML = "";
+    const sorted = [...this.dailyRevenue].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (!sorted.length) {
+      this.elements.dailyModalEmpty.style.display = "block";
+      this.elements.dailyModalList.style.display = "none";
+      return;
+    }
+
+    this.elements.dailyModalEmpty.style.display = "none";
+    this.elements.dailyModalList.style.display = "grid";
+
+    const fragment = document.createDocumentFragment();
+    sorted.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "modal-row";
+      const dateLabel = formatDate(item.date);
+      row.innerHTML = `
+        <div class="modal-row-date">${dateLabel}</div>
+        <div class="modal-row-value">${formatMoneyRub(item.amount)}</div>
+      `;
+      fragment.appendChild(row);
+    });
+
+    this.elements.dailyModalList.appendChild(fragment);
   }
 
   renderCategories() {
