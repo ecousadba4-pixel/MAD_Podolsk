@@ -482,6 +482,7 @@ export class UIManager {
       card.className = `category-card${category.key === this.activeCategoryKey ? " active" : ""}`;
       card.style.setProperty("--accent", palette.accent);
       card.style.setProperty("--accent-soft", palette.soft);
+      const isOffPlanCategory = typeof category.key === "string" && category.key.toLowerCase() === "внерегламент";
       const deltaClass = category.delta > 0 ? "delta-positive" : category.delta < 0 ? "delta-negative" : "";
       const completion = category.planned ? (category.fact ?? 0) / category.planned : null;
       const hasProgress = completion !== null && !Number.isNaN(completion) && Number.isFinite(completion);
@@ -495,10 +496,13 @@ export class UIManager {
         : `hsl(${cappedHue}, 78%, ${progressPercent >= 50 ? 43 : 47}%)`;
       const progressStyle = `width: ${progressWidth}%; --progress-color: ${progressColor};`;
       const ariaValue = hasProgress ? Math.min(120, progressPercent).toFixed(1) : "0";
+      const categoryTitleNote = isOffPlanCategory
+        ? '<span class="category-offplan-note"><span>30% от</span><span>общего плана</span></span>'
+        : `<span class="category-pill">${category.works.length} работ</span>`;
       card.innerHTML = `
         <div class="category-title">
           <span>${category.title}</span>
-          <span class="category-pill">${category.works.length} работ</span>
+          ${categoryTitleNote}
         </div>
         <div class="category-values">
           <span><span class="label">План</span><strong>${formatMoney(category.planned)}</strong></span>
