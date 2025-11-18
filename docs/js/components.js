@@ -336,8 +336,11 @@ export class UIManager {
     const lastUpdatedLabel = data.has_data
       ? formatDateTime(data.last_updated)
       : "Нет данных";
+    const lastUpdatedDateLabel = data.has_data
+      ? formatDate(data.last_updated, { day: "2-digit", month: "long", year: "numeric" })
+      : "Нет данных";
     this.elements.lastUpdatedText.textContent = lastUpdatedLabel;
-    this.updateContractTitleDate(lastUpdatedLabel);
+    this.updateContractTitleDate(lastUpdatedDateLabel);
     const hasAnyData = data.has_data && items.length > 0;
     this.elements.pdfButton.disabled = !hasAnyData;
     this.renderSummary();
