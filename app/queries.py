@@ -26,7 +26,6 @@ ITEMS_SQL = """
     LEFT JOIN skpdi_rates AS rates
         ON TRIM(LOWER(rates.work_name)) = TRIM(LOWER(pvf.description))
     WHERE pvf.month_start = %s
-        AND COALESCE(TRIM(LOWER(pvf.smeta_code)), '') NOT IN ('внерегл_ч_1', 'внерегл_ч_2')
     ORDER BY ABS(COALESCE(pvf.delta_amount_done, 0)) DESC, pvf.description;
 """
 
@@ -50,11 +49,14 @@ LAST_UPDATED_SQL = """
 SUMMARY_SQL = """
     WITH agg AS (
         SELECT
-            SUM(planned_amount) AS planned_total,
+            SUM(CASE
+                    WHEN COALESCE(TRIM(LOWER(smeta_code)), '') IN ('внерегл_ч_1', 'внерегл_ч_2')
+                        THEN 0
+                    ELSE planned_amount
+                END) AS planned_total,
             SUM(fact_amount_done) AS fact_total
         FROM skpdi_plan_vs_fact_monthly
         WHERE month_start = %s
-            AND COALESCE(TRIM(LOWER(smeta_code)), '') NOT IN ('внерегл_ч_1', 'внерегл_ч_2')
     )
     SELECT
         planned_total,
@@ -196,8 +198,6 @@ def _aggregate_items_streaming(cursor) -> list[DashboardItem]:
     items_map: dict[tuple[str | None, str | None, str | None, str], dict[str, Any]] = {}
     
     for row in cursor:
-        if _is_vnr_row(row):
-            continue
         category, smeta, work_name, description = _extract_strings(row)
         key = (category, smeta, work_name, description)
 
@@ -213,7 +213,7 @@ def _aggregate_items_streaming(cursor) -> list[DashboardItem]:
             }
             items_map[key] = item
 
-        planned_value = _to_float(row.get("planned_amount"))
+        planned_value = None if _is_vnr_row(row) else _to_float(row.get("planned_amount"))
         if planned_value is not None:
             item["planned_amount"] = (item["planned_amount"] or 0.0) + planned_value
 
