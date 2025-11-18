@@ -11,7 +11,14 @@ from .db import get_connection
 
 logger = logging.getLogger(__name__)
 
-INSERT_VISIT_SQL = """
+_unique_index_created = False
+
+CREATE_UNIQUE_SESSION_INDEX_SQL = """
+    CREATE UNIQUE INDEX IF NOT EXISTS dashboard_visits_user_session_uidx
+        ON dashboard_visits (user_id, session_id);
+"""
+
+UPSERT_VISIT_SQL = """
     INSERT INTO dashboard_visits (
         endpoint,
         client_ip,
@@ -23,7 +30,23 @@ INSERT_VISIT_SQL = """
         browser,
         os
     )
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ON CONFLICT (user_id, session_id) DO UPDATE
+        SET visited_at = CURRENT_TIMESTAMP,
+            endpoint = EXCLUDED.endpoint,
+            client_ip = EXCLUDED.client_ip,
+            user_agent = EXCLUDED.user_agent,
+            session_duration_sec = COALESCE(
+                GREATEST(
+                    dashboard_visits.session_duration_sec,
+                    EXCLUDED.session_duration_sec
+                ),
+                EXCLUDED.session_duration_sec,
+                dashboard_visits.session_duration_sec
+            ),
+            device_type = EXCLUDED.device_type,
+            browser = EXCLUDED.browser,
+            os = EXCLUDED.os;
 """
 
 
@@ -143,6 +166,21 @@ def _parse_user_agent(user_agent: str | None) -> tuple[str | None, str | None, s
     return device_type, browser, os
 
 
+def _ensure_unique_index(cur) -> None:
+    global _unique_index_created
+    if _unique_index_created:
+        return
+
+    try:
+        cur.execute(CREATE_UNIQUE_SESSION_INDEX_SQL)
+    except Exception as exc:  # pragma: no cover - защита от неожиданных ошибок
+        logger.warning(
+            "Не удалось создать уникальный индекс по user_id и session_id: %s", exc
+        )
+    else:
+        _unique_index_created = True
+
+
 def log_dashboard_visit(
     *,
     request: Request,
@@ -181,17 +219,17 @@ def log_dashboard_visit(
 
     try:
         with get_connection() as conn, conn.cursor() as cur:
-            cur.execute(INSERT_VISIT_SQL, values)
+            _ensure_unique_index(cur)
+            cur.execute(UPSERT_VISIT_SQL, values)
             conn.commit()
     except IntegrityError as exc:
-        # Может быть duplicate constraint если есть уникальный индекс на (session_id, endpoint)
         logger.debug(
-            "Duplicate visit record для %s (session_id=%s): %s. Это нормально.",
+            "Duplicate visit record для %s (user_id=%s, session_id=%s): %s. Это нормально.",
             endpoint,
+            user_id,
             session_id,
             exc,
         )
-        # Откатываем транзакцию чтобы очистить состояние соединения
         try:
             conn.rollback()
         except Exception:
