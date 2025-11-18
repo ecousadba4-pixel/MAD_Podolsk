@@ -63,3 +63,17 @@ export function debounce(func, wait) {
     timeout = setTimeout(() => func(...args), wait);
   };
 }
+
+export function normalizeAmount(value) {
+  if (value === null || value === undefined) return null;
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+export function setElementsDisabled(elements, disabled = true) {
+  Object.values(elements).forEach(el => {
+    if (el && typeof el.disabled === "boolean") {
+      el.disabled = disabled;
+    }
+  });
+}

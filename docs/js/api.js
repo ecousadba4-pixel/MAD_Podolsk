@@ -1,4 +1,4 @@
-import { calculateDelta } from "./utils.js";
+import { calculateDelta, normalizeAmount } from "./utils.js";
 
 const MERGED_SMETA_OVERRIDES = {
   "внерегл_ч_1": { key: "внерегламент", title: "внерегламент" },
@@ -7,14 +7,6 @@ const MERGED_SMETA_OVERRIDES = {
 
 const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
 const DEFAULT_RETRY_DELAY_MS = 700;
-
-function normalizeAmount(value) {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  const numeric = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
-}
 
 function hasMeaningfulAmount(value) {
   const normalized = normalizeAmount(value);

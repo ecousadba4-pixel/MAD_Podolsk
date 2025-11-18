@@ -1,4 +1,4 @@
-import { cacheDomElements } from "./utils.js";
+import { cacheDomElements, setElementsDisabled } from "./utils.js";
 import { DataManager } from "./api.js";
 import { UIManager } from "./components.js";
 import { VisitorTracker } from "./visitor.js";
@@ -64,15 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const pdfButtonDefaultLabel = DOM.pdfButton ? DOM.pdfButton.innerHTML : "Скачать PDF";
-  if (DOM.pdfButton) {
-    DOM.pdfButton.disabled = true;
-  }
-  if (DOM.searchInput) {
-    DOM.searchInput.disabled = true;
-  }
-  if (DOM.workSortSelect) {
-    DOM.workSortSelect.disabled = true;
-  }
+  setElementsDisabled({
+    pdfButton: DOM.pdfButton,
+    searchInput: DOM.searchInput,
+    workSortSelect: DOM.workSortSelect,
+  }, true);
 
   const pdfMobileMediaQuery = window.matchMedia("(max-width: 767px)");
   const movePdfButton = (isMobile) => {

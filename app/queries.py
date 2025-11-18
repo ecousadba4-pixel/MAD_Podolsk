@@ -141,16 +141,20 @@ def _to_float(value: Any) -> float | None:
         return None
 
 
+def _safe_get_from_row(row: dict[str, Any], *keys: str, default: Any = None) -> Any:
+    """Безопасно получить значение из словаря, пытаясь несколько ключей по порядку."""
+    for key in keys:
+        value = row.get(key)
+        if value:
+            return value
+    return default
+
+
 def _extract_strings(row: dict[str, Any]) -> tuple[str | None, str | None, str | None, str]:
-    description = row.get("description") or ""
-    category = row.get("category_code") or row.get("smeta")
-    smeta = (
-        row.get("smeta")
-        or row.get("smeta_name")
-        or row.get("smeta_title")
-        or row.get("section")
-    )
-    work_name = row.get("work_name") or row.get("work_title") or description
+    description = _safe_get_from_row(row, "description", default="")
+    category = _safe_get_from_row(row, "category_code", "smeta")
+    smeta = _safe_get_from_row(row, "smeta", "smeta_name", "smeta_title", "section")
+    work_name = _safe_get_from_row(row, "work_name", "work_title", default=description)
     return category, smeta, work_name, description
 
 
@@ -172,7 +176,7 @@ def _calculate_vnr_plan(items: list["DashboardItem"]) -> float:
 
 
 def _is_vnr_row(row: dict[str, Any]) -> bool:
-    smeta_code = (row.get("smeta_code") or row.get("category_code") or "").strip().lower()
+    smeta_code = (_safe_get_from_row(row, "smeta_code", "category_code", default="")).strip().lower()
     return smeta_code in _VNR_CATEGORY_CODES
 
 

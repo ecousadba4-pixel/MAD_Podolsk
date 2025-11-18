@@ -1,3 +1,5 @@
+import { normalizeAmount } from "./utils.js";
+
 function generateUuid() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -34,11 +36,7 @@ function persistCookie(name, value, { days = 365 } = {}) {
   }
 }
 
-function parseNumber(value) {
-  if (value === null || value === undefined) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
+
 
 export class VisitorTracker {
   constructor({
@@ -75,7 +73,7 @@ export class VisitorTracker {
   }
 
   restoreSessionStart() {
-    const stored = parseNumber(safeGet(sessionStorage, this.sessionStartedAtKey));
+    const stored = normalizeAmount(safeGet(sessionStorage, this.sessionStartedAtKey));
     const startedAt = stored ?? Date.now();
     safeSet(sessionStorage, this.sessionStartedAtKey, String(startedAt));
     return startedAt;
