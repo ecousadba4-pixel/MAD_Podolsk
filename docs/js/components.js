@@ -33,6 +33,7 @@ export class UIManager {
     this.dailyRevenue = [];
     this.currentSearchTerm = "";
     this.workSort = { column: "planned" };
+    this.selectedMonthIso = null;
     this.initialMonth = new URLSearchParams(window.location.search).get("month");
     if (this.elements.workSortSelect) {
       this.elements.workSortSelect.value = this.workSort.column;
@@ -247,6 +248,20 @@ export class UIManager {
     return `${year}-${month}-01`;
   }
 
+  isCurrentMonth(monthIso) {
+    if (!monthIso) {
+      return false;
+    }
+    return monthIso === this.getCurrentMonthIso();
+  }
+
+  updateDailyAverageNoteVisibility(monthIso = this.selectedMonthIso) {
+    if (!this.elements.dailyAverageNote) {
+      return;
+    }
+    this.elements.dailyAverageNote.hidden = !this.isCurrentMonth(monthIso);
+  }
+
   setMonthSelectPlaceholder(message) {
     if (!this.elements.monthSelect) {
       return;
@@ -261,6 +276,8 @@ export class UIManager {
   }
 
   async loadMonthData(monthIso) {
+    this.selectedMonthIso = monthIso;
+    this.updateDailyAverageNoteVisibility(monthIso);
     const cached = this.dataManager.getCached(monthIso);
     if (cached) {
       this.applyData(cached);
