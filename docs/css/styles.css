@@ -565,6 +565,12 @@
       }
     }
 
+    .summary-note {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .summary-value.positive {
       color: var(--success);
     }
