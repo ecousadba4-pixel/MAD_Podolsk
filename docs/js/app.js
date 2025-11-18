@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sumFactProgress: "#sum-fact-progress",
     sumFactProgressLabel: "#sum-fact-progress-label",
     sumDailyAverage: "#sum-daily-average",
+    dailyAverageNote: "#daily-average-note",
     dailyAverageCard: "#daily-average-card",
     dailyModal: "#daily-modal",
     dailyModalClose: "#daily-modal-close",
