@@ -539,10 +539,6 @@
         min-height: auto;
       }
 
-      .summary-value {
-        font-size: 0.95rem;
-      }
-
       .summary-label,
       .summary-sub {
         font-size: 0.68rem;
@@ -665,6 +661,7 @@
     }
 
     @media (max-width: 640px) {
+      .summary-value,
       .summary-card-interactive .summary-value {
         font-size: 0.95rem;
       }
@@ -691,6 +688,24 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    .summary-note-line {
+      display: inline;
+    }
+
+    @media (max-width: 640px) {
+      .summary-note {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        line-height: 1.2;
+        text-align: left;
+      }
+
+      .summary-note-line {
+        display: block;
+      }
     }
 
     .summary-value.positive {
