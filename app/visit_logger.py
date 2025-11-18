@@ -32,7 +32,7 @@ UPSERT_VISIT_SQL = """
     )
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     ON CONFLICT (user_id, session_id) DO UPDATE
-        SET visited_at = CURRENT_TIMESTAMP,
+        SET visited_at = TIMEZONE('Europe/Moscow', CURRENT_TIMESTAMP),
             endpoint = EXCLUDED.endpoint,
             client_ip = EXCLUDED.client_ip,
             user_agent = EXCLUDED.user_agent,
