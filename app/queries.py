@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Callable, TypeVar
 
+from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
 
 from .db import get_connection
@@ -16,6 +18,11 @@ logger = logging.getLogger(__name__)
 _PLAN_BASE_CATEGORIES = {"лето", "зима"}
 _VNR_CATEGORY_CODES = {"внерегл_ч_1", "внерегл_ч_2"}
 _VNR_PLAN_SHARE = Decimal("0.43")
+
+_DB_RETRYABLE_ERRORS = (OperationalError, InterfaceError)
+_DB_RETRY_DELAY_SEC = 0.7
+
+T = TypeVar("T")
 
 
 ITEMS_SQL = """
@@ -65,6 +72,33 @@ SUMMARY_SQL = """
         fact_total - planned_total AS delta_amount
     FROM agg;
 """
+
+
+def _execute_with_retry(
+    operation: Callable[[], T],
+    *,
+    retries: int = 1,
+    delay_sec: float = _DB_RETRY_DELAY_SEC,
+    label: str = "database operation",
+) -> T:
+    attempt = 0
+    while True:
+        try:
+            return operation()
+        except _DB_RETRYABLE_ERRORS as exc:
+            if attempt >= retries:
+                raise
+            attempt += 1
+            logger.warning(
+                "Ошибка при выполнении %s, повтор через %.1f с (попытка %d/%d)",
+                label,
+                delay_sec,
+                attempt,
+                retries + 1,
+                exc_info=False,
+            )
+            time.sleep(delay_sec)
+
 
 DAILY_FACT_SQL = """
     SELECT
@@ -284,64 +318,73 @@ def fetch_plan_vs_fact_for_month(
     и собирает summary. Использует потоковую обработку для оптимизации памяти.
     Возвращает: (items, summary, last_updated)
     """
+    def _load() -> tuple[list[DashboardItem], DashboardSummary | None, datetime | None]:
+        items: list[DashboardItem]
+        summary: DashboardSummary | None = None
+        last_updated: datetime | None = None
 
-    items: list[DashboardItem]
-    summary: DashboardSummary | None = None
-    last_updated: datetime | None = None
+        with get_connection() as conn:
+            # Потоковая обработка основных данных - не загружаем всё в память
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(ITEMS_SQL, (month_start,))
+                items = _aggregate_items_streaming(cur)
 
-    with get_connection() as conn:
-        # Потоковая обработка основных данных - не загружаем всё в память
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(ITEMS_SQL, (month_start,))
-            items = _aggregate_items_streaming(cur)
+            vnr_plan_amount = _calculate_vnr_plan(items)
+            vnr_plan_item = _build_vnr_plan_item(vnr_plan_amount, items)
+            if vnr_plan_item:
+                items.append(vnr_plan_item)
 
-        vnr_plan_amount = _calculate_vnr_plan(items)
-        vnr_plan_item = _build_vnr_plan_item(vnr_plan_amount, items)
-        if vnr_plan_item:
-            items.append(vnr_plan_item)
+            daily_revenue = _fetch_daily_fact_totals(conn, month_start)
+            average_daily_revenue = _calculate_daily_average(daily_revenue)
 
-        daily_revenue = _fetch_daily_fact_totals(conn, month_start)
-        average_daily_revenue = _calculate_daily_average(daily_revenue)
+            with conn.cursor() as cur:
+                cur.execute(LAST_UPDATED_SQL)
+                res = cur.fetchone()
+                if res:
+                    last_updated = res[0]
 
-        with conn.cursor() as cur:
-            cur.execute(LAST_UPDATED_SQL)
-            res = cur.fetchone()
-            if res:
-                last_updated = res[0]
-
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(SUMMARY_SQL, (month_start,))
-            summary_row = cur.fetchone() or {}
-            has_financial_data = (
-                summary_row.get("planned_total") is not None
-                or summary_row.get("fact_total") is not None
-                or bool(daily_revenue)
-            )
-            if has_financial_data:
-                summary = DashboardSummary(
-                    planned_amount=_to_float(summary_row.get("planned_total")) or 0.0,
-                    fact_amount=_to_float(summary_row.get("fact_total")) or 0.0,
-                    completion_pct=_to_float(summary_row.get("completion_pct")),
-                    delta_amount=_to_float(summary_row.get("delta_amount")) or 0.0,
-                    average_daily_revenue=average_daily_revenue,
-                    daily_revenue=daily_revenue,
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(SUMMARY_SQL, (month_start,))
+                summary_row = cur.fetchone() or {}
+                has_financial_data = (
+                    summary_row.get("planned_total") is not None
+                    or summary_row.get("fact_total") is not None
+                    or bool(daily_revenue)
                 )
+                if has_financial_data:
+                    summary = DashboardSummary(
+                        planned_amount=_to_float(summary_row.get("planned_total")) or 0.0,
+                        fact_amount=_to_float(summary_row.get("fact_total")) or 0.0,
+                        completion_pct=_to_float(summary_row.get("completion_pct")),
+                        delta_amount=_to_float(summary_row.get("delta_amount")) or 0.0,
+                        average_daily_revenue=average_daily_revenue,
+                        daily_revenue=daily_revenue,
+                    )
 
-        summary = _update_summary_with_vnr_plan(
-            summary=summary,
-            plan_adjustment=vnr_plan_amount,
-            items=items,
-            average_daily_revenue=average_daily_revenue,
-            daily_revenue=daily_revenue,
-        )
+            summary = _update_summary_with_vnr_plan(
+                summary=summary,
+                plan_adjustment=vnr_plan_amount,
+                items=items,
+                average_daily_revenue=average_daily_revenue,
+                daily_revenue=daily_revenue,
+            )
 
-    return items, summary, last_updated
+        return items, summary, last_updated
+
+    return _execute_with_retry(
+        _load, label="fetch_plan_vs_fact_for_month", delay_sec=_DB_RETRY_DELAY_SEC
+    )
 
 
 def fetch_available_months(limit: int = 12) -> list[date]:
     """Возвращает список месяцев, за которые есть данные."""
 
-    with get_connection() as conn, conn.cursor() as cur:
-        cur.execute(AVAILABLE_MONTHS_SQL, (limit,))
-        rows = cur.fetchall() or []
-    return [row[0] for row in rows if row and row[0] is not None]
+    def _load_months() -> list[date]:
+        with get_connection() as conn, conn.cursor() as cur:
+            cur.execute(AVAILABLE_MONTHS_SQL, (limit,))
+            rows = cur.fetchall() or []
+        return [row[0] for row in rows if row and row[0] is not None]
+
+    return _execute_with_retry(
+        _load_months, label="fetch_available_months", delay_sec=_DB_RETRY_DELAY_SEC
+    )

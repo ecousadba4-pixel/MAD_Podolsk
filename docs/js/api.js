@@ -5,6 +5,9 @@ const MERGED_SMETA_OVERRIDES = {
   "внерегл_ч_2": { key: "внерегламент", title: "внерегламент" },
 };
 
+const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const DEFAULT_RETRY_DELAY_MS = 700;
+
 function normalizeAmount(value) {
   if (value === null || value === undefined) {
     return null;
@@ -35,6 +38,46 @@ function resolveCategoryMeta(rawKey, smetaValue) {
   const resolvedKey = keyCandidate || fallbackTitle || "Прочее";
   const resolvedTitle = fallbackTitle || resolvedKey;
   return { key: resolvedKey, title: resolvedTitle };
+}
+
+async function wait(delayMs = DEFAULT_RETRY_DELAY_MS) {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+function buildHttpError(response) {
+  const error = new Error("HTTP " + response.status);
+  error.retryable = RETRYABLE_STATUS_CODES.has(response.status);
+  return error;
+}
+
+function isRetryableError(error) {
+  if (!error) return false;
+  if (error.retryable === true) return true;
+  if (error.retryable === false) return false;
+  const message = (error.message || "").toLowerCase();
+  return (
+    error.name === "TypeError" ||
+    message.includes("network") ||
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("connection")
+  );
+}
+
+async function withRetry(requestFn, { retries = 1, delayMs = DEFAULT_RETRY_DELAY_MS } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = error;
+      if (attempt === retries || !isRetryableError(error)) {
+        break;
+      }
+      await wait(delayMs);
+    }
+  }
+  throw lastError;
 }
 
 export class DataManager {
@@ -69,26 +112,38 @@ export class DataManager {
       ...(this.visitorTracker ? this.visitorTracker.buildHeaders() : {}),
     };
 
-    const response = await fetch(url.toString(), {
-      cache: "no-store",
-      headers,
-    });
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
+    const response = await withRetry(
+      () =>
+        fetch(url.toString(), {
+          cache: "no-store",
+          headers,
+        }).then((res) => {
+          if (!res.ok) {
+            throw buildHttpError(res);
+          }
+          return res;
+        }),
+      { delayMs: DEFAULT_RETRY_DELAY_MS }
+    );
     const data = await response.json();
     this.cache.set(monthIso, data);
     return { data, fromCache: false };
   }
 
   async fetchAvailableMonths() {
-    const response = await fetch(this.monthsUrl, {
-      cache: "no-store",
-      headers: this.visitorTracker ? this.visitorTracker.buildHeaders() : undefined,
-    });
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
+    const response = await withRetry(
+      () =>
+        fetch(this.monthsUrl, {
+          cache: "no-store",
+          headers: this.visitorTracker ? this.visitorTracker.buildHeaders() : undefined,
+        }).then((res) => {
+          if (!res.ok) {
+            throw buildHttpError(res);
+          }
+          return res;
+        }),
+      { delayMs: DEFAULT_RETRY_DELAY_MS }
+    );
     const payload = await response.json();
     return Array.isArray(payload?.months) ? payload.months : [];
   }
