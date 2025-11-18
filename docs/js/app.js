@@ -1,6 +1,7 @@
 import { cacheDomElements } from "./utils.js";
 import { DataManager } from "./api.js";
 import { UIManager } from "./components.js";
+import { VisitorTracker } from "./visitor.js";
 
 // Разрешаем переопределять адрес API через meta-тег `mad-api-url` или
 // глобальную переменную `MAD_API_URL`, чтобы фронтенд можно было разворачивать
@@ -15,6 +16,8 @@ const API_PDF_URL = `${API_BASE}/pdf`;
 const API_MONTHS_URL = `${API_BASE}/months`;
 
 document.addEventListener("DOMContentLoaded", () => {
+  const visitorTracker = new VisitorTracker();
+
   const DOM = cacheDomElements({
     monthSelect: "#month",
     lastUpdatedText: "#last-updated-text",
@@ -80,12 +83,19 @@ document.addEventListener("DOMContentLoaded", () => {
   movePdfButton(pdfMobileMediaQuery.matches);
   pdfMobileMediaQuery.addEventListener("change", (event) => movePdfButton(event.matches));
 
-  const dataManager = new DataManager(API_URL, { monthsUrl: API_MONTHS_URL });
+  const dataManager = new DataManager(API_URL, {
+    monthsUrl: API_MONTHS_URL,
+    visitorTracker,
+  });
   const uiManager = new UIManager({
     dataManager,
     elements: DOM,
     apiPdfUrl: API_PDF_URL,
     pdfButtonDefaultLabel,
+    visitorTracker,
   });
   uiManager.init();
+
+  const endpointPath = new URL(API_URL, window.location.origin).pathname;
+  visitorTracker.sendVisitLog({ apiBase: API_BASE, endpoint: endpointPath });
 });

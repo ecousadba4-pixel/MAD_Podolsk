@@ -38,11 +38,12 @@ function resolveCategoryMeta(rawKey, smetaValue) {
 }
 
 export class DataManager {
-  constructor(apiUrl, { monthsUrl } = {}) {
+  constructor(apiUrl, { monthsUrl, visitorTracker } = {}) {
     this.apiUrl = apiUrl;
     this.monthsUrl = monthsUrl || `${apiUrl.replace(/\/$/, "")}/months`;
     this.cache = new Map();
     this.currentData = null;
+    this.visitorTracker = visitorTracker || null;
   }
 
   getCached(monthIso) {
@@ -62,12 +63,15 @@ export class DataManager {
     // (например, на стороне браузера или CDN) и гарантировать получение
     // свежих данных сразу после обновления в источнике.
     url.searchParams.set("_", Date.now().toString());
+    const headers = {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      ...(this.visitorTracker ? this.visitorTracker.buildHeaders() : {}),
+    };
+
     const response = await fetch(url.toString(), {
       cache: "no-store",
-      headers: {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      },
+      headers,
     });
     if (!response.ok) {
       throw new Error("HTTP " + response.status);
@@ -78,7 +82,10 @@ export class DataManager {
   }
 
   async fetchAvailableMonths() {
-    const response = await fetch(this.monthsUrl, { cache: "no-store" });
+    const response = await fetch(this.monthsUrl, {
+      cache: "no-store",
+      headers: this.visitorTracker ? this.visitorTracker.buildHeaders() : undefined,
+    });
     if (!response.ok) {
       throw new Error("HTTP " + response.status);
     }

@@ -19,11 +19,12 @@ const CATEGORY_COLORS = [
 ];
 
 export class UIManager {
-  constructor({ dataManager, elements, apiPdfUrl, pdfButtonDefaultLabel }) {
+  constructor({ dataManager, elements, apiPdfUrl, pdfButtonDefaultLabel, visitorTracker }) {
     this.dataManager = dataManager;
     this.elements = elements;
     this.apiPdfUrl = apiPdfUrl;
     this.pdfButtonDefaultLabel = pdfButtonDefaultLabel;
+    this.visitorTracker = visitorTracker || null;
     this.groupedCategories = [];
     this.activeCategoryKey = null;
     this.workHeaderEl = null;
@@ -873,7 +874,10 @@ export class UIManager {
       const pdfUrl = new URL(this.apiPdfUrl, window.location.origin);
       pdfUrl.searchParams.set("month", this.elements.monthSelect.value);
       const response = await fetch(pdfUrl.toString(), {
-        headers: { Accept: "application/pdf" },
+        headers: {
+          Accept: "application/pdf",
+          ...(this.visitorTracker ? this.visitorTracker.buildHeaders() : {}),
+        },
       });
       if (!response.ok) {
         throw new Error("HTTP " + response.status);
