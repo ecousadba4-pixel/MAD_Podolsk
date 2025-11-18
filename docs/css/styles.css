@@ -491,6 +491,14 @@
       overflow: hidden;
     }
 
+    /* Ensure interactive summary cards (buttons) inherit font and color
+       so their numeric values match non-interactive cards */
+    .summary-card,
+    .summary-card-interactive {
+      color: inherit;
+      font: inherit;
+    }
+
     .summary-card-interactive:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 4px;
@@ -546,6 +554,15 @@
     .summary-value {
       font-size: 1.05rem;
       font-weight: 600;
+    }
+
+    /* Make sure value inside interactive card has identical numeric rendering */
+    .summary-card-interactive .summary-value {
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
     }
 
     @media (min-width: 768px) {
