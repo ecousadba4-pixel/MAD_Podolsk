@@ -39,7 +39,14 @@ class _ThreadSafeConnectionPool:
                 exc_info=True,
             )
             self._pool.putconn(conn, close=True)
-            raise
+
+            logger.info("Пробую получить новое соединение после ошибки проверки.")
+            conn = self._pool.getconn()
+            try:
+                self._ensure_connection_alive(conn)
+            except Exception:
+                self._pool.putconn(conn, close=True)
+                raise
         return conn
 
     @staticmethod
