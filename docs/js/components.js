@@ -525,7 +525,7 @@ export class UIManager {
     if (this.elements.dailyAverageCard) {
       this.elements.dailyAverageCard.classList.toggle("is-disabled", !isInteractive);
       this.elements.dailyAverageCard.setAttribute("aria-disabled", String(!isInteractive));
-      const hint = this.elements.dailyAverageCard.querySelector(".summary-card-hint");
+      const hint = this.elements.dailyAverageHint;
       if (hint) {
         hint.hidden = !isCurrentMonth;
       }
