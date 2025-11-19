@@ -39,11 +39,6 @@ class DailyRevenue(BaseModel):
     amount: float
 
 
-class WorkDailyVolume(BaseModel):
-    date: date
-    total_volume: float
-
-
 class DashboardSummary(BaseModel):
     planned_amount: float
     fact_amount: float
@@ -62,11 +57,3 @@ class DashboardResponse(BaseModel):
     summary: DashboardSummary | None
     items: list[DashboardItem]
     has_data: bool
-
-
-class WorkDetailsResponse(BaseModel):
-    work_key: str
-    work_name: str | None = None
-    description: str | None = None
-    smeta: str | None = None
-    days: list[WorkDailyVolume]

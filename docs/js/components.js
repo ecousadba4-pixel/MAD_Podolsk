@@ -7,7 +7,6 @@ import {
   showToast,
   calculateDelta,
   debounce,
-  formatVolume,
 } from "./utils.js";
 
 const CATEGORY_COLORS = [
@@ -35,7 +34,6 @@ export class UIManager {
     this.currentSearchTerm = "";
     this.workSort = { column: "planned" };
     this.selectedMonthIso = null;
-    this.activeWorkDetailsKey = null;
     this.initialMonth = new URLSearchParams(window.location.search).get("month");
     if (this.elements.workSortSelect) {
       this.elements.workSortSelect.value = this.workSort.column;
@@ -180,16 +178,6 @@ export class UIManager {
         }
       });
     }
-    if (this.elements.workModalClose) {
-      this.elements.workModalClose.addEventListener("click", () => this.closeWorkModal());
-    }
-    if (this.elements.workModal) {
-      this.elements.workModal.addEventListener("click", (event) => {
-        if (event.target === this.elements.workModal) {
-          this.closeWorkModal();
-        }
-      });
-    }
   }
 
   async initMonthSelect() {
@@ -316,8 +304,6 @@ export class UIManager {
   async loadMonthData(monthIso) {
     this.selectedMonthIso = monthIso;
     this.updateDailyAverageVisibility(monthIso);
-    this.closeDailyModal();
-    this.closeWorkModal();
     const cached = this.dataManager.getCached(monthIso);
     if (cached) {
       this.applyData(cached);
@@ -342,8 +328,6 @@ export class UIManager {
     this.groupedCategories = [];
     this.activeCategoryKey = null;
     this.dailyRevenue = [];
-    this.closeWorkModal();
-    this.closeDailyModal();
     this.toggleSkeletons(true);
     this.elements.categoryGrid.innerHTML = "";
     this.elements.lastUpdatedText.textContent = "Загрузка данных…";
@@ -559,7 +543,6 @@ export class UIManager {
     ) {
       return;
     }
-    this.closeWorkModal();
     this.renderDailyModalList();
     this.elements.dailyModal.classList.add("visible");
     this.elements.dailyModal.setAttribute("aria-hidden", "false");
@@ -604,138 +587,6 @@ export class UIManager {
     });
 
     this.elements.dailyModalList.appendChild(fragment);
-  }
-
-  normalizeWorkIdentifier(value) {
-    if (!value) return null;
-    return value.toString().trim().toLowerCase().replace(/\s+/g, " ");
-  }
-
-  buildWorkIdentifier(item) {
-    if (!item) return null;
-    return this.normalizeWorkIdentifier(
-      item.work_name
-        || item.description
-        || item.smeta
-        || item.category
-    );
-  }
-
-  canOpenWorkDetails(item) {
-    return Boolean(
-      this.elements.workModal
-        && this.isCurrentMonth(this.selectedMonthIso)
-        && this.buildWorkIdentifier(item)
-    );
-  }
-
-  handleWorkRowClick(event, item) {
-    if (!this.canOpenWorkDetails(item)) {
-      return;
-    }
-    if (event.target.closest && event.target.closest(".work-row-name-toggle")) {
-      return;
-    }
-    event.preventDefault();
-    this.openWorkModal(item);
-  }
-
-  async openWorkModal(item) {
-    if (!this.elements.workModal || !item) {
-      return;
-    }
-
-    const workKey = this.buildWorkIdentifier(item);
-    if (!workKey) {
-      return;
-    }
-
-    const workTitle = item.work_name || item.description || "Работа";
-    if (this.elements.workModalTitle) {
-      this.elements.workModalTitle.textContent = workTitle;
-    }
-    if (this.elements.workModalSubtitle) {
-      const monthLabel = this.getSelectedMonthLabel() || "выбранный месяц";
-      this.elements.workModalSubtitle.textContent = `Объёмы по дням за ${monthLabel.toLowerCase()}`;
-    }
-
-    this.closeDailyModal();
-    this.elements.workModal.classList.add("visible");
-    this.elements.workModal.setAttribute("aria-hidden", "false");
-    this.renderWorkModalState("loading");
-
-    const requestKey = `${this.selectedMonthIso || ""}__${workKey}`;
-    this.activeWorkDetailsKey = requestKey;
-
-    try {
-      const payload = await this.dataManager.fetchWorkDailyDetails(this.selectedMonthIso, {
-        workKey,
-        workName: item.work_name,
-        description: item.description,
-        smeta: item.smeta,
-      });
-      if (this.activeWorkDetailsKey !== requestKey) {
-        return;
-      }
-      const days = Array.isArray(payload?.days) ? payload.days : [];
-      if (!days.length) {
-        this.renderWorkModalState("empty");
-        return;
-      }
-      this.renderWorkModalRows(days);
-    } catch (error) {
-      console.error("Не удалось загрузить объёмы по работе", error);
-      if (this.activeWorkDetailsKey === requestKey) {
-        this.renderWorkModalState("error");
-        showToast("Не удалось загрузить объёмы по работе", "error");
-      }
-    }
-  }
-
-  closeWorkModal() {
-    if (!this.elements.workModal) return;
-    this.elements.workModal.classList.remove("visible");
-    this.elements.workModal.setAttribute("aria-hidden", "true");
-    this.activeWorkDetailsKey = null;
-  }
-
-  renderWorkModalState(state, customMessage) {
-    if (!this.elements.workModalEmpty || !this.elements.workModalList) {
-      return;
-    }
-    const defaultMessages = {
-      loading: "Загружаем объёмы…",
-      empty: "Нет данных по объёмам за выбранный месяц",
-      error: "Ошибка загрузки данных",
-    };
-    const message = customMessage || defaultMessages[state] || defaultMessages.loading;
-    this.elements.workModalEmpty.textContent = message;
-    this.elements.workModalEmpty.style.display = "block";
-    this.elements.workModalList.style.display = "none";
-    this.elements.workModalList.innerHTML = "";
-  }
-
-  renderWorkModalRows(days) {
-    if (!this.elements.workModalList || !this.elements.workModalEmpty) {
-      return;
-    }
-    this.elements.workModalList.innerHTML = "";
-    const fragment = document.createDocumentFragment();
-    const sorted = [...days].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    sorted.forEach((detail) => {
-      const row = document.createElement("div");
-      row.className = "modal-row";
-      row.innerHTML = `
-        <div class="modal-row-date">${formatDate(detail.date)}</div>
-        <div class="modal-row-value">${formatVolume(detail.total_volume)}</div>
-      `;
-      fragment.appendChild(row);
-    });
-
-    this.elements.workModalList.appendChild(fragment);
-    this.elements.workModalEmpty.style.display = "none";
-    this.elements.workModalList.style.display = "grid";
   }
 
   renderCategories() {
@@ -1012,21 +863,6 @@ export class UIManager {
         );
       });
     }
-
-    if (this.canOpenWorkDetails(item)) {
-      row.classList.add("work-row--interactive");
-      row.setAttribute("role", "button");
-      row.setAttribute("tabindex", "0");
-      row.setAttribute("aria-label", `${workName}. Нажмите, чтобы открыть подневную расшифровку.`);
-      row.addEventListener("click", (event) => this.handleWorkRowClick(event, item));
-      row.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          this.handleWorkRowClick(event, item);
-        }
-      });
-    }
-
     return row;
   }
 

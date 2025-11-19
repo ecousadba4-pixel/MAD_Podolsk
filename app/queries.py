@@ -5,13 +5,13 @@ import time
 import calendar
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Callable, Sequence, TypeVar
+from typing import Any, Callable, TypeVar
 
 from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
 
 from .db import get_connection
-from .models import DashboardItem, DashboardSummary, DailyRevenue, WorkDailyVolume
+from .models import DashboardItem, DashboardSummary, DailyRevenue
 
 logger = logging.getLogger(__name__)
 
@@ -123,19 +123,6 @@ DAILY_FACT_SQL = """
     ORDER BY work_date;
 """
 
-WORK_DAILY_VOLUME_SQL = """
-    SELECT
-        date_done::date AS work_date,
-        SUM(total_volume) AS total_volume
-    FROM skpdi_fact_agg
-    WHERE month_start = %s
-        AND status = 'Рассмотрено'
-        AND TRIM(LOWER(COALESCE(NULLIF(work_name, ''), description))) = ANY(%s)
-    GROUP BY work_date
-    HAVING SUM(total_volume) IS NOT NULL
-    ORDER BY work_date;
-"""
-
 
 def _to_float(value: Any) -> float | None:
     if value is None:
@@ -155,25 +142,6 @@ def _safe_get_from_row(row: dict[str, Any], *keys: str, default: Any = None) -> 
         if value:
             return value
     return default
-
-
-def _normalize_identifier(value: str | None) -> str | None:
-    if not value:
-        return None
-    normalized = " ".join(value.split()).strip().lower()
-    return normalized or None
-
-
-def _build_identifier_array(values: Sequence[str | None]) -> tuple[str, ...]:
-    normalized: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        norm = _normalize_identifier(value)
-        if not norm or norm in seen:
-            continue
-        seen.add(norm)
-        normalized.append(norm)
-    return tuple(normalized)
 
 
 def _extract_strings(row: dict[str, Any]) -> tuple[str | None, str | None, str | None, str]:
@@ -505,44 +473,6 @@ def fetch_plan_vs_fact_for_month(
 
     return _execute_with_retry(
         _load, label="fetch_plan_vs_fact_for_month", delay_sec=_DB_RETRY_DELAY_SEC
-    )
-
-
-def fetch_work_daily_volumes(month_start: date, *, identifiers: Sequence[str | None]) -> list[WorkDailyVolume]:
-    """Возвращает суточные объёмы работ для конкретной строки сметы."""
-
-    normalized = _build_identifier_array(identifiers)
-    if not normalized:
-        return []
-
-    def _load() -> list[WorkDailyVolume]:
-        rows: list[dict[str, Any]] = []
-        with get_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            try:
-                cur.execute(WORK_DAILY_VOLUME_SQL, (month_start, list(normalized)))
-                rows = cur.fetchall() or []
-            except Exception as exc:  # noqa: BLE001
-                logger.warning(
-                    "Не удалось загрузить объёмы работ за %s: %s",
-                    month_start,
-                    exc,
-                    exc_info=True,
-                )
-                conn.rollback()
-                return []
-
-        details: list[WorkDailyVolume] = []
-        for row in rows:
-            amount = _to_float(row.get("total_volume"))
-            work_date = row.get("work_date")
-            if amount is None or work_date is None:
-                continue
-            details.append(WorkDailyVolume(date=work_date, total_volume=amount))
-
-        return details
-
-    return _execute_with_retry(
-        _load, label="fetch_work_daily_volumes", delay_sec=_DB_RETRY_DELAY_SEC
     )
 
 

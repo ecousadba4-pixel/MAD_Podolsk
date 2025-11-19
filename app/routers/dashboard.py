@@ -6,14 +6,10 @@ from typing import Annotated
 from fastapi import APIRouter, Query, Request, status
 from fastapi.responses import Response
 
-from ..models import DashboardResponse, WorkDetailsResponse
+from ..models import DashboardResponse
 from ..visit_logger import VisitLogRequest, log_dashboard_visit
 from ..pdf import build_dashboard_pdf
-from ..queries import (
-    fetch_available_months,
-    fetch_plan_vs_fact_for_month,
-    fetch_work_daily_volumes,
-)
+from ..queries import fetch_available_months, fetch_plan_vs_fact_for_month
 
 router = APIRouter()
 
@@ -77,25 +73,3 @@ def log_dashboard_visit_endpoint(payload: VisitLogRequest, request: Request) -> 
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.get("/dashboard/work-details", response_model=WorkDetailsResponse)
-def get_work_details(
-    month: MonthQuery,
-    work_key: Annotated[str, Query(min_length=1, max_length=512)],
-    work_name: Annotated[str | None, Query(max_length=512)] = None,
-    description: Annotated[str | None, Query(max_length=1024)] = None,
-    smeta: Annotated[str | None, Query(max_length=512)] = None,
-) -> WorkDetailsResponse:
-    """Возвращает помесячные объёмы выбранной работы."""
-
-    identifiers = [work_key, work_name, description, smeta]
-    days = fetch_work_daily_volumes(month, identifiers=identifiers)
-
-    return WorkDetailsResponse(
-        work_key=work_key,
-        work_name=work_name,
-        description=description,
-        smeta=smeta,
-        days=days,
-    )
