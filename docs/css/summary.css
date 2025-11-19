@@ -1,0 +1,259 @@
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  margin-bottom: var(--grid-gap);
+  align-items: stretch;
+}
+
+@media (max-width: 640px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .summary-card,
+  .summary-card-skeleton {
+    padding: 10px 12px;
+    min-height: auto;
+  }
+
+  .summary-label,
+  .summary-sub {
+    font-size: 0.68rem;
+  }
+
+  .summary-label {
+    min-height: 2.1em;
+    line-height: 1.15;
+    display: flex;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 768px) {
+  .summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.summary-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--card-padding);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: clamp(92px, 11vw, 120px);
+  height: 100%;
+}
+
+.summary-card-interactive {
+  text-align: left;
+  border: 1px solid var(--border-soft);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ensure interactive summary cards (buttons) inherit font and color
+   so their numeric values match non-interactive cards */
+.summary-card,
+.summary-card-interactive {
+  color: inherit;
+  font: inherit;
+}
+
+.summary-card-interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.summary-card-interactive:not(.is-disabled):hover {
+  box-shadow: var(--shadow-summary-hover);
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border-soft));
+}
+
+.summary-card-interactive.is-disabled {
+  cursor: default;
+}
+
+.summary-card-hint {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.summary-card-hint[hidden] {
+  display: none;
+}
+
+.summary-card-interactive:not(.is-disabled):hover .summary-card-hint {
+  background: color-mix(in srgb, var(--accent) 8%, var(--accent-soft));
+  color: color-mix(in srgb, var(--accent-strong) 80%, var(--accent));
+  transform: translateY(-1px);
+}
+
+.summary-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (min-width: 768px) {
+  .summary-label {
+    font-size: 0.78rem;
+  }
+}
+
+.summary-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Make sure value inside interactive card has identical numeric rendering
+   and follows the same responsive sizes as non-interactive cards */
+.summary-card-interactive .summary-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: var(--text-main);
+}
+
+@media (min-width: 768px) {
+  .summary-card-interactive .summary-value {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-value,
+  .summary-card-interactive .summary-value {
+    font-size: 0.95rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .summary-value {
+    font-size: 1.2rem;
+  }
+}
+
+.summary-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+@media (min-width: 768px) {
+  .summary-sub {
+    font-size: 0.78rem;
+  }
+}
+
+.summary-note {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.summary-note-line {
+  display: inline;
+}
+
+@media (max-width: 640px) {
+  .summary-note {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .summary-note-line {
+    display: block;
+  }
+}
+
+.summary-value.positive {
+  color: var(--success);
+}
+
+.summary-value.negative {
+  color: var(--danger);
+}
+
+.summary-progress {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
+
+.summary-progress-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.summary-progress-labels strong {
+  color: var(--text-main);
+  font-size: 0.86rem;
+  letter-spacing: 0;
+}
+
+.summary-progress-bar {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(47, 111, 237, 0.12);
+  overflow: hidden;
+  position: relative;
+}
+
+.summary-progress-fill {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  border-radius: inherit;
+  --progress-color: var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--progress-color) 75%, #ffffff) 0%,
+    var(--progress-color) 100%
+  );
+  box-shadow: 0 6px 12px color-mix(in srgb, var(--progress-color) 30%, transparent);
+  transition: width 0.35s ease;
+}
+
+.summary-progress-fill.overflow {
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.25);
+}
+
+@supports not (color-mix(in srgb, red, blue)) {
+  .summary-progress-fill {
+    background: var(--progress-color);
+  }
+}
+
+/* Таблица / список работ */

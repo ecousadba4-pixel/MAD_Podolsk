@@ -1,0 +1,113 @@
+/* Печатная версия */
+
+.print-report {
+  display: none;
+  font-family: 'Roboto', 'Roboto Mono', 'IBM Plex Mono', 'PT Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 18px;
+  color: #111827;
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  background: #fff;
+  line-height: 1.2;
+}
+
+.print-report.print-visible {
+  display: block;
+  position: fixed;
+  top: -10000px;
+  left: 0;
+  right: 0;
+  z-index: -1;
+}
+
+.print-report h1 {
+  font-size: 1.08rem;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.print-report .print-meta {
+  font-size: 0.76rem;
+  color: #4b5563;
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.68rem;
+  table-layout: fixed;
+}
+
+.print-table th,
+.print-table td {
+  border: 1px solid #d1d5db;
+  padding: 4px 6px;
+  vertical-align: top;
+}
+
+.print-table th {
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  background: #f3f4f6;
+}
+
+.print-table td.num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.print-smeta-summary td {
+  font-weight: 600;
+  background: #f9fafb;
+}
+
+.print-table .delta-positive {
+  color: #166534;
+}
+
+.print-table .delta-negative {
+  color: #b91c1c;
+}
+
+.print-table tfoot td {
+  font-weight: 700;
+  background: #e5e7eb;
+  text-transform: uppercase;
+}
+
+.print-table tbody tr {
+  page-break-inside: avoid;
+}
+
+@media print {
+  :root {
+    --text-main: #111827;
+    --text-muted: #4b5563;
+    --border-soft: #d1d5db;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .page {
+    display: none;
+  }
+
+  .print-report {
+    display: block;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+}
