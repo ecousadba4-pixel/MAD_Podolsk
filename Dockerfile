@@ -13,9 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем backend-приложение
 COPY app ./app
 
-# Копируем статический фронтенд для раздачи через FastAPI
-COPY docs ./docs
-
 # Порт пробрасывается через переменную окружения PORT (Amvera её ставит),
 # локально по умолчанию 8000.
 ENV PORT=8000
