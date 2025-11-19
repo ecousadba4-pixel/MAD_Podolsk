@@ -637,9 +637,9 @@ export class UIManager {
     const header = document.createElement("div");
     header.className = "modal-row modal-row-header";
     header.innerHTML = `
-      <div>Дата</div>
-      <div>Объем</div>
-      <div>Сумма,₽</div>
+      <div class="modal-col-date">Дата</div>
+      <div class="modal-col-amount">Объем</div>
+      <div class="modal-col-sum">Сумма,₽</div>
     `;
     this.elements.dailyModalList.appendChild(header);
 
@@ -655,9 +655,9 @@ export class UIManager {
       const totalAmount = Number(item.total_amount);
       const formattedTotal = Number.isFinite(totalAmount) ? totalAmount.toLocaleString("ru-RU", {minimumFractionDigits: 0, maximumFractionDigits: 0}) : "–";
       row.innerHTML = `
-        <div class="modal-row-date">${dateLabel}</div>
-        <div class="modal-row-value">${valueText}</div>
-        <div class="modal-row-sum">${formattedTotal}</div>
+        <div class="modal-col-date">${dateLabel}</div>
+        <div class="modal-col-amount">${valueText}</div>
+        <div class="modal-col-sum">${formattedTotal}</div>
       `;
       fragment.appendChild(row);
     });

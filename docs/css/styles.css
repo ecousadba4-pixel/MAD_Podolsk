@@ -1225,9 +1225,10 @@
       }
     }
 
-    .work-row {
+
+    .modal-row {
       display: grid;
-      grid-template-columns: minmax(0, 4fr) repeat(3, minmax(0, 0.7fr));
+      grid-template-columns: 1.2fr 1fr 1fr;
       gap: 10px;
       padding: 12px 18px;
       border-bottom: 1px solid var(--border-soft);
@@ -1236,6 +1237,22 @@
       background: #fff;
       font-variant-numeric: tabular-nums;
       contain: layout style paint;
+    }
+
+    .modal-row-header {
+      background: #f3f6ff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .modal-col-date {
+      text-align: left;
+    }
+    .modal-col-amount, .modal-col-sum {
+      text-align: right;
     }
 
     .work-row-last {
