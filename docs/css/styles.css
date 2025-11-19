@@ -467,7 +467,14 @@
       color: var(--accent-strong);
       border: 1px solid rgba(47, 111, 237, 0.18);
       box-shadow: var(--shadow-btn-airy);
-      padding: 12px 18px;
+      padding: 0 16px;
+      min-height: 54px; /* совпадает с высотой .month-select */
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
     }
 
     .btn-airy:hover:not(:disabled) {
