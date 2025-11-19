@@ -293,7 +293,8 @@ def _fetch_daily_fact_totals(conn, month_start: date) -> list[DailyRevenue]:
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         try:
             cur.execute(DAILY_FACT_SQL, (month_start,))
-            for row in cur.fetchall() or []:
+            rows = cur.fetchall() or []
+            for row in rows:
                 amount = _to_float(row.get("fact_total"))
                 work_date = row.get("work_date")
                 if amount is None or work_date is None:
@@ -352,28 +353,32 @@ def _calculate_daily_average(
     fact_total: float | None,
 ) -> float | None:
     """Вычисляет среднедневную выручку для выбранного месяца."""
-
     today = date.today()
     current_month_start = today.replace(day=1)
 
+    # Для прошлых месяцев: берём явный fact_total если он есть,
+    # иначе суммируем доступные дневные записи. Если данных нет — возвращаем None.
     if month_start != current_month_start:
-        total = fact_total
-        if total is None:
-            total = sum(row.amount for row in daily_rows if row.amount is not None)
-        if not total:
+        if fact_total is not None:
+            total = fact_total
+        else:
+            total = sum((row.amount for row in daily_rows if row.amount is not None), 0.0)
+
+        if total == 0.0:
             return None
+
         days_in_month = calendar.monthrange(month_start.year, month_start.month)[1]
         return total / days_in_month
 
+    # Для текущего месяца: усредняем по доступным дням, исключая данные за сегодня.
     if not daily_rows:
         return None
 
-    amounts_without_today = [
-        row.amount for row in daily_rows if row.amount is not None and row.date != today
-    ]
-    if not amounts_without_today:
+    past_days_amounts = [row.amount for row in daily_rows if row.amount is not None and row.date != today]
+    if not past_days_amounts:
         return None
-    return sum(amounts_without_today) / len(amounts_without_today)
+
+    return sum(past_days_amounts) / len(past_days_amounts)
 
 
 def fetch_plan_vs_fact_for_month(
