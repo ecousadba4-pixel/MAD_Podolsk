@@ -24,11 +24,12 @@ class Settings(BaseSettings):
         if not value:
             return None
         if "//" not in value:
-            msg = "DB_DSN должен быть полноценной строкой подключения"
+            msg = "DB_DSN должен быть полноценной строкой подключения (формат: postgresql://user:password@host/dbname)"
             raise ValueError(msg)
         
-        # Добавляем параметры SSL по умолчанию, если их нет
-        if "sslmode" not in value:
+        # Нормализуем параметры SSL
+        # Если sslmode не указан, добавляем sslmode=disable по умолчанию
+        if "sslmode" not in value.lower():
             separator = "&" if "?" in value else "?"
             value = f"{value}{separator}sslmode=disable"
         

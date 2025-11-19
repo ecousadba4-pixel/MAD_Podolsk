@@ -62,10 +62,16 @@ class _ThreadSafeConnectionPool:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1")
         except OperationalError as exc:
-            if "SSL" in str(exc):
+            error_msg = str(exc).lower()
+            if "ssl" in error_msg or "certificate" in error_msg or "tls" in error_msg:
                 logger.error(
-                    "SSL ошибка соединения с БД. Убедитесь, что DB_DSN содержит корректные SSL параметры. "
-                    "Рекомендуется добавить '?sslmode=disable' если SSL не требуется. Ошибка: %s",
+                    "SSL/TLS ошибка соединения с БД. DB_DSN уже содержит sslmode=disable. "
+                    "Проверьте состояние сетевого соединения и доступность БД, а также правильность хоста и портов. Ошибка: %s",
+                    exc,
+                )
+            else:
+                logger.error(
+                    "Ошибка проверки соединения с БД: %s",
                     exc,
                 )
             raise
@@ -137,6 +143,9 @@ def _get_pool() -> _ConnectionProvider:
                     )
                     raise RuntimeError(msg)
 
+                logger.info(
+                    "Инициализация пула соединений с БД (с параметром sslmode)"
+                )
                 _pool = _create_pool(dsn)
     return _pool
 
