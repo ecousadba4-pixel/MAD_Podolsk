@@ -314,6 +314,47 @@ def _fetch_daily_fact_totals(conn, month_start: date) -> list[DailyRevenue]:
     return daily_rows
 
 
+WORK_BREAKDOWN_SQL = WORK_BREAKDOWN_SQL if 'WORK_BREAKDOWN_SQL' in globals() else WORK_BREAKDOWN_SQL
+
+def fetch_work_daily_breakdown(month_start: date, work_identifier: str) -> list[DailyRevenue]:
+    """Возвращает список по-дневных объёмов (total_volume) для указанной строки работ за месяц.
+
+    В результате возвращается список объектов с полями `date` и `amount`.
+    Поиск выполняется по полю `work_name` и по `description` с приведением к нижнему регистру.
+    """
+
+    results: list[DailyRevenue] = []
+    if not work_identifier:
+        return results
+
+    def _load() -> list[DailyRevenue]:
+        rows: list[DailyRevenue] = []
+        with get_connection() as conn:
+            try:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute(WORK_BREAKDOWN_SQL, (month_start, work_identifier, work_identifier))
+                    fetched = cur.fetchall() or []
+                    for row in fetched:
+                        work_date = row.get("work_date")
+                        vol = _to_float(row.get("total_volume"))
+                        if work_date is None or vol is None:
+                            continue
+                        rows.append(DailyRevenue(date=work_date, amount=vol))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Не удалось загрузить подневную расшифровку для '%s' за %s: %s",
+                    work_identifier,
+                    month_start,
+                    exc,
+                    exc_info=True,
+                )
+                conn.rollback()
+                return []
+        return rows
+
+    return _execute_with_retry(_load, label="fetch_work_daily_breakdown", delay_sec=_DB_RETRY_DELAY_SEC)
+
+
 def _fetch_contract_progress(conn, _selected_month: date) -> dict[str, float] | None:
     """Возвращает агрегаты по контракту и выполнению, логирует и возвращает None при ошибке."""
 

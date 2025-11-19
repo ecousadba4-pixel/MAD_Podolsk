@@ -9,7 +9,7 @@ from fastapi.responses import Response
 from ..models import DashboardResponse
 from ..visit_logger import VisitLogRequest, log_dashboard_visit
 from ..pdf import build_dashboard_pdf
-from ..queries import fetch_available_months, fetch_plan_vs_fact_for_month
+from ..queries import fetch_available_months, fetch_plan_vs_fact_for_month, fetch_work_daily_breakdown
 
 router = APIRouter()
 
@@ -73,3 +73,17 @@ def log_dashboard_visit_endpoint(payload: VisitLogRequest, request: Request) -> 
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/dashboard/work-breakdown")
+def get_work_breakdown(month: MonthQuery, work: Annotated[str, Query(..., description="Название вида работы")]) -> list[dict]:
+    """Возвращает подневную расшифровку объёмов (`total_volume`) по указанной работе за месяц.
+
+    Возвращает массив объектов с полями `date` и `amount`.
+    """
+    rows = fetch_work_daily_breakdown(month, work)
+    # pydantic-объекты DailyRevenue будут сериализованы как dict автоматически,
+    # но здесь приводим к простому списку словарей для фронтенда.
+    return [
+        {"date": r.date.isoformat(), "amount": r.amount} for r in rows
+    ]

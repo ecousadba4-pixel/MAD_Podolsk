@@ -286,6 +286,16 @@ export class UIManager {
     if (this.elements.dailyAverageHint) {
       this.elements.dailyAverageHint.hidden = !isCurrentMonth;
     }
+    // Показываем иконку (i) только когда выбран текущий календарный месяц
+    if (this.elements.workDetailHint) {
+      if (isCurrentMonth) {
+        this.elements.workDetailHint.style.display = "inline-block";
+        this.elements.workDetailHint.setAttribute("aria-hidden", "false");
+      } else {
+        this.elements.workDetailHint.style.display = "none";
+        this.elements.workDetailHint.setAttribute("aria-hidden", "true");
+      }
+    }
   }
 
   setMonthSelectPlaceholder(message) {
@@ -546,6 +556,52 @@ export class UIManager {
     this.renderDailyModalList();
     this.elements.dailyModal.classList.add("visible");
     this.elements.dailyModal.setAttribute("aria-hidden", "false");
+  }
+
+  async openWorkModal(item) {
+    if (!item || !this.elements.dailyModal || !this.isCurrentMonth(this.selectedMonthIso)) {
+      return;
+    }
+    const workName = (item.work_name || item.description || "").toString();
+    const monthIso = this.selectedMonthIso;
+    const apiBase = (this.dataManager && this.dataManager.apiUrl)
+      ? this.dataManager.apiUrl.replace(/\/$/, "")
+      : "/api/dashboard";
+
+    const url = new URL(`${apiBase}/work-breakdown`, window.location.origin);
+    url.searchParams.set("month", monthIso);
+    url.searchParams.set("work", workName);
+
+    try {
+      // Установим заголовок модального окна
+      const titleEl = this.elements.dailyModal.querySelector("#daily-modal-title") || document.getElementById("daily-modal-title");
+      if (titleEl) titleEl.textContent = `Расшифровка: ${workName}`;
+      if (this.elements.dailyModalSubtitle) {
+        this.elements.dailyModalSubtitle.textContent = `По дням за ${this.getSelectedMonthLabel().toLowerCase()}`;
+      }
+
+      const response = await fetch(url.toString(), {
+        headers: this.visitorTracker ? this.visitorTracker.buildHeaders() : {},
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const payload = await response.json();
+      const items = Array.isArray(payload) ? payload : (payload?.daily || []);
+
+      this.dailyRevenue = (items || []).map((it) => {
+        const date = it.date || it.work_date || it.day;
+        const raw = it.amount ?? it.total_volume ?? it.value;
+        const amount = raw === null || raw === undefined ? null : Number(raw);
+        if (!date || amount === null || !Number.isFinite(amount)) return null;
+        return { date, amount };
+      }).filter(Boolean);
+
+      this.renderDailyModalList();
+      this.elements.dailyModal.classList.add("visible");
+      this.elements.dailyModal.setAttribute("aria-hidden", "false");
+    } catch (err) {
+      console.error("Ошибка загрузки расшифровки по работе:", err);
+      showToast("Не удалось загрузить расшифровку по работе.", "error");
+    }
   }
 
   closeDailyModal() {
@@ -863,6 +919,17 @@ export class UIManager {
         );
       });
     }
+    // Клик по строке работы открывает подневную расшифровку (только для текущего месяца).
+    row.addEventListener("click", (event) => {
+      // не обрабатываем клик по кнопке разворачивания названия
+      if (event.target.closest(".work-row-name-toggle")) return;
+      try {
+        this.openWorkModal(item);
+      } catch (err) {
+        // Ошибка обработки — логируем и показываем тост
+        console.error(err);
+      }
+    });
     return row;
   }
 

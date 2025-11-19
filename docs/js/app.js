@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     activeCategoryTitle: "#active-category-title",
     activeCategoryTitleDesktop: "#active-category-title-desktop",
     activeCategoryTitleMobileValue: "#active-category-title-mobile-value",
+    workDetailHint: "#work-detail-hint",
     printMonth: "#print-month",
     printUpdated: "#print-updated",
     printBody: "#print-report-body",
