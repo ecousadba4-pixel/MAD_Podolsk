@@ -620,6 +620,10 @@
       pointer-events: none;
     }
 
+    .summary-card-hint[hidden] {
+      display: none;
+    }
+
     .summary-card-interactive:not(.is-disabled):hover .summary-card-hint {
       background: color-mix(in srgb, var(--accent) 8%, var(--accent-soft));
       color: color-mix(in srgb, var(--accent-strong) 80%, var(--accent));

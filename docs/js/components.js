@@ -253,17 +253,14 @@ export class UIManager {
       return null;
     }
 
-    const parsedDate = new Date(monthIso);
-    if (!Number.isNaN(parsedDate.getTime())) {
-      return `${parsedDate.getFullYear()}-${parsedDate.getMonth()}`;
-    }
-
-    const match = /^\s*(\d{4})-(\d{1,2})/.exec(monthIso);
+    // Пытаемся распарсить строку в формате YYYY-MM или YYYY-MM-DD
+    const match = /^(\d{4})-(\d{1,2})/.exec(monthIso);
     if (match) {
       const year = Number(match[1]);
-      const monthIndex = Number(match[2]) - 1;
-      if (!Number.isNaN(year) && monthIndex >= 0 && monthIndex < 12) {
-        return `${year}-${monthIndex}`;
+      const month = Number(match[2]);
+      if (!Number.isNaN(year) && month >= 1 && month <= 12) {
+        // Возвращаем ключ с индексом месяца (0-based), как это делает getMonth()
+        return `${year}-${month - 1}`;
       }
     }
 
