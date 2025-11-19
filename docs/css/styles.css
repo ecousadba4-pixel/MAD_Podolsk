@@ -1656,11 +1656,13 @@
 
     .modal-row {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      /* фиксированная в пределах диапазона вторая колонка — чтобы границы по строкам совпадали */
+      grid-template-columns: 1fr minmax(110px, 150px) minmax(90px, 130px);
       align-items: center;
       column-gap: 24px;
       padding: 6px 0;
       border-bottom: 1px solid var(--border-soft);
+      box-sizing: border-box;
     }
 
     .modal-row:last-child {
@@ -1679,8 +1681,9 @@
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      padding-left: 12px;
-      /* лёгкие вертикальные границы слева и справа от колонки "Объем" */
+      padding: 6px 12px; /* вертикальные отступы + небольшой внутренний отступ слева */
+      box-sizing: border-box;
+      /* вертикальные границы, которые будут располагаться по одной оси, так как колонка фиксирована */
       border-left: 1px solid rgba(15, 23, 42, 0.06);
       border-right: 1px solid rgba(15, 23, 42, 0.06);
     }
@@ -1698,7 +1701,8 @@
       justify-content: flex-start;
       text-align: left;
       font-weight: 700;
-      padding-left: 12px;
+      padding: 6px 12px;
+      box-sizing: border-box;
       border-left: 1px solid rgba(15, 23, 42, 0.06);
       border-right: 1px solid rgba(15, 23, 42, 0.06);
     }
