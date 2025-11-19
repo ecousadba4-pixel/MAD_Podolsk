@@ -1654,8 +1654,8 @@
 
     .modal-row {
       display: grid;
-      /* фиксированная в пределах диапазона вторая колонка — чтобы границы по строкам совпадали */
-      grid-template-columns: 1fr minmax(100px, 140px) minmax(80px, 120px);
+      /* увеличили максимальную ширину колонки Объём для настольного вида */
+      grid-template-columns: 1fr minmax(120px, 220px) minmax(80px, 140px);
       align-items: center;
       column-gap: 18px;
       /* уменьшили вертикальные отступы на ~30% (6px -> 4px) для компактного вида */
@@ -1685,8 +1685,8 @@
       /* padding уменьшён ~30% */
       padding: 4px 8px;
       box-sizing: border-box;
-      /* вертикальные границы, которые будут располагаться по одной оси, так как колонка фиксирована */
-      border-left: 1px solid rgba(15, 23, 42, 0.06);
+      /* Оставляем только правую границу у колонки Объём, а левую границу задаём у предыдущей колонки (даты),
+         чтобы между колонками была ровная одна линия (не двойная). */
       border-right: 1px solid rgba(15, 23, 42, 0.06);
     }
 
@@ -1723,8 +1723,6 @@
       font-weight: 700;
       padding: 4px 8px;
       box-sizing: border-box;
-      border-left: 1px solid rgba(15, 23, 42, 0.06);
-      border-right: 1px solid rgba(15, 23, 42, 0.06);
       font-size: 0.95rem;
     }
 
@@ -1765,7 +1763,7 @@
         .modal-row {
           /* Фиксированная ширина столбца даты и чёткие вертикальные границы,
              выглядим как таблица: Date | Volume | Sum. Дата — ровно 56px (DD.MM). */
-          grid-template-columns: 56px minmax(72px, 140px) minmax(72px, 120px);
+          grid-template-columns: 56px minmax(120px, 180px) minmax(72px, 120px);
           column-gap: 6px;
           padding: 2px 6px;
           font-size: 0.92rem;
