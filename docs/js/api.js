@@ -79,6 +79,8 @@ export class DataManager {
     this.cache = new Map();
     this.currentData = null;
     this.visitorTracker = visitorTracker || null;
+    this.workDetailsCache = new Map();
+    this.workDetailsUrl = `${apiUrl.replace(/\/$/, "")}/work-details`;
   }
 
   getCached(monthIso) {
@@ -120,6 +122,56 @@ export class DataManager {
     const data = await response.json();
     this.cache.set(monthIso, data);
     return { data, fromCache: false };
+  }
+
+  _buildWorkCacheKey(monthIso, workKey) {
+    return `${monthIso || "unknown"}|${workKey || ""}`;
+  }
+
+  async fetchWorkDailyDetails(monthIso, { workKey, workName, description, smeta } = {}) {
+    if (!monthIso || !workKey) {
+      return null;
+    }
+
+    const normalizedKey = typeof workKey === "string"
+      ? workKey.trim().toLowerCase().replace(/\s+/g, " ")
+      : workKey;
+    if (!normalizedKey) {
+      return null;
+    }
+
+    const cacheKey = this._buildWorkCacheKey(monthIso, normalizedKey);
+    if (this.workDetailsCache.has(cacheKey)) {
+      return this.workDetailsCache.get(cacheKey);
+    }
+
+    const url = new URL(this.workDetailsUrl, window.location.origin);
+    url.searchParams.set("month", monthIso);
+    url.searchParams.set("work_key", normalizedKey);
+    if (workName) url.searchParams.set("work_name", workName);
+    if (description) url.searchParams.set("description", description);
+    if (smeta) url.searchParams.set("smeta", smeta);
+
+    const headers = {
+      ...(this.visitorTracker ? this.visitorTracker.buildHeaders() : {}),
+    };
+
+    const response = await withRetry(
+      () =>
+        fetch(url.toString(), {
+          headers,
+        }).then((res) => {
+          if (!res.ok) {
+            throw buildHttpError(res);
+          }
+          return res;
+        }),
+      { delayMs: DEFAULT_RETRY_DELAY_MS }
+    );
+
+    const payload = await response.json();
+    this.workDetailsCache.set(cacheKey, payload);
+    return payload;
   }
 
   async fetchAvailableMonths() {

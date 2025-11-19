@@ -1238,6 +1238,21 @@
       contain: layout style paint;
     }
 
+    .work-row--interactive {
+      cursor: pointer;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .work-row--interactive:hover {
+      background: rgba(47, 111, 237, 0.08);
+    }
+
+    .work-row--interactive:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+      box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.2);
+    }
+
     .work-row-last {
       border-bottom: 1px solid var(--border-soft);
     }

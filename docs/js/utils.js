@@ -22,6 +22,14 @@ export function formatPercent(value) {
   return (value * 100).toFixed(1) + " %";
 }
 
+export function formatVolume(value) {
+  if (value === null || value === undefined || isNaN(value)) return "–";
+  return value.toLocaleString("ru-RU", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
+}
+
 export function formatDateTime(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
