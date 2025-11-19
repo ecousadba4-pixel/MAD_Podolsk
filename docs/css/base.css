@@ -362,11 +362,38 @@ header {
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-card);
   min-height: 54px;
+  position: relative;
 }
 
 .month-select label {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.month-select-control {
+  position: relative;
+  flex: 1;
+  min-width: 146px;
+}
+
+.month-select-control select {
+  width: 100%;
+  appearance: none;
+  padding-right: 26px;
+}
+
+.month-select-control::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 select {
@@ -608,7 +635,11 @@ select {
     text-align: left;
   }
 
-  .month-select select {
+  .month-select-control {
+    width: 100%;
+  }
+
+  .month-select-control select {
     width: 100%;
     cursor: pointer;
     text-align: left;

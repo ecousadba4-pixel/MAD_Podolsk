@@ -224,7 +224,7 @@
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  color: inherit;
+  color: var(--text-muted);
   cursor: pointer;
   position: absolute;
   top: 0;
@@ -238,12 +238,13 @@
 }
 
 .work-row-name-toggle-icon {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
   transition: transform 0.2s ease;
+  opacity: 0.6;
 }
 
 .work-row-name-toggle[aria-expanded="true"] .work-row-name-toggle-icon {
