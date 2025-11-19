@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+import calendar
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Callable, TypeVar
@@ -359,10 +360,28 @@ def _fetch_contract_progress(conn, _selected_month: date) -> dict[str, float] | 
         return None
 
 
-def _calculate_daily_average(daily_rows: list[DailyRevenue]) -> float | None:
+def _calculate_daily_average(
+    month_start: date,
+    daily_rows: list[DailyRevenue],
+    fact_total: float | None,
+) -> float | None:
+    """Вычисляет среднедневную выручку для выбранного месяца."""
+
+    today = date.today()
+    current_month_start = today.replace(day=1)
+
+    if month_start != current_month_start:
+        total = fact_total
+        if total is None:
+            total = sum(row.amount for row in daily_rows if row.amount is not None)
+        if not total:
+            return None
+        days_in_month = calendar.monthrange(month_start.year, month_start.month)[1]
+        return total / days_in_month
+
     if not daily_rows:
         return None
-    today = date.today()
+
     amounts_without_today = [
         row.amount for row in daily_rows if row.amount is not None and row.date != today
     ]
@@ -395,8 +414,16 @@ def fetch_plan_vs_fact_for_month(
             if vnr_plan_item:
                 items.append(vnr_plan_item)
 
+            month_fact_total = sum(
+                item.fact_amount or 0.0 for item in items if item.fact_amount is not None
+            )
+
             daily_revenue = _fetch_daily_fact_totals(conn, month_start)
-            average_daily_revenue = _calculate_daily_average(daily_revenue)
+            average_daily_revenue = _calculate_daily_average(
+                month_start,
+                daily_revenue,
+                month_fact_total,
+            )
 
             contract_progress = _fetch_contract_progress(conn, month_start)
 
