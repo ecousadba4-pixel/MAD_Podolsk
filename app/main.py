@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from pathlib import Path
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .db import close_pool
@@ -63,13 +60,6 @@ def create_app() -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
-
-    static_root = Path(__file__).resolve().parent.parent / "docs"
-    app.mount(
-        "/",
-        StaticFiles(directory=str(static_root), html=True),
-        name="frontend",
-    )
 
     return app
 
