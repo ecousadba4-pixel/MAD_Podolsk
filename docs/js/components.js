@@ -660,7 +660,13 @@ export class UIManager {
     sorted.forEach((item) => {
       const row = document.createElement("div");
       row.className = "modal-row";
-      const dateLabel = formatDate(item.date);
+      // Для мобильной версии используем компактный формат даты DD.MM
+      const isMobile = typeof window !== "undefined" && window.matchMedia
+        ? window.matchMedia("(max-width: 767px)").matches
+        : false;
+      const dateLabel = isMobile
+        ? formatDate(item.date, { day: "2-digit", month: "2-digit" })
+        : formatDate(item.date);
       if (isWorkMode) {
         const amount = Number(item.amount);
         const formattedAmount = Number.isFinite(amount) ? amount.toFixed(1) : "–";

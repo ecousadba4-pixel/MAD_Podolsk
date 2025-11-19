@@ -421,24 +421,15 @@
       word-break: break-word;
     }
 
-    .pill-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #0f9d58;
-      box-shadow: 0 0 0 4px rgba(15, 157, 88, 0.15);
-    }
-
-    .transition-lift-fade,
-    .btn {
-      transition: var(--transition-lift), var(--transition-fade);
-    }
-
-    .btn {
-      border: none;
-      border-radius: var(--radius-md);
-      font-size: 0.9rem;
-      padding: 10px 18px;
+      .modal-row {
+        /* увеличили максимальную ширину второй колонки (единицы измерения),
+           чтобы длинные единицы не обрезались и дата оставалась видимой */
+        grid-template-columns: minmax(0, 1fr) minmax(56px, 140px) minmax(72px, 120px);
+        column-gap: 6px;
+        padding: 2px 6px;
+        font-size: 0.92rem;
+        line-height: 1.06;
+      }
       display: inline-flex;
       align-items: center;
       gap: 10px;
@@ -1762,7 +1753,17 @@
         padding: 2px 6px;
         font-size: 0.92rem;
         line-height: 1.06;
-      }
+        }
+    
+        .modal-row {
+          /* увеличили максимальную ширину второй колонки (единицы измерения),
+             чтобы длинные единицы не обрезались и дата оставалась видимой */
+          grid-template-columns: minmax(0, 1fr) minmax(56px, 140px) minmax(72px, 120px);
+          column-gap: 6px;
+          padding: 2px 6px;
+          font-size: 0.92rem;
+          line-height: 1.06;
+        }
 
       .modal-row > div {
         white-space: nowrap;
@@ -1772,8 +1773,9 @@
 
       .modal-row-date {
         text-align: left;
-        font-weight: 600;
+        font-weight: 400; /* теперь не жирный */
         padding-right: 6px;
+        font-size: 0.86rem; /* чуть меньше шрифт для даты */
       }
 
       .modal-row-value {
@@ -1967,19 +1969,7 @@
         max-height: none;
         padding-right: 6px;
       }
-      /* На мобильных отключаем вертикальные разделители для компактного вида */
-      .modal-row-value {
-        padding-left: 0;
-        border-left: none;
-        border-right: none;
-        text-align: right;
-        justify-content: flex-end;
-      }
-      .modal-row.modal-row-header > div:nth-child(2) {
-        padding-left: 0;
-        border-left: none;
-        border-right: none;
-      }
+      /* Конфликтующие правила отключения границ/выровнивания удалены. */
     }
 
     /* Print: 1 страница A4 */
