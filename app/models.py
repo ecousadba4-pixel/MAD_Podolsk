@@ -43,6 +43,7 @@ class DailyWorkVolume(BaseModel):
     date: date
     amount: float
     unit: str = ""
+    total_amount: float = 0.0
 
 
 class DashboardSummary(BaseModel):

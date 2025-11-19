@@ -318,8 +318,9 @@ WORK_BREAKDOWN_SQL = """
     SELECT
         date_done::date AS work_date,
         SUM(COALESCE(total_volume, 0)) AS total_volume,
-        MAX(COALESCE(unit::text, '')) AS unit
-    FROM skpdi_fact_agg
+        MAX(COALESCE(unit::text, '')) AS unit,
+        SUM(COALESCE(total_amount, 0)) AS total_amount
+    FROM skpdi_fact_with_money
     WHERE DATE_TRUNC('month', date_done::timestamp)::date = %s
         AND status = 'Рассмотрено'
         AND COALESCE(description::text, '') ILIKE %s
@@ -352,9 +353,10 @@ def fetch_work_daily_breakdown(month_start: date, work_identifier: str) -> list[
                         work_date = row.get("work_date")
                         vol = _to_float(row.get("total_volume"))
                         unit = (row.get("unit") or "").strip()
+                        total_amount = _to_float(row.get("total_amount"))
                         if work_date is None or vol is None:
                             continue
-                        rows.append(DailyWorkVolume(date=work_date, amount=vol, unit=unit))
+                        rows.append(DailyWorkVolume(date=work_date, amount=vol, unit=unit, total_amount=total_amount))
             except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     "Не удалось загрузить подневную расшифровку для '%s' за %s: %s",

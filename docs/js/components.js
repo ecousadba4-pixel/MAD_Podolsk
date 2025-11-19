@@ -577,7 +577,7 @@ export class UIManager {
       const titleEl = this.elements.dailyModal.querySelector("#daily-modal-title") || document.getElementById("daily-modal-title");
       if (titleEl) titleEl.textContent = `Расшифровка: ${workName}`;
       if (this.elements.dailyModalSubtitle) {
-        this.elements.dailyModalSubtitle.textContent = `По дням за ${this.getSelectedMonthLabel().toLowerCase()}`;
+        this.elements.dailyModalSubtitle.textContent = "";
       }
 
       const response = await fetch(url.toString(), {
@@ -593,8 +593,9 @@ export class UIManager {
         const raw = it.amount ?? it.total_volume ?? it.value;
         const amount = raw === null || raw === undefined ? null : Number(raw);
         const unit = it.unit || "";
+        const total_amount = it.total_amount ?? null;
         if (!date || amount === null || !Number.isFinite(amount)) return null;
-        return { date, amount, unit };
+        return { date, amount, unit, total_amount };
       }).filter(Boolean);
 
       this.renderDailyModalList();
@@ -632,19 +633,31 @@ export class UIManager {
     this.elements.dailyModalEmpty.style.display = "none";
     this.elements.dailyModalList.style.display = "grid";
 
+    // Добавляем заголовки
+    const header = document.createElement("div");
+    header.className = "modal-row modal-row-header";
+    header.innerHTML = `
+      <div>Дата</div>
+      <div>Объем</div>
+      <div>Сумма,₽</div>
+    `;
+    this.elements.dailyModalList.appendChild(header);
+
     const fragment = document.createDocumentFragment();
     sorted.forEach((item) => {
       const row = document.createElement("div");
       row.className = "modal-row";
       const dateLabel = formatDate(item.date);
-      // Форматируем объём с одним знаком после запятой и единицей измерения в скобках
       const amount = Number(item.amount);
       const formattedAmount = Number.isFinite(amount) ? amount.toFixed(1) : "–";
       const unit = item.unit || "";
       const valueText = unit ? `${formattedAmount} (${unit})` : formattedAmount;
+      const totalAmount = Number(item.total_amount);
+      const formattedTotal = Number.isFinite(totalAmount) ? totalAmount.toLocaleString("ru-RU", {minimumFractionDigits: 0, maximumFractionDigits: 0}) : "–";
       row.innerHTML = `
         <div class="modal-row-date">${dateLabel}</div>
         <div class="modal-row-value">${valueText}</div>
+        <div class="modal-row-sum">${formattedTotal}</div>
       `;
       fragment.appendChild(row);
     });

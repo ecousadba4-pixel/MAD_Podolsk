@@ -83,5 +83,11 @@ def get_work_breakdown(month: MonthQuery, work: Annotated[str, Query(..., descri
     """
     rows = fetch_work_daily_breakdown(month, work)
     return [
-        {"date": r.date.isoformat(), "amount": r.amount, "unit": r.unit} for r in rows
+        {
+            "date": r.date.isoformat(),
+            "amount": r.amount,
+            "unit": r.unit,
+            "total_amount": r.total_amount,
+        }
+        for r in rows
     ]
