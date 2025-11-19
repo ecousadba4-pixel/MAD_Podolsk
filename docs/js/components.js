@@ -286,16 +286,6 @@ export class UIManager {
     if (this.elements.dailyAverageHint) {
       this.elements.dailyAverageHint.hidden = !isCurrentMonth;
     }
-    // Показываем иконку (i) только когда выбран текущий календарный месяц
-    if (this.elements.workDetailHint) {
-      if (isCurrentMonth) {
-        this.elements.workDetailHint.style.display = "inline-block";
-        this.elements.workDetailHint.setAttribute("aria-hidden", "false");
-      } else {
-        this.elements.workDetailHint.style.display = "none";
-        this.elements.workDetailHint.setAttribute("aria-hidden", "true");
-      }
-    }
   }
 
   setMonthSelectPlaceholder(message) {

@@ -1394,34 +1394,6 @@
       transition: transform 0.2s ease;
     }
 
-    .work-detail-hint {
-      margin-left: 12px;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      align-self: center;
-      background: transparent;
-      padding: 0;
-      border: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: default;
-    }
-
-    .work-detail-icon {
-      display: inline-flex;
-      width: 28px;
-      height: 28px;
-      line-height: 28px;
-      border-radius: 999px;
-      border: 1px solid rgba(0,0,0,0.08);
-      background: rgba(0,0,0,0.02);
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.85rem;
-      text-align: center;
-    }
-
     .work-row-name-toggle[aria-expanded="true"] .work-row-name-toggle-icon {
       transform: rotate(-135deg);
     }
