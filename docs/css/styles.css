@@ -656,6 +656,7 @@
       line-height: 1.15;
       font-variant-numeric: tabular-nums;
       font-feature-settings: "tnum" 1;
+      color: var(--text-main);
     }
 
     @media (min-width: 768px) {
