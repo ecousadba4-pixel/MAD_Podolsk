@@ -281,7 +281,7 @@ export class UIManager {
     return targetKey === currentKey;
   }
 
-  updateDailyAverageNoteVisibility(monthIso = this.selectedMonthIso) {
+  updateDailyAverageVisibility(monthIso = this.selectedMonthIso) {
     const isCurrentMonth = this.isCurrentMonth(monthIso);
     if (this.elements.dailyAverageNote) {
       this.elements.dailyAverageNote.hidden = !isCurrentMonth;
@@ -306,7 +306,7 @@ export class UIManager {
 
   async loadMonthData(monthIso) {
     this.selectedMonthIso = monthIso;
-    this.updateDailyAverageNoteVisibility(monthIso);
+    this.updateDailyAverageVisibility(monthIso);
     const cached = this.dataManager.getCached(monthIso);
     if (cached) {
       this.applyData(cached);
@@ -330,6 +330,7 @@ export class UIManager {
   showLoadingState() {
     this.groupedCategories = [];
     this.activeCategoryKey = null;
+    this.dailyRevenue = [];
     this.toggleSkeletons(true);
     this.elements.categoryGrid.innerHTML = "";
     this.elements.lastUpdatedText.textContent = "Загрузка данных…";
@@ -360,6 +361,7 @@ export class UIManager {
     this.elements.sumFact.textContent = "–";
     this.elements.sumDelta.textContent = "–";
     this.elements.sumDelta.classList.remove("positive", "negative");
+    this.dailyRevenue = [];
     this.updateSummaryProgress(null, "–");
     this.updateDailyAverage(null, 0);
     this.updateContractCard(null);
@@ -410,6 +412,7 @@ export class UIManager {
     const contractMetrics = this.dataManager.calculateContractMetrics(currentData || {});
     this.updateContractCard(contractMetrics);
     this.metrics = metrics;
+
     if (!metrics) {
       this.elements.sumPlanned.textContent = "–";
       this.elements.sumFact.textContent = "–";
@@ -515,6 +518,7 @@ export class UIManager {
     const hasData = Number.isFinite(daysWithData) && daysWithData > 0;
     const isCurrentMonth = this.isCurrentMonth(this.selectedMonthIso);
     const isInteractive = hasData && isCurrentMonth;
+
     if (this.elements.sumDailyAverage) {
       this.elements.sumDailyAverage.textContent = averageValue !== null
         && averageValue !== undefined
@@ -522,13 +526,11 @@ export class UIManager {
         ? formatMoney(averageValue)
         : "–";
     }
+
     if (this.elements.dailyAverageCard) {
       this.elements.dailyAverageCard.classList.toggle("is-disabled", !isInteractive);
       this.elements.dailyAverageCard.setAttribute("aria-disabled", String(!isInteractive));
-      const hint = this.elements.dailyAverageHint;
-      if (hint) {
-        hint.hidden = !isCurrentMonth;
-      }
+
       const srHint = this.elements.dailyAverageCard.querySelector(".sr-only");
       if (srHint) {
         srHint.hidden = !isInteractive;
