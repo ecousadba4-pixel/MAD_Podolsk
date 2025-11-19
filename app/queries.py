@@ -319,12 +319,9 @@ WORK_BREAKDOWN_SQL = """
         date_done::date AS work_date,
         SUM(COALESCE(total_volume, 0)) AS total_volume
     FROM skpdi_fact_agg
-    WHERE month_start = %s
+    WHERE DATE_TRUNC('month', date_done::timestamp)::date = %s
         AND status = 'Рассмотрено'
-        AND (
-            TRIM(LOWER(COALESCE(work_name::text, ''))) = TRIM(LOWER(%s))
-            OR TRIM(LOWER(COALESCE(description::text, ''))) = TRIM(LOWER(%s))
-        )
+        AND COALESCE(description::text, '') ILIKE %s
     GROUP BY work_date
     ORDER BY work_date;
 """
@@ -346,7 +343,9 @@ def fetch_work_daily_breakdown(month_start: date, work_identifier: str) -> list[
         with get_connection() as conn:
             try:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(WORK_BREAKDOWN_SQL, (month_start, work_identifier, work_identifier))
+                    # Используем ILIKE с шаблоном, чтобы находить работы по подстроке
+                    work_param = f"%{work_identifier.strip()}%"
+                    cur.execute(WORK_BREAKDOWN_SQL, (month_start, work_param))
                     fetched = cur.fetchall() or []
                     for row in fetched:
                         work_date = row.get("work_date")
