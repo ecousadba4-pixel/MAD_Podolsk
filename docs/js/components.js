@@ -484,6 +484,8 @@ export class UIManager {
 
   updateDailyAverage(averageValue, daysWithData) {
     const hasData = Number.isFinite(daysWithData) && daysWithData > 0;
+    const isCurrentMonth = this.isCurrentMonth(this.selectedMonthIso);
+    const isInteractive = hasData && isCurrentMonth;
     if (this.elements.sumDailyAverage) {
       this.elements.sumDailyAverage.textContent = averageValue !== null
         && averageValue !== undefined
@@ -492,13 +494,25 @@ export class UIManager {
         : "–";
     }
     if (this.elements.dailyAverageCard) {
-      this.elements.dailyAverageCard.classList.toggle("is-disabled", !hasData);
-      this.elements.dailyAverageCard.setAttribute("aria-disabled", String(!hasData));
+      this.elements.dailyAverageCard.classList.toggle("is-disabled", !isInteractive);
+      this.elements.dailyAverageCard.setAttribute("aria-disabled", String(!isInteractive));
+      const hint = this.elements.dailyAverageCard.querySelector(".summary-card-hint");
+      if (hint) {
+        hint.hidden = !isCurrentMonth;
+      }
+      const srHint = this.elements.dailyAverageCard.querySelector(".sr-only");
+      if (srHint) {
+        srHint.hidden = !isInteractive;
+      }
     }
   }
 
   openDailyModal() {
-    if (!this.dailyRevenue.length || !this.elements.dailyModal) {
+    if (
+      !this.dailyRevenue.length
+      || !this.elements.dailyModal
+      || !this.isCurrentMonth(this.selectedMonthIso)
+    ) {
       return;
     }
     this.renderDailyModalList();
