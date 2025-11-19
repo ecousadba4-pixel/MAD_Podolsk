@@ -638,8 +638,8 @@ export class UIManager {
     header.className = "modal-row modal-row-header";
     header.innerHTML = `
       <div>Дата</div>
-      <div>Объем</div>
-      <div>Сумма,₽</div>
+      <div class="modal-row-value">Объем</div>
+      <div class="modal-row-sum">Сумма,₽</div>
     `;
     this.elements.dailyModalList.appendChild(header);
 

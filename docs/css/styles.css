@@ -1656,9 +1656,9 @@
 
     .modal-row {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       align-items: center;
-      column-gap: 16px;
+      column-gap: 24px;
       padding: 6px 0;
       border-bottom: 1px solid var(--border-soft);
     }
@@ -1675,7 +1675,30 @@
     .modal-row-value {
       font-weight: 700;
       color: var(--text-main);
+      text-align: left;
+    }
+
+    .modal-row-sum {
+      font-weight: 700;
+      color: var(--text-main);
       text-align: right;
+    }
+
+    /* Выравнивание заголовков в шапке модального списка */
+    .modal-row.modal-row-header > div:nth-child(2) {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    .modal-row.modal-row-header > div:nth-child(3) {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      text-align: right;
+      font-weight: 700;
     }
 
     @media (max-width: 767px) {
@@ -1686,6 +1709,36 @@
       .controls {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      /* Мобильные правки для модального окна: сворачиваем три колонки в более компактную схему */
+      .modal-list {
+        row-gap: 8px;
+        padding: 6px 0;
+      }
+
+      .modal-row {
+        /* Для мобильных: дата слева, а справа — блок с объёмом и суммой (они будут внутри правой колонки)
+           Поскольку в десктопной верcии у нас два auto-колонок, здесь мы используем auto для второй колонки
+           и уменьшаем gap для компактности. */
+        grid-template-columns: 1fr auto;
+        column-gap: 12px;
+        padding: 8px 0;
+      }
+
+      /* Подписи и значения: дата слева, объем и сумма справа (в одну колонку справа) */
+      .modal-row-date {
+        font-weight: 600;
+      }
+
+      .modal-row-value {
+        text-align: right;
+        font-weight: 700;
+      }
+
+      .modal-row-sum {
+        text-align: right;
+        font-weight: 700;
       }
 
       .pdf-action {
