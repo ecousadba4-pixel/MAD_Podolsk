@@ -12,6 +12,7 @@
   --accent-soft: #e0e7ff;
   --danger: #c0342b;
   --success: #0f9d58;
+  --chevron-color: rgba(94, 100, 115, 0.5);
   --radius-lg: 18px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -389,11 +390,11 @@ header {
   right: 8px;
   width: 8px;
   height: 8px;
-  border-right: 2px solid var(--text-muted);
-  border-bottom: 2px solid var(--text-muted);
+  border-right: 2px solid var(--chevron-color);
+  border-bottom: 2px solid var(--chevron-color);
   transform: translateY(-50%) rotate(45deg);
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 1;
 }
 
 select {

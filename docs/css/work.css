@@ -224,7 +224,7 @@
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  color: var(--text-muted);
+  color: var(--chevron-color);
   cursor: pointer;
   position: absolute;
   top: 0;
@@ -240,11 +240,11 @@
 .work-row-name-toggle-icon {
   width: 8px;
   height: 8px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  border-right: 2px solid var(--chevron-color);
+  border-bottom: 2px solid var(--chevron-color);
   transform: rotate(45deg);
   transition: transform 0.2s ease;
-  opacity: 0.6;
+  opacity: 1;
 }
 
 .work-row-name-toggle[aria-expanded="true"] .work-row-name-toggle-icon {
