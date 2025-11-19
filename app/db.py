@@ -58,8 +58,17 @@ class _ThreadSafeConnectionPool:
         if not conn.autocommit:
             conn.rollback()
 
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        except OperationalError as exc:
+            if "SSL" in str(exc):
+                logger.error(
+                    "SSL ошибка соединения с БД. Убедитесь, что DB_DSN содержит корректные SSL параметры. "
+                    "Рекомендуется добавить '?sslmode=disable' если SSL не требуется. Ошибка: %s",
+                    exc,
+                )
+            raise
 
     @contextmanager
     def connection(self) -> Iterator[PGConnection]:

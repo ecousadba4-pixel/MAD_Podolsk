@@ -26,6 +26,12 @@ class Settings(BaseSettings):
         if "//" not in value:
             msg = "DB_DSN должен быть полноценной строкой подключения"
             raise ValueError(msg)
+        
+        # Добавляем параметры SSL по умолчанию, если их нет
+        if "sslmode" not in value:
+            separator = "&" if "?" in value else "?"
+            value = f"{value}{separator}sslmode=disable"
+        
         return value
 
     @property
