@@ -208,7 +208,7 @@
   }
 
   .modal-row {
-    grid-template-columns: 70px minmax(120px, 190px) minmax(90px, 130px);
+    grid-template-columns: 70px minmax(140px, 220px) minmax(70px, 110px);
     column-gap: 8px;
     padding: 4px 6px;
     font-size: 0.92rem;
@@ -263,7 +263,7 @@
   }
 
   .modal-row.modal-row-header {
-    grid-template-columns: 70px minmax(120px, 190px) minmax(90px, 130px);
+    grid-template-columns: 70px minmax(140px, 220px) minmax(70px, 110px);
     column-gap: 8px;
     padding: 4px 6px;
     border-bottom: 1px solid var(--border-soft);
