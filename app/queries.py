@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 import calendar
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Callable, TypeVar
 
@@ -321,7 +321,8 @@ WORK_BREAKDOWN_SQL = """
         MAX(COALESCE(unit::text, '')) AS unit,
         SUM(COALESCE(total_amount, 0)) AS total_amount
     FROM skpdi_fact_with_money
-    WHERE DATE_TRUNC('month', date_done::timestamp)::date = %s
+    WHERE date_done::date >= %s
+        AND date_done::date < %s
         AND status = 'Рассмотрено'
         AND COALESCE(description::text, '') ILIKE %s
     GROUP BY work_date
@@ -342,12 +343,13 @@ def fetch_work_daily_breakdown(month_start: date, work_identifier: str) -> list[
 
     def _load() -> list[DailyWorkVolume]:
         rows: list[DailyWorkVolume] = []
+        next_month_start = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
         with get_connection() as conn:
             try:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     # Используем ILIKE с шаблоном, чтобы находить работы по подстроке
                     work_param = f"%{work_identifier.strip()}%"
-                    cur.execute(WORK_BREAKDOWN_SQL, (month_start, work_param))
+                    cur.execute(WORK_BREAKDOWN_SQL, (month_start, next_month_start, work_param))
                     fetched = cur.fetchall() or []
                     for row in fetched:
                         work_date = row.get("work_date")
