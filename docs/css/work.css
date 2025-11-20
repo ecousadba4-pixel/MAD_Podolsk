@@ -72,7 +72,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .work-list-scroller {
@@ -294,17 +294,20 @@
 
   .work-panel-header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(128px, min(45vw, 200px));
+    grid-template-columns: minmax(0, 1fr) max-content;
     grid-template-areas:
       "title sort"
       "hint hint";
     column-gap: clamp(16px, 4vw, 24px);
     row-gap: clamp(12px, 3vw, 18px);
     align-items: start;
+    margin-bottom: 6px;
   }
 
   .work-panel-title-area {
     grid-area: title;
+    align-items: flex-start;
+    min-width: 0;
   }
 
   .panel-title-text-desktop {
@@ -313,6 +316,10 @@
 
   .panel-title-mobile {
     display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
   }
 
   .panel-title-mobile-value {
@@ -326,6 +333,8 @@
     min-width: 0;
     max-width: 100%;
     align-self: center;
+    justify-self: start;
+    align-items: flex-start;
   }
 
   .work-panel-header .panel-title {
@@ -342,13 +351,13 @@
   .work-detail-hint {
     grid-area: hint;
     font-size: 0.8rem;
-    margin: 0;
+    margin: 6px 0 0;
   }
 
   .work-panel-header .work-sort-select {
     grid-area: sort;
     justify-self: end;
-    width: min(45vw, 200px);
+    width: min(42vw, 186px);
   }
 
   .work-sort-select {
