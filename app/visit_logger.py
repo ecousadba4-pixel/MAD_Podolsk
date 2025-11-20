@@ -86,28 +86,27 @@ def _get_client_ip(request: Request) -> str | None:
     return None
 
 
-def _get_user_id(request: Request) -> str | None:
-    """Возвращает анонимный постоянный идентификатор пользователя.
+def _get_identifier_from_request(
+    request: Request, header_name: str, cookie_name: str
+) -> str | None:
+    """Извлекает строковый идентификатор из заголовков или cookies."""
 
-    Ожидается, что фронтенд сохраняет его в localStorage/cookie и прокидывает в
-    заголовке `X-User-Id` или cookie `user_id`.
-    """
-
-    user_id = request.headers.get("x-user-id") or request.cookies.get("user_id")
-    if user_id:
-        return user_id.strip() or None
+    raw_value = request.headers.get(header_name) or request.cookies.get(cookie_name)
+    if raw_value:
+        return raw_value.strip() or None
     return None
+
+
+def _get_user_id(request: Request) -> str | None:
+    """Возвращает анонимный постоянный идентификатор пользователя."""
+
+    return _get_identifier_from_request(request, "x-user-id", "user_id")
 
 
 def _get_session_id(request: Request) -> str | None:
     """Возвращает идентификатор сессии (UUID v4 без персональных данных)."""
 
-    session_id = request.headers.get("x-session-id") or request.cookies.get(
-        "session_id"
-    )
-    if session_id:
-        return session_id.strip() or None
-    return None
+    return _get_identifier_from_request(request, "x-session-id", "session_id")
 
 
 def _get_session_duration(request: Request) -> int | None:
