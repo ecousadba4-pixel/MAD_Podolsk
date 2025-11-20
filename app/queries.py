@@ -341,6 +341,10 @@ def fetch_work_daily_breakdown(month_start: date, work_identifier: str) -> list[
     if not work_identifier:
         return results
 
+    # На фронтенд может прийти любая дата внутри месяца, поэтому нормализуем
+    # значение к первому дню месяца, чтобы захватывать весь период.
+    month_start = month_start.replace(day=1)
+
     def _load() -> list[DailyWorkVolume]:
         rows: list[DailyWorkVolume] = []
         next_month_start = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
