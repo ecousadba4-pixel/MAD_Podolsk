@@ -357,9 +357,11 @@
   .work-detail-hint {
     grid-area: hint;
     font-size: 0.8rem;
-    margin: 6px 0 0;
+    margin: 2px 0 0;
     width: 100%;
-    align-self: start;
+    align-self: center;
+    justify-self: center;
+    text-align: center;
   }
 
   .work-detail-hint-line-break {
