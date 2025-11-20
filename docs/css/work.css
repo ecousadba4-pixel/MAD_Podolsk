@@ -306,7 +306,7 @@
       "hint hint";
     column-gap: clamp(16px, 4vw, 24px);
     row-gap: clamp(12px, 3vw, 18px);
-    align-items: start;
+    align-items: center;
     margin-bottom: 6px;
   }
 
@@ -340,7 +340,7 @@
     max-width: 100%;
     align-self: center;
     justify-self: start;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .work-panel-header .panel-title {
@@ -359,10 +359,11 @@
     font-size: 0.8rem;
     margin: 6px 0 0;
     width: 100%;
+    align-self: start;
   }
 
   .work-detail-hint-line-break {
-    display: inline;
+    display: none;
   }
 
   .work-panel-header .work-sort-select {
