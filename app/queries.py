@@ -11,7 +11,14 @@ from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
 
 from .db import get_connection
-from .models import DashboardItem, DashboardSummary, DailyRevenue, DailyWorkVolume
+from .models import (
+    DashboardItem,
+    DashboardSummary,
+    DailyReportItem,
+    DailyReportResponse,
+    DailyRevenue,
+    DailyWorkVolume,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +128,29 @@ DAILY_FACT_SQL = """
     GROUP BY work_date
     HAVING SUM(total_amount) IS NOT NULL
     ORDER BY work_date;
+"""
+
+DAILY_REPORT_SQL = """
+    SELECT
+        COALESCE(smeta_code, '') AS smeta_code,
+        COALESCE(smeta_section, '') AS smeta_section,
+        COALESCE(description, '') AS description,
+        unit,
+        SUM(total_volume) AS total_volume,
+        SUM(total_amount) AS total_amount
+    FROM skpdi_fact_with_money
+    WHERE date_done::date = %s
+        AND status = 'Рассмотрено'
+    GROUP BY smeta_code, smeta_section, description, unit
+    ORDER BY total_amount DESC NULLS LAST, description;
+"""
+
+AVAILABLE_DAYS_SQL = """
+    SELECT DISTINCT date_done::date AS work_date
+    FROM skpdi_fact_with_money
+    WHERE date_trunc('month', date_done) = date_trunc('month', CURRENT_DATE)
+        AND status = 'Рассмотрено'
+    ORDER BY work_date DESC;
 """
 
 
@@ -551,4 +581,61 @@ def fetch_available_months(limit: int = 12) -> list[date]:
 
     return _execute_with_retry(
         _load_months, label="fetch_available_months", delay_sec=_DB_RETRY_DELAY_SEC
+    )
+
+
+def fetch_available_days() -> list[date]:
+    """Возвращает список дат текущего месяца, по которым есть фактические данные."""
+
+    def _load_days() -> list[date]:
+        with get_connection() as conn, conn.cursor() as cur:
+            cur.execute(AVAILABLE_DAYS_SQL)
+            rows = cur.fetchall() or []
+        return [row[0] for row in rows if row and row[0] is not None]
+
+    return _execute_with_retry(
+        _load_days, label="fetch_available_days", delay_sec=_DB_RETRY_DELAY_SEC
+    )
+
+
+def fetch_daily_report(target_date: date) -> DailyReportResponse:
+    """Возвращает детализацию фактических работ за выбранный день."""
+
+    target_date = target_date or date.today()
+
+    def _load_report() -> DailyReportResponse:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(DAILY_REPORT_SQL, (target_date,))
+                rows = cur.fetchall() or []
+
+            last_updated = None
+            with conn.cursor() as cur:
+                cur.execute(LAST_UPDATED_SQL)
+                res = cur.fetchone()
+                if res:
+                    last_updated = res[0]
+
+        items: list[DailyReportItem] = []
+        for row in rows:
+            items.append(
+                DailyReportItem(
+                    smeta=(row.get("smeta_code") or "").strip() or None,
+                    work_type=(row.get("smeta_section") or "").strip() or None,
+                    description=(row.get("description") or "").strip() or "Без названия",
+                    unit=(row.get("unit") or "").strip() or None,
+                    total_volume=_to_float(row.get("total_volume")),
+                    total_amount=_to_float(row.get("total_amount")),
+                )
+            )
+
+        return DailyReportResponse(
+            date=target_date,
+            last_updated=last_updated,
+            items=items,
+            has_data=bool(items),
+        )
+
+    return _execute_with_retry(
+        _load_report, label="fetch_daily_report", delay_sec=_DB_RETRY_DELAY_SEC
     )

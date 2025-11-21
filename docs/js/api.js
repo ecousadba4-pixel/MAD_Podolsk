@@ -73,10 +73,13 @@ async function withRetry(requestFn, { retries = 1, delayMs = DEFAULT_RETRY_DELAY
 }
 
 export class DataManager {
-  constructor(apiUrl, { monthsUrl, visitorTracker } = {}) {
+  constructor(apiUrl, { monthsUrl, daysUrl, dailyUrl, visitorTracker } = {}) {
     this.apiUrl = apiUrl;
     this.monthsUrl = monthsUrl || `${apiUrl.replace(/\/$/, "")}/months`;
+    this.daysUrl = daysUrl || `${apiUrl.replace(/\/$/, "")}/days`;
+    this.dailyUrl = dailyUrl || `${apiUrl.replace(/\/$/, "")}/daily`;
     this.cache = new Map();
+    this.dailyCache = new Map();
     this.currentData = null;
     this.visitorTracker = visitorTracker || null;
   }
@@ -138,6 +141,64 @@ export class DataManager {
     );
     const payload = await response.json();
     return Array.isArray(payload?.months) ? payload.months : [];
+  }
+
+  async fetchAvailableDays() {
+    const response = await withRetry(
+      () =>
+        fetch(this.daysUrl, {
+          cache: "no-store",
+          headers: this.visitorTracker ? this.visitorTracker.buildHeaders() : undefined,
+        }).then((res) => {
+          if (!res.ok) {
+            throw buildHttpError(res);
+          }
+          return res;
+        }),
+      { delayMs: DEFAULT_RETRY_DELAY_MS }
+    );
+    const payload = await response.json();
+    return Array.isArray(payload?.days) ? payload.days : [];
+  }
+
+  getCachedDaily(dayIso) {
+    return this.dailyCache.get(dayIso) || null;
+  }
+
+  async fetchDailyReport(dayIso, { force = false } = {}) {
+    if (!dayIso) {
+      throw new Error("Не указана дата для загрузки дневного отчёта");
+    }
+    if (!force && this.dailyCache.has(dayIso)) {
+      return { data: this.dailyCache.get(dayIso), fromCache: true };
+    }
+
+    const url = new URL(this.dailyUrl, window.location.origin);
+    url.searchParams.set("day", dayIso);
+    url.searchParams.set("_", Date.now().toString());
+    const headers = {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      ...(this.visitorTracker ? this.visitorTracker.buildHeaders() : {}),
+    };
+
+    const response = await withRetry(
+      () =>
+        fetch(url.toString(), {
+          cache: "no-store",
+          headers,
+        }).then((res) => {
+          if (!res.ok) {
+            throw buildHttpError(res);
+          }
+          return res;
+        }),
+      { delayMs: DEFAULT_RETRY_DELAY_MS }
+    );
+
+    const data = await response.json();
+    this.dailyCache.set(dayIso, data);
+    return { data, fromCache: false };
   }
 
   setCurrentData(data) {

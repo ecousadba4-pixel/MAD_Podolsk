@@ -35,6 +35,12 @@ export function formatDate(value, options = { day: "2-digit", month: "long" }) {
   return d.toLocaleDateString("ru-RU", options);
 }
 
+export function formatNumber(value, options = { maximumFractionDigits: 3 }) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "–";
+  const opts = { minimumFractionDigits: 0, ...options };
+  return Number(value).toLocaleString("ru-RU", opts);
+}
+
 export function showToast(message, type = "success") {
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;

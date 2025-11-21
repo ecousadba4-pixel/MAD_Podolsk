@@ -9,13 +9,24 @@ from fastapi.responses import Response
 from ..models import DashboardResponse
 from ..visit_logger import VisitLogRequest, log_dashboard_visit
 from ..pdf import build_dashboard_pdf
-from ..queries import fetch_available_months, fetch_plan_vs_fact_for_month, fetch_work_daily_breakdown
+from ..queries import (
+    fetch_available_days,
+    fetch_available_months,
+    fetch_daily_report,
+    fetch_plan_vs_fact_for_month,
+    fetch_work_daily_breakdown,
+)
 
 router = APIRouter()
 
 MonthQuery = Annotated[
     date,
     Query(..., description="Первый день месяца, напр. 2025-11-01"),
+]
+
+DayQuery = Annotated[
+    date,
+    Query(..., description="Дата в формате 2025-11-15"),
 ]
 
 
@@ -56,6 +67,14 @@ def get_available_months(limit: Annotated[int | None, Query(gt=0, le=24)] = 12) 
     return {"months": months}
 
 
+@router.get("/dashboard/days")
+def get_available_days() -> dict[str, list[date]]:
+    """Возвращает дни текущего месяца, для которых есть данные факта."""
+
+    days = fetch_available_days()
+    return {"days": days}
+
+
 @router.post("/dashboard/visit", status_code=status.HTTP_204_NO_CONTENT)
 def log_dashboard_visit_endpoint(payload: VisitLogRequest, request: Request) -> Response:
     """Записывает единичный визит пользователя на дашборд.
@@ -73,6 +92,14 @@ def log_dashboard_visit_endpoint(payload: VisitLogRequest, request: Request) -> 
     )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/dashboard/daily")
+def get_daily_report(day: DayQuery, request: Request):
+    """Возвращает детализацию принятых работ за конкретный день."""
+
+    log_dashboard_visit(request=request, endpoint=str(request.url.path))
+    return fetch_daily_report(day)
 
 
 @router.get("/dashboard/work-breakdown")

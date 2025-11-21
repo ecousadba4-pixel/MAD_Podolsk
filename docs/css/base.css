@@ -239,12 +239,94 @@ header {
   max-width: 640px;
 }
 
+.page[data-view-mode="daily"] .monthly-only {
+  display: none !important;
+}
+
+.page[data-view-mode="monthly"] .daily-only {
+  display: none !important;
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: stretch;
   justify-content: flex-start;
+}
+
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.view-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-border);
+}
+
+.view-toggle-btn.active {
+  background: var(--gradient-accent);
+  color: #fff;
+  box-shadow: var(--shadow-btn-airy);
+}
+
+.view-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.day-info {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.day-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  min-width: 162px;
+  box-shadow: var(--shadow-card);
+}
+
+.day-select-control {
+  position: relative;
+}
+
+.day-select-control select {
+  width: 100%;
+  font-size: 0.95rem;
+  font-weight: 600;
+  appearance: none;
+  padding-right: 24px;
+}
+
+.day-select-control::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .contract-card {

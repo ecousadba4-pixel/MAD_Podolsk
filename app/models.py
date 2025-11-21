@@ -46,6 +46,22 @@ class DailyWorkVolume(BaseModel):
     total_amount: float = 0.0
 
 
+class DailyReportItem(BaseModel):
+    smeta: str | None = None
+    work_type: str | None = None
+    description: str
+    unit: str | None = None
+    total_volume: float | None = None
+    total_amount: float | None = None
+
+
+class DailyReportResponse(BaseModel):
+    date: date
+    last_updated: datetime | None = None
+    items: list[DailyReportItem]
+    has_data: bool
+
+
 class DashboardSummary(BaseModel):
     planned_amount: float
     fact_amount: float

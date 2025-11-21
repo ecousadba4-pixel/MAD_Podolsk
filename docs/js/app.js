@@ -14,13 +14,20 @@ const API_URL = (() => {
 const API_BASE = API_URL.replace(/\/$/, "");
 const API_PDF_URL = `${API_BASE}/pdf`;
 const API_MONTHS_URL = `${API_BASE}/months`;
+const API_DAYS_URL = `${API_BASE}/days`;
+const API_DAILY_URL = `${API_BASE}/daily`;
 
 document.addEventListener("DOMContentLoaded", () => {
   const visitorTracker = new VisitorTracker();
 
   const DOM = cacheDomElements({
+    page: ".page",
     monthSelect: "#month",
+    daySelect: "#day",
+    monthControls: "#month-controls",
+    dayControls: "#day-controls",
     lastUpdatedText: "#last-updated-text",
+    lastUpdatedTextDaily: "#last-updated-text-daily",
     sumPlanned: "#sum-planned",
     sumFact: "#sum-fact",
     sumDelta: "#sum-delta",
@@ -63,6 +70,13 @@ document.addEventListener("DOMContentLoaded", () => {
     contractPercent: "#contract-percent",
     contractProgress: "#contract-progress",
     contractTitleDate: "#contract-title-date",
+    viewModeMonthly: "#view-mode-monthly",
+    viewModeDaily: "#view-mode-daily",
+    dailyPanel: "#daily-panel",
+    dailySkeleton: "#daily-skeleton",
+    dailyEmptyState: "#daily-empty-state",
+    dailyTable: "#daily-table",
+    dailyPanelSubtitle: "#daily-panel-subtitle",
   });
 
   const pdfButtonDefaultLabel = DOM.pdfButton ? DOM.pdfButton.innerHTML : "Скачать PDF";
@@ -88,6 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const dataManager = new DataManager(API_URL, {
     monthsUrl: API_MONTHS_URL,
+    daysUrl: API_DAYS_URL,
+    dailyUrl: API_DAILY_URL,
     visitorTracker,
   });
   const uiManager = new UIManager({

@@ -1,0 +1,117 @@
+:root {
+  --mockup-bg: linear-gradient(120deg, #f8fbff 0%, #f4f8ff 32%, #f9f9ff 100%);
+}
+
+.mockup-body {
+  margin: 0;
+  font-family: "Google Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--mockup-bg);
+  color: var(--text-main);
+}
+
+.mockup-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 42px) clamp(16px, 4vw, 48px) clamp(32px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mockup-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mockup-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  font-size: 0.84rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: fit-content;
+  box-shadow: var(--shadow-soft);
+}
+
+.mockup-top h1 {
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  margin: 0;
+}
+
+.mockup-lead {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  max-width: 960px;
+  line-height: 1.6;
+}
+
+.mockup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+
+.mockup-card {
+  background: #ffffffd9;
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  box-shadow: var(--shadow-card);
+  padding: clamp(12px, 2vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mockup-label {
+  align-self: flex-start;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--bg-muted);
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+}
+
+.mockup-card .page {
+  background: #fff;
+  border-radius: 18px;
+  padding: clamp(14px, 2vw, 18px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.mockup-card header {
+  margin-bottom: 12px;
+}
+
+.mockup-card .summary-grid {
+  margin-top: 4px;
+}
+
+.mockup-card .panel {
+  margin-top: 4px;
+}
+
+.panel-subtitle {
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.day-select label,
+.month-select label {
+  font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  .mockup-card .summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
