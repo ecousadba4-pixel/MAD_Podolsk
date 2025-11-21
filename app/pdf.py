@@ -129,7 +129,7 @@ TABLE_TEXT_STYLE = ParagraphStyle(
     "TableText",
     fontName=BODY_FONT_NAME,
     fontSize=7.5,
-    leading=9,
+    leading=8.2,
     spaceAfter=0,
     spaceBefore=0,
 )
@@ -330,8 +330,8 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
             [
                 ("FONTNAME", (0, 0), (-1, -1), BODY_FONT_NAME),
                 ("FONTSIZE", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
             ]
         )
     )
@@ -437,8 +437,8 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 4),
         ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
     ]
     style_commands.extend(
         [
