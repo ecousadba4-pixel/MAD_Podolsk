@@ -208,7 +208,10 @@ class NumberedCanvas(canvas.Canvas):
 
     def showPage(self):
         self._saved_page_states.append(dict(self.__dict__))
-        super().showPage()
+        # Не фиксируем страницу сразу, чтобы избежать повторного рендеринга без номера
+        # страницы. Настоящее отображение происходит в save(), когда уже известен
+        # итоговый счётчик.
+        self._startPage()
 
     def save(self):
         total_pages = len(self._saved_page_states)
