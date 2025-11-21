@@ -300,6 +300,7 @@ header {
   background: var(--bg-card);
   min-width: 162px;
   box-shadow: var(--shadow-card);
+  min-height: 54px;
 }
 
 .day-select-control {
@@ -715,9 +716,11 @@ select {
   min-width: 62px;
 }
 .page-header.compact .month-select,
+.page-header.compact .day-select,
 .page-header.compact .pill,
 .page-header.compact .pdf-action-desktop .btn-airy { min-height: 54px; }
-.page-header.compact .month-select { padding: 6px 12px; }
+.page-header.compact .month-select,
+.page-header.compact .day-select { padding: 6px 12px; }
 .page-header.compact .pill { padding: 6px 12px; }
 .page-header.compact .pdf-action-desktop .btn-airy.btn-pdf-compact { padding: 0 14px; }
 .btn-airy.btn-pdf-compact span { font-size: 0.85rem; letter-spacing: 0.04em; font-weight: 700; }
@@ -734,10 +737,16 @@ select {
 /* Мобильное: месяц и pill в одну строку */
 @media (max-width: 767px) {
   .page-header.compact .month-info { flex-wrap: nowrap; width: 100%; }
-  .page-header.compact .month-info .month-select { flex: 1 1 auto; min-width: 0; }
-  .page-header.compact .month-info .pill { flex: 1 1 auto; min-width: 0; }
-  .page-header.compact .month-info .month-select, .page-header.compact .month-info .pill { padding: 6px 10px; }
-  .page-header.compact .month-info { gap: 8px; }
+  .page-header.compact .month-info .month-select,
+  .page-header.compact .day-info .day-select { flex: 1 1 auto; min-width: 0; }
+  .page-header.compact .month-info .pill,
+  .page-header.compact .day-info .pill { flex: 1 1 auto; min-width: 0; }
+  .page-header.compact .month-info .month-select,
+  .page-header.compact .day-info .day-select,
+  .page-header.compact .month-info .pill,
+  .page-header.compact .day-info .pill { padding: 6px 10px; }
+  .page-header.compact .month-info,
+  .page-header.compact .day-info { gap: 8px; }
   .pdf-action-mobile-bottom { margin: 28px 16px 16px; }
 }
 
@@ -875,8 +884,21 @@ select {
     align-items: stretch;
   }
 
+  .day-info {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    align-items: stretch;
+  }
+
   .month-select,
   .pill {
+    width: 100%;
+    height: 100%;
+  }
+
+  .day-select {
     width: 100%;
     height: 100%;
   }
