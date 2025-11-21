@@ -48,7 +48,10 @@ export class UIManager {
     if (this.elements.workSortSelect) {
       this.elements.workSortSelect.value = this.workSort.column;
     }
-    this.handleResize = debounce(() => this.updateWorkNameCollapsers(), 150);
+    this.handleResize = debounce(() => {
+      this.updateWorkNameCollapsers();
+      this.updateDailyNameCollapsers();
+    }, 150);
     this.monthOptionsLoaded = false;
   }
 
@@ -779,6 +782,12 @@ export class UIManager {
       return;
     }
 
+    const sortedItems = [...items].sort((a, b) => {
+      const amountA = Number.isFinite(Number(a?.total_amount)) ? Number(a.total_amount) : 0;
+      const amountB = Number.isFinite(Number(b?.total_amount)) ? Number(b.total_amount) : 0;
+      return amountB - amountA;
+    });
+
     this.elements.dailyTable.style.display = "block";
     this.elements.dailyTable.classList.add("has-data");
 
@@ -795,39 +804,62 @@ export class UIManager {
     const fragment = document.createDocumentFragment();
     fragment.appendChild(header);
 
-    items.forEach((item, index) => {
+    sortedItems.forEach((item, index) => {
       const row = document.createElement("div");
-      row.className = "work-row";
-      if (index === items.length - 1) {
+      row.className = "work-row daily-row";
+      if (index === sortedItems.length - 1) {
         row.classList.add("work-row-last");
       }
       row.innerHTML = `
-        <div>${item.smeta || "—"}</div>
-        <div>${item.description || "Без названия"}</div>
-        <div>${item.unit || "—"}</div>
-        <div><strong>${formatNumber(item.total_volume, { maximumFractionDigits: 3 })}</strong></div>
-        <div><strong>${formatMoneyRub(item.total_amount)}</strong></div>
+        <div class="daily-cell daily-cell-smeta">${item.smeta || "—"}</div>
+        <div class="daily-cell daily-cell-name">
+          <div class="work-row-name work-row-name--collapsed" data-expanded="false">
+            <span class="work-row-name-text">${item.description || "Без названия"}</span>
+            <button
+              type="button"
+              class="work-row-name-toggle"
+              aria-expanded="false"
+              aria-label="Развернуть полное название"
+            >
+              <span class="work-row-name-toggle-icon" aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
+        <div class="daily-cell daily-cell-unit">
+          <span class="daily-cell-label">Ед. изм.</span>
+          <span class="daily-cell-value">${item.unit || "—"}</span>
+        </div>
+        <div class="daily-cell daily-cell-volume">
+          <span class="daily-cell-label">Объём</span>
+          <span class="daily-cell-value"><strong>${formatNumber(item.total_volume, { maximumFractionDigits: 3 })}</strong></span>
+        </div>
+        <div class="daily-cell daily-cell-amount">
+          <span class="daily-cell-label">Сумма</span>
+          <span class="daily-cell-value"><strong>${formatMoneyRub(item.total_amount)}</strong></span>
+        </div>
       `;
+      this.initializeNameToggle(row.querySelector(".work-row-name"));
       fragment.appendChild(row);
     });
 
-    const totalAmount = items.reduce((sum, item) => {
+    const totalAmount = sortedItems.reduce((sum, item) => {
       const amount = Number(item.total_amount);
       return sum + (Number.isFinite(amount) ? amount : 0);
     }, 0);
 
     const totalRow = document.createElement("div");
-    totalRow.className = "work-row work-row-total";
+    totalRow.className = "work-row work-row-total daily-total-row";
     totalRow.innerHTML = `
-      <div>Итого</div>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div><strong>${formatMoneyRub(totalAmount)}</strong></div>
+      <div class="daily-cell daily-cell-total-label">Итого по сумме</div>
+      <div class="daily-cell daily-cell-total-gap"></div>
+      <div class="daily-cell daily-cell-total-gap"></div>
+      <div class="daily-cell daily-cell-total-gap"></div>
+      <div class="daily-cell daily-cell-total-amount"><strong>${formatMoneyRub(totalAmount)}</strong></div>
     `;
     fragment.appendChild(totalRow);
 
     this.elements.dailyTable.appendChild(fragment);
+    requestAnimationFrame(() => this.updateDailyNameCollapsers());
   }
 
   async loadDailyData(dayIso) {
@@ -1223,6 +1255,76 @@ export class UIManager {
     return works;
   }
 
+  initializeNameToggle(nameWrapper) {
+    if (!nameWrapper) {
+      return;
+    }
+    const toggleBtn = nameWrapper.querySelector(".work-row-name-toggle");
+    if (!toggleBtn) {
+      return;
+    }
+    nameWrapper.dataset.expanded = "false";
+    toggleBtn.addEventListener("click", () => {
+      const isExpanded = nameWrapper.classList.toggle("work-row-name--expanded");
+      if (isExpanded) {
+        nameWrapper.classList.remove("work-row-name--collapsed");
+      } else {
+        nameWrapper.classList.add("work-row-name--collapsed");
+      }
+      nameWrapper.dataset.expanded = String(isExpanded);
+      toggleBtn.setAttribute("aria-expanded", String(isExpanded));
+      toggleBtn.setAttribute(
+        "aria-label",
+        isExpanded ? "Свернуть название" : "Развернуть полное название"
+      );
+    });
+  }
+
+  updateNameCollapsers(container) {
+    if (!container) {
+      return;
+    }
+    const nameWrappers = container.querySelectorAll(".work-row-name");
+    nameWrappers.forEach((wrapper) => {
+      const textEl = wrapper.querySelector(".work-row-name-text");
+      const toggleBtn = wrapper.querySelector(".work-row-name-toggle");
+      if (!textEl || !toggleBtn) {
+        return;
+      }
+
+      const isExpanded = wrapper.dataset.expanded === "true";
+      wrapper.classList.toggle("work-row-name--expanded", isExpanded);
+      if (isExpanded) {
+        wrapper.classList.remove("work-row-name--collapsed");
+      } else {
+        wrapper.classList.add("work-row-name--collapsed");
+      }
+      toggleBtn.setAttribute("aria-expanded", String(isExpanded));
+      toggleBtn.setAttribute(
+        "aria-label",
+        isExpanded ? "Свернуть название" : "Развернуть полное название"
+      );
+      wrapper.classList.remove("work-row-name--collapsible");
+      toggleBtn.hidden = true;
+
+      const lineHeight = parseFloat(window.getComputedStyle(textEl).lineHeight || "0");
+      const maxHeight = lineHeight && !Number.isNaN(lineHeight) ? lineHeight * 2 : null;
+      const isOverflowing = maxHeight
+        ? textEl.scrollHeight > maxHeight + 1
+        : textEl.scrollHeight > textEl.offsetHeight + 1;
+      if (isOverflowing) {
+        wrapper.classList.add("work-row-name--collapsible");
+        toggleBtn.hidden = false;
+      } else if (!isExpanded) {
+        wrapper.classList.remove("work-row-name--collapsed");
+      }
+    });
+  }
+
+  updateDailyNameCollapsers() {
+    this.updateNameCollapsers(this.elements.dailyTable);
+  }
+
   createWorkRow(item, index, total) {
     const workName = item.work_name || item.description || "Без названия";
     const delta = calculateDelta(item);
@@ -1260,25 +1362,7 @@ export class UIManager {
         <span class="work-row-delta-value">${deltaFormatted}</span>
       </div>
     `;
-    const nameWrapper = row.querySelector(".work-row-name");
-    const toggleBtn = row.querySelector(".work-row-name-toggle");
-    if (nameWrapper && toggleBtn) {
-      nameWrapper.dataset.expanded = "false";
-      toggleBtn.addEventListener("click", () => {
-        const isExpanded = nameWrapper.classList.toggle("work-row-name--expanded");
-        if (isExpanded) {
-          nameWrapper.classList.remove("work-row-name--collapsed");
-        } else {
-          nameWrapper.classList.add("work-row-name--collapsed");
-        }
-        nameWrapper.dataset.expanded = String(isExpanded);
-        toggleBtn.setAttribute("aria-expanded", String(isExpanded));
-        toggleBtn.setAttribute(
-          "aria-label",
-          isExpanded ? "Свернуть название" : "Развернуть полное название"
-        );
-      });
-    }
+    this.initializeNameToggle(row.querySelector(".work-row-name"));
     // Клик по строке работы открывает подневную расшифровку (только для текущего месяца).
     row.addEventListener("click", (event) => {
       // не обрабатываем клик по кнопке разворачивания названия
@@ -1294,44 +1378,7 @@ export class UIManager {
   }
 
   updateWorkNameCollapsers() {
-    if (!this.elements.workListScroller) {
-      return;
-    }
-    const nameWrappers = this.elements.workListScroller.querySelectorAll(".work-row-name");
-    nameWrappers.forEach((wrapper) => {
-      const textEl = wrapper.querySelector(".work-row-name-text");
-      const toggleBtn = wrapper.querySelector(".work-row-name-toggle");
-      if (!textEl || !toggleBtn) {
-        return;
-      }
-
-      const isExpanded = wrapper.dataset.expanded === "true";
-      wrapper.classList.toggle("work-row-name--expanded", isExpanded);
-      if (isExpanded) {
-        wrapper.classList.remove("work-row-name--collapsed");
-      } else {
-        wrapper.classList.add("work-row-name--collapsed");
-      }
-      toggleBtn.setAttribute("aria-expanded", String(isExpanded));
-      toggleBtn.setAttribute(
-        "aria-label",
-        isExpanded ? "Свернуть название" : "Развернуть полное название"
-      );
-      wrapper.classList.remove("work-row-name--collapsible");
-      toggleBtn.hidden = true;
-
-      const lineHeight = parseFloat(window.getComputedStyle(textEl).lineHeight || "0");
-      const maxHeight = lineHeight && !Number.isNaN(lineHeight) ? lineHeight * 2 : null;
-      const isOverflowing = maxHeight
-        ? textEl.scrollHeight > maxHeight + 1
-        : textEl.scrollHeight > textEl.offsetHeight + 1;
-      if (isOverflowing) {
-        wrapper.classList.add("work-row-name--collapsible");
-        toggleBtn.hidden = false;
-      } else if (!isExpanded) {
-        wrapper.classList.remove("work-row-name--collapsed");
-      }
-    });
+    this.updateNameCollapsers(this.elements.workListScroller);
   }
 
   renderPrintReport() {

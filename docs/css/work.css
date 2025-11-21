@@ -335,6 +335,28 @@
   font-weight: 700;
 }
 
+.daily-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.daily-cell-label {
+  display: none;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.daily-cell-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.daily-cell-total-amount {
+  text-align: right;
+}
+
 .daily-table .work-row-total {
   font-weight: 700;
   background: rgba(0, 0, 0, 0.02);
@@ -456,5 +478,76 @@
     display: block;
     width: 100%;
     text-align: center;
+  }
+
+  .daily-table .work-row-header {
+    display: none;
+  }
+
+  .daily-table .work-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "name name name"
+      "unit volume amount";
+    row-gap: 10px;
+    align-items: flex-start;
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .daily-table .work-row-last {
+    border-bottom: none;
+  }
+
+  .daily-table .daily-cell {
+    min-width: 0;
+  }
+
+  .daily-cell-label {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .daily-table .daily-cell-smeta {
+    display: none;
+  }
+
+  .daily-table .daily-cell-name {
+    grid-area: name;
+  }
+
+  .daily-table .daily-cell-unit {
+    grid-area: unit;
+  }
+
+  .daily-table .daily-cell-volume {
+    grid-area: volume;
+    text-align: center;
+  }
+
+  .daily-table .daily-cell-amount {
+    grid-area: amount;
+    text-align: right;
+  }
+
+  .daily-table .daily-total-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "total-label total-label total-amount";
+    align-items: center;
+    padding: 16px 14px;
+    gap: 8px;
+  }
+
+  .daily-total-row .daily-cell-total-label {
+    grid-area: total-label;
+  }
+
+  .daily-total-row .daily-cell-total-amount {
+    grid-area: total-amount;
+    text-align: right;
+  }
+
+  .daily-total-row .daily-cell-total-gap {
+    display: none;
   }
 }
