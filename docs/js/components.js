@@ -747,8 +747,18 @@ export class UIManager {
     }
 
     const selectedDayLabel = formatDate(data?.date, { day: "2-digit", month: "long" });
-    if (this.elements.dailyPanelSubtitle && selectedDayLabel) {
-      this.elements.dailyPanelSubtitle.textContent = `Данные за ${selectedDayLabel}`;
+    const titleText = selectedDayLabel
+      ? `Данные за ${selectedDayLabel}`
+      : "Данные за выбранный день";
+
+    if (this.elements.dailyPanelTitle) {
+      this.elements.dailyPanelTitle.textContent = titleText;
+    }
+
+    if (this.elements.dailyPanelSubtitle) {
+      const subtitleText = selectedDayLabel ? "" : "Выберите день, чтобы увидеть данные";
+      this.elements.dailyPanelSubtitle.textContent = subtitleText;
+      this.elements.dailyPanelSubtitle.hidden = Boolean(selectedDayLabel);
     }
 
     this.lastUpdatedDailyLabel = data?.has_data ? formatDateTime(data.last_updated) : "Нет данных";

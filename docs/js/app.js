@@ -76,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dailySkeleton: "#daily-skeleton",
     dailyEmptyState: "#daily-empty-state",
     dailyTable: "#daily-table",
+    dailyPanelTitle: "#daily-panel-title",
     dailyPanelSubtitle: "#daily-panel-subtitle",
   });
 
