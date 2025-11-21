@@ -282,9 +282,12 @@ export class UIManager {
       return;
     }
 
-    const selectEl = this.elements.daySelect;
-    selectEl.innerHTML = "";
-    selectEl.disabled = true;
+    const inputEl = this.elements.daySelect;
+    inputEl.value = "";
+    inputEl.disabled = true;
+    inputEl.min = "";
+    inputEl.max = "";
+    this.selectedDayIso = null;
 
     try {
       const availableDays = await this.dataManager.fetchAvailableDays();
@@ -305,27 +308,38 @@ export class UIManager {
         this.availableDays = todayIso ? [{ iso: todayIso, label: formatDate(todayIso, { day: "2-digit", month: "long" }) }] : [];
       }
 
-      this.availableDays.forEach((item, index) => {
-        const option = document.createElement("option");
-        option.value = item.iso;
-        option.textContent = item.label;
-        if (index === 0) {
-          option.selected = true;
-        }
-        selectEl.appendChild(option);
-      });
+      const minDayIso = this.availableDays.reduce(
+        (min, item) => (!min || item.iso < min ? item.iso : min),
+        null,
+      );
+      const maxDayIso = this.availableDays.reduce(
+        (max, item) => (!max || item.iso > max ? item.iso : max),
+        null,
+      );
 
-      this.selectedDayIso = selectEl.value || (this.availableDays[0] ? this.availableDays[0].iso : null);
+      if (minDayIso) {
+        inputEl.min = minDayIso;
+      }
+      if (maxDayIso) {
+        inputEl.max = maxDayIso;
+      }
+
+      const initialDayIso = (this.selectedDayIso && this.availableDays.some((item) => item.iso === this.selectedDayIso))
+        ? this.selectedDayIso
+        : this.availableDays[0]?.iso;
+
+      if (initialDayIso) {
+        inputEl.value = initialDayIso;
+        this.selectedDayIso = initialDayIso;
+      }
+
       this.dayOptionsLoaded = true;
-      selectEl.disabled = false;
+      inputEl.disabled = false;
     } catch (error) {
       console.error("Не удалось загрузить список дней", error);
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "Ошибка загрузки";
-      option.disabled = true;
-      option.selected = true;
-      selectEl.appendChild(option);
+      inputEl.value = "";
+      inputEl.placeholder = "Ошибка загрузки";
+      inputEl.setAttribute("aria-invalid", "true");
       this.dayOptionsLoaded = false;
     }
   }
