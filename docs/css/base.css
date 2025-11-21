@@ -324,6 +324,7 @@ header {
   background: transparent;
   color: var(--text-main);
   outline: none;
+  position: relative;
 }
 
 .day-select-control::after {
@@ -341,8 +342,13 @@ header {
 
 .day-select-control input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  color: var(--accent);
-  opacity: 0.8;
+  color: transparent;
+  background: transparent;
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .day-select-control input[type="date"]:disabled {
