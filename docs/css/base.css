@@ -319,11 +319,24 @@ header {
   font-size: 0.95rem;
   font-weight: 600;
   appearance: none;
-  padding-right: 10px;
+  padding-right: 32px;
   border: none;
   background: transparent;
   color: var(--text-main);
   outline: none;
+}
+
+.day-select-control::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='3' y='4' width='14' height='13' rx='2' stroke='%236B77F4' stroke-width='1.5'/%3E%3Cpath d='M7 2.5V6' stroke='%236B77F4' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M13 2.5V6' stroke='%236B77F4' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M3 8.5H17' stroke='%236B77F4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 .day-select-control input[type="date"]::-webkit-calendar-picker-indicator {
