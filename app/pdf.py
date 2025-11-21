@@ -258,6 +258,11 @@ def _group_items(items: Sequence[DashboardItem]) -> list[CategoryGroup]:
         if item.planned_amount is None and item.fact_amount is None:
             # В отчет не должны попадать строки без данных по плану и факту
             continue
+        planned_value = item.planned_amount or 0.0
+        fact_value = item.fact_amount or 0.0
+        if planned_value < 1 and fact_value < 1:
+            # Исключаем строки, где план и факт одновременно меньше 1
+            continue
         is_plan_only = getattr(item, "category_plan_only", False)
         key, title = _resolve_category_name(
             item.category or item.smeta,
