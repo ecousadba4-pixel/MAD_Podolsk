@@ -768,7 +768,13 @@ input[type="date"] {
   .page-header.compact .day-info .pill { padding: 6px 10px; }
   .page-header.compact .month-info,
   .page-header.compact .day-info { gap: 8px; }
-  .pdf-action-mobile-bottom { margin: 28px 16px 16px; }
+  .pdf-action-mobile-bottom {
+    margin: 28px auto 16px;
+    max-width: 1180px;
+    width: 100%;
+    padding: 0 clamp(12px, 3vw, 28px);
+    box-sizing: border-box;
+  }
 }
 
 .delta-positive {
