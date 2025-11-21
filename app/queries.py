@@ -10,8 +10,7 @@ from typing import Any, Callable, TypeVar
 from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
 
-from .db import get_connection, safe_rollback, fetchall_safe, fetchone_safe, execute_with_cursor
-from .utils import _to_float, _safe_get_from_row
+from .db import get_connection
 from .models import DashboardItem, DashboardSummary, DailyRevenue, DailyWorkVolume
 
 logger = logging.getLogger(__name__)
@@ -125,7 +124,24 @@ DAILY_FACT_SQL = """
 """
 
 
-# utility functions moved to `app.utils`
+def _to_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float, Decimal)):
+        return float(value)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_get_from_row(row: dict[str, Any], *keys: str, default: Any = None) -> Any:
+    """Безопасно получить значение из словаря, пытаясь несколько ключей по порядку."""
+    for key in keys:
+        value = row.get(key)
+        if value:
+            return value
+    return default
 
 
 def _extract_strings(row: dict[str, Any]) -> tuple[str | None, str | None, str | None, str]:
@@ -274,13 +290,26 @@ def _aggregate_items_streaming(cursor) -> list[DashboardItem]:
 def _fetch_daily_fact_totals(conn, month_start: date) -> list[DailyRevenue]:
     """Извлекает дневные суммы фактических работ. При ошибке логирует и возвращает пусто."""
     daily_rows: list[DailyRevenue] = []
-    rows = fetchall_safe(conn, DAILY_FACT_SQL, (month_start,), cursor_factory=RealDictCursor, label="daily_fact")
-    for row in rows:
-        amount = _to_float(row.get("fact_total"))
-        work_date = row.get("work_date")
-        if amount is None or work_date is None:
-            continue
-        daily_rows.append(DailyRevenue(date=work_date, amount=amount))
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        try:
+            cur.execute(DAILY_FACT_SQL, (month_start,))
+            rows = cur.fetchall() or []
+            for row in rows:
+                amount = _to_float(row.get("fact_total"))
+                work_date = row.get("work_date")
+                if amount is None or work_date is None:
+                    continue
+                daily_rows.append(DailyRevenue(date=work_date, amount=amount))
+        except Exception as exc:
+            # Логируем ошибку для отладки (может быть отсутствие таблицы или полей)
+            logger.warning(
+                "Не удалось загрузить дневные суммы за %s: %s. Используется пустой список.",
+                month_start,
+                exc,
+                exc_info=True,
+            )
+            conn.rollback()
+            return []
 
     return daily_rows
 
@@ -320,23 +349,30 @@ def fetch_work_daily_breakdown(month_start: date, work_identifier: str) -> list[
         rows: list[DailyWorkVolume] = []
         next_month_start = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
         with get_connection() as conn:
-            # Используем безопасный fetchall helper для централизации обработки ошибок
-            work_param = f"%{work_identifier.strip()}%"
-            fetched = fetchall_safe(
-                conn,
-                WORK_BREAKDOWN_SQL,
-                (month_start, next_month_start, work_param),
-                cursor_factory=RealDictCursor,
-                label="work_breakdown",
-            )
-            for row in fetched:
-                work_date = row.get("work_date")
-                vol = _to_float(row.get("total_volume"))
-                unit = (row.get("unit") or "").strip()
-                total_amount = _to_float(row.get("total_amount"))
-                if work_date is None or vol is None:
-                    continue
-                rows.append(DailyWorkVolume(date=work_date, amount=vol, unit=unit, total_amount=total_amount))
+            try:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # Используем ILIKE с шаблоном, чтобы находить работы по подстроке
+                    work_param = f"%{work_identifier.strip()}%"
+                    cur.execute(WORK_BREAKDOWN_SQL, (month_start, next_month_start, work_param))
+                    fetched = cur.fetchall() or []
+                    for row in fetched:
+                        work_date = row.get("work_date")
+                        vol = _to_float(row.get("total_volume"))
+                        unit = (row.get("unit") or "").strip()
+                        total_amount = _to_float(row.get("total_amount"))
+                        if work_date is None or vol is None:
+                            continue
+                        rows.append(DailyWorkVolume(date=work_date, amount=vol, unit=unit, total_amount=total_amount))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Не удалось загрузить подневную расшифровку для '%s' за %s: %s",
+                    work_identifier,
+                    month_start,
+                    exc,
+                    exc_info=True,
+                )
+                conn.rollback()
+                return []
         return rows
 
     return _execute_with_retry(_load, label="fetch_work_daily_breakdown", delay_sec=_DB_RETRY_DELAY_SEC)
@@ -349,18 +385,30 @@ def _fetch_contract_progress(conn, _selected_month: date) -> dict[str, float] | 
     # рассчитываться относительно реального текущего календарного месяца,
     # а не выбранного пользователем периода. Поэтому месяц получения данных
     # вычисляем от сегодняшней даты.
-    # Используем fetchone_safe — он сам логирует ошибки и делает safe_rollback.
-    contract_row = fetchone_safe(
-        conn, CONTRACT_TOTAL_SQL, None, cursor_factory=RealDictCursor, label="contract_total"
-    ) or {}
-    contract_total = _to_float(contract_row.get("contract_total")) or 0.0
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(CONTRACT_TOTAL_SQL)
+            contract_row = cur.fetchone() or {}
+            contract_total = _to_float(contract_row.get("contract_total")) or 0.0
 
-    executed_row = fetchone_safe(
-        conn, CONTRACT_EXECUTED_SQL, None, cursor_factory=RealDictCursor, label="contract_executed"
-    ) or {}
-    executed_total = _to_float(executed_row.get("executed_total")) or 0.0
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(CONTRACT_EXECUTED_SQL)
+            executed_row = cur.fetchone() or {}
+            executed_total = _to_float(executed_row.get("executed_total")) or 0.0
 
-    return {"contract_total": contract_total, "executed_total": executed_total}
+        return {
+            "contract_total": contract_total,
+            "executed_total": executed_total,
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Не удалось загрузить агрегаты по контракту за %s: %s",
+            date.today().replace(day=1),
+            exc,
+            exc_info=True,
+        )
+        conn.rollback()
+        return None
 
 
 def _calculate_daily_average(
@@ -412,17 +460,9 @@ def fetch_plan_vs_fact_for_month(
 
         with get_connection() as conn:
             # Потоковая обработка основных данных - не загружаем всё в память
-            def _process_items(cur):
-                return _aggregate_items_streaming(cur)
-
-            items = execute_with_cursor(
-                conn,
-                ITEMS_SQL,
-                (month_start,),
-                cursor_factory=RealDictCursor,
-                label="items_stream",
-                processor=_process_items,
-            )
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(ITEMS_SQL, (month_start,))
+                items = _aggregate_items_streaming(cur)
 
             vnr_plan_amount = _calculate_vnr_plan(items)
             vnr_plan_item = _build_vnr_plan_item(vnr_plan_amount, items)
@@ -442,25 +482,29 @@ def fetch_plan_vs_fact_for_month(
 
             contract_progress = _fetch_contract_progress(conn, month_start)
 
-            res = fetchone_safe(conn, LAST_UPDATED_SQL, None, cursor_factory=None, label="last_updated")
-            if res:
-                last_updated = res[0]
+            with conn.cursor() as cur:
+                cur.execute(LAST_UPDATED_SQL)
+                res = cur.fetchone()
+                if res:
+                    last_updated = res[0]
 
-            summary_row = fetchone_safe(conn, SUMMARY_SQL, (month_start,), cursor_factory=RealDictCursor, label="summary") or {}
-            has_financial_data = (
-                summary_row.get("planned_total") is not None
-                or summary_row.get("fact_total") is not None
-                or bool(daily_revenue)
-            )
-            if has_financial_data:
-                summary = DashboardSummary(
-                    planned_amount=_to_float(summary_row.get("planned_total")) or 0.0,
-                    fact_amount=_to_float(summary_row.get("fact_total")) or 0.0,
-                    completion_pct=_to_float(summary_row.get("completion_pct")),
-                    delta_amount=_to_float(summary_row.get("delta_amount")) or 0.0,
-                    average_daily_revenue=average_daily_revenue,
-                    daily_revenue=daily_revenue,
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(SUMMARY_SQL, (month_start,))
+                summary_row = cur.fetchone() or {}
+                has_financial_data = (
+                    summary_row.get("planned_total") is not None
+                    or summary_row.get("fact_total") is not None
+                    or bool(daily_revenue)
                 )
+                if has_financial_data:
+                    summary = DashboardSummary(
+                        planned_amount=_to_float(summary_row.get("planned_total")) or 0.0,
+                        fact_amount=_to_float(summary_row.get("fact_total")) or 0.0,
+                        completion_pct=_to_float(summary_row.get("completion_pct")),
+                        delta_amount=_to_float(summary_row.get("delta_amount")) or 0.0,
+                        average_daily_revenue=average_daily_revenue,
+                        daily_revenue=daily_revenue,
+                    )
 
             if summary is None and contract_progress is not None:
                 summary = DashboardSummary(
@@ -500,8 +544,9 @@ def fetch_available_months(limit: int = 12) -> list[date]:
     """Возвращает список месяцев, за которые есть данные."""
 
     def _load_months() -> list[date]:
-        with get_connection() as conn:
-            rows = fetchall_safe(conn, AVAILABLE_MONTHS_SQL, (limit,), cursor_factory=None, label="available_months")
+        with get_connection() as conn, conn.cursor() as cur:
+            cur.execute(AVAILABLE_MONTHS_SQL, (limit,))
+            rows = cur.fetchall() or []
         return [row[0] for row in rows if row and row[0] is not None]
 
     return _execute_with_retry(

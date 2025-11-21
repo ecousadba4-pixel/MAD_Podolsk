@@ -7,7 +7,7 @@ from fastapi import Request
 from pydantic import BaseModel, Field, field_validator
 from psycopg2 import IntegrityError
 
-from .db import get_connection, safe_rollback, execute_and_commit
+from .db import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -216,29 +216,24 @@ def log_dashboard_visit(
         os,
     )
 
-    with get_connection() as conn:
-            # Создаём индекс при необходимости и выполняем upsert через один cursor
-            def _do_with_cursor(cur):
-                _ensure_unique_index(cur)
-                cur.execute(UPSERT_VISIT_SQL, values)
-
-            # Используем execute_and_commit для выполнения + commit и безопасного отката внутри
-            try:
-                # открыть курсор и выполнить
-                with conn.cursor() as cur:
-                    _do_with_cursor(cur)
-                conn.commit()
-            except IntegrityError as exc:
-                logger.debug(
-                    "Duplicate visit record для %s (user_id=%s, session_id=%s): %s. Это нормально.",
-                    endpoint,
-                    user_id,
-                    session_id,
-                    exc,
-                )
-                safe_rollback(conn)
-            except Exception as exc:  # pragma: no cover - запись не должна падать приложение
-                logger.warning(
-                    "Не удалось записать посещение дашборда: %s", exc, exc_info=True
-                )
-                safe_rollback(conn)
+    try:
+        with get_connection() as conn, conn.cursor() as cur:
+            _ensure_unique_index(cur)
+            cur.execute(UPSERT_VISIT_SQL, values)
+            conn.commit()
+    except IntegrityError as exc:
+        logger.debug(
+            "Duplicate visit record для %s (user_id=%s, session_id=%s): %s. Это нормально.",
+            endpoint,
+            user_id,
+            session_id,
+            exc,
+        )
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+    except Exception as exc:  # pragma: no cover - запись не должна падать приложение
+        logger.warning(
+            "Не удалось записать посещение дашборда: %s", exc, exc_info=True
+        )

@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import AbstractContextManager, contextmanager
 import logging
 from threading import Lock
-from typing import Iterator, Protocol, Callable, TypeVar
+from typing import Iterator, Protocol
 
 from psycopg2 import OperationalError, connect
 from psycopg2.extensions import connection as PGConnection
@@ -12,8 +12,6 @@ from psycopg2.pool import ThreadedConnectionPool
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 
 class _ConnectionProvider(Protocol):
@@ -166,145 +164,3 @@ def close_pool() -> None:
     if _pool is not None:
         _pool.close()
         _pool = None
-
-
-def safe_rollback(conn: PGConnection | None) -> None:
-    """Безопасно откатывает транзакцию, если соединение доступно.
-
-    Защищает вызывающий код от ошибок, если соединение было не создано
-    или уже закрыто.
-    """
-    try:
-        if conn is None:
-            return
-        # psycopg2 connection has `closed` attribute (0 = open, non-zero = closed)
-        closed = getattr(conn, "closed", None)
-        if closed is None:
-            return
-        if closed:
-            return
-        conn.rollback()
-    except Exception:
-        logger.debug("safe_rollback: rollback failed", exc_info=True)
-
-
-def fetchall_safe(
-    conn: PGConnection | None,
-    sql: str,
-    params: tuple | None = None,
-    *,
-    cursor_factory=None,
-    label: str | None = None,
-) -> list:
-    """Выполняет запрос и возвращает список строк; при ошибке логирует и возвращает пустой список.
-
-    Используется для упрощения повторяющихся блоков чтения из БД в коде приложения.
-    """
-    if conn is None:
-        return []
-    try:
-        with conn.cursor(cursor_factory=cursor_factory) as cur:
-            cur.execute(sql, params or ())
-            return cur.fetchall() or []
-    except Exception as exc:  # pragma: no cover - защитный код
-        lbl = f" ({label})" if label else ""
-        logger.warning(
-            "Ошибка выполнения запроса%s: %s",
-            lbl,
-            exc,
-            exc_info=True,
-        )
-        safe_rollback(conn)
-        return []
-
-
-def fetchone_safe(
-    conn: PGConnection | None,
-    sql: str,
-    params: tuple | None = None,
-    *,
-    cursor_factory=None,
-    label: str | None = None,
-) -> object | None:
-    """Выполняет запрос и возвращает одну строку; при ошибке логирует и возвращает None."""
-    if conn is None:
-        return None
-
-
-def execute_with_cursor(
-    conn: PGConnection | None,
-    sql: str,
-    params: tuple | None = None,
-    *,
-    cursor_factory=None,
-    label: str | None = None,
-    processor: Callable[[object], T] | None = None,
-) -> T:
-    """Выполнить запрос и передать курсор в `processor` для потоковой обработки.
-
-    При ошибке выполняется безопасный откат и исключение повторно пробрасывается.
-    """
-    if conn is None:
-        if processor is None:
-            return None  # type: ignore[return-value]
-        # если нет соединения, вызываем processor с None нецелесообразно
-        raise RuntimeError("No DB connection provided to execute_with_cursor")
-    try:
-        with conn.cursor(cursor_factory=cursor_factory) as cur:
-            cur.execute(sql, params or ())
-            if processor is None:
-                # Если нет обработчика, вернём пустой список по соглашению fetchall_safe
-                return cur.fetchall()  # type: ignore[return-value]
-            return processor(cur)
-    except Exception as exc:  # pragma: no cover - защитный код
-        lbl = f" ({label})" if label else ""
-        logger.warning(
-            "Ошибка выполнения курсорного запроса%s: %s",
-            lbl,
-            exc,
-            exc_info=True,
-        )
-        safe_rollback(conn)
-        raise
-
-
-def execute_and_commit(
-    conn: PGConnection | None,
-    sql: str,
-    params: tuple | None = None,
-    *,
-    cursor_factory=None,
-    label: str | None = None,
-) -> bool:
-    """Выполнить DML/DDL запрос и закоммитить транзакцию; при ошибке откат и False."""
-    if conn is None:
-        return False
-    try:
-        with conn.cursor(cursor_factory=cursor_factory) as cur:
-            cur.execute(sql, params or ())
-        conn.commit()
-        return True
-    except Exception as exc:  # pragma: no cover - защитный код
-        lbl = f" ({label})" if label else ""
-        logger.warning(
-            "Ошибка при выполнении и коммите запроса%s: %s",
-            lbl,
-            exc,
-            exc_info=True,
-        )
-        safe_rollback(conn)
-        return False
-    try:
-        with conn.cursor(cursor_factory=cursor_factory) as cur:
-            cur.execute(sql, params or ())
-            return cur.fetchone()
-    except Exception as exc:  # pragma: no cover - защитный код
-        lbl = f" ({label})" if label else ""
-        logger.warning(
-            "Ошибка выполнения запроса%s: %s",
-            lbl,
-            exc,
-            exc_info=True,
-        )
-        safe_rollback(conn)
-        return None
