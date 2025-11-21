@@ -304,11 +304,11 @@
 .daily-table .work-row,
 .daily-skeleton .work-row-skeleton {
   grid-template-columns:
-    minmax(0, 1.2fr)
-    minmax(0, 1.6fr)
-    minmax(0, 0.8fr)
-    minmax(0, 0.9fr)
-    minmax(0, 1fr);
+    minmax(112px, 140px)
+    minmax(0, 2.7fr)
+    minmax(80px, 0.8fr)
+    minmax(96px, 0.9fr)
+    minmax(116px, 1fr);
 }
 
 .daily-table .work-row-header {
