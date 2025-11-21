@@ -1,17 +1,59 @@
 from __future__ import annotations
 
 from contextlib import AbstractContextManager, contextmanager
+from functools import wraps
 import logging
+import time
 from threading import Lock
-from typing import Iterator, Protocol
+from typing import Callable, Iterator, Protocol, TypeVar
 
-from psycopg2 import OperationalError, connect
+from psycopg2 import InterfaceError, OperationalError, connect
 from psycopg2.extensions import connection as PGConnection
 from psycopg2.pool import ThreadedConnectionPool
 
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+DB_RETRYABLE_ERRORS = (OperationalError, InterfaceError)
+DB_RETRY_DELAY_SEC = 0.7
+
+
+def retry_db_operation(
+    *,
+    retries: int = 1,
+    delay_sec: float = DB_RETRY_DELAY_SEC,
+    label: str = "database operation",
+):
+    """Декоратор для повторного выполнения операции при ошибках БД."""
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempt = 0
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except DB_RETRYABLE_ERRORS:
+                    if attempt >= retries:
+                        raise
+                    attempt += 1
+                    logger.warning(
+                        "Ошибка при выполнении %s, повтор через %.1f с (попытка %d/%d)",
+                        label,
+                        delay_sec,
+                        attempt,
+                        retries + 1,
+                        exc_info=False,
+                    )
+                    time.sleep(delay_sec)
+
+        return wrapper
+
+    return decorator
 
 
 class _ConnectionProvider(Protocol):

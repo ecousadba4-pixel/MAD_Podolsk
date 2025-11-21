@@ -7,7 +7,7 @@ from fastapi import Request
 from pydantic import BaseModel, Field, field_validator
 from psycopg2 import IntegrityError
 
-from .db import get_connection
+from .db import get_connection, retry_db_operation
 
 logger = logging.getLogger(__name__)
 
@@ -216,11 +216,22 @@ def log_dashboard_visit(
         os,
     )
 
-    try:
+    @retry_db_operation(label="log_dashboard_visit")
+    def _upsert_visit() -> None:
         with get_connection() as conn, conn.cursor() as cur:
-            _ensure_unique_index(cur)
-            cur.execute(UPSERT_VISIT_SQL, values)
-            conn.commit()
+            try:
+                _ensure_unique_index(cur)
+                cur.execute(UPSERT_VISIT_SQL, values)
+                conn.commit()
+            except IntegrityError:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                raise
+
+    try:
+        _upsert_visit()
     except IntegrityError as exc:
         logger.debug(
             "Duplicate visit record для %s (user_id=%s, session_id=%s): %s. Это нормально.",
@@ -229,10 +240,6 @@ def log_dashboard_visit(
             session_id,
             exc,
         )
-        try:
-            conn.rollback()
-        except Exception:
-            pass
     except Exception as exc:  # pragma: no cover - запись не должна падать приложение
         logger.warning(
             "Не удалось записать посещение дашборда: %s", exc, exc_info=True

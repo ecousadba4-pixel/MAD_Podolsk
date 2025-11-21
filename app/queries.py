@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import logging
-import time
 import calendar
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Callable, TypeVar
 
-from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
 
-from .db import get_connection
+from .db import DB_RETRY_DELAY_SEC, get_connection, retry_db_operation
 from .models import (
     DashboardItem,
     DashboardSummary,
@@ -26,9 +24,6 @@ logger = logging.getLogger(__name__)
 _PLAN_BASE_CATEGORIES = {"лето", "зима"}
 _VNR_CATEGORY_CODES = {"внерегл_ч_1", "внерегл_ч_2"}
 _VNR_PLAN_SHARE = Decimal("0.43")
-
-_DB_RETRYABLE_ERRORS = (OperationalError, InterfaceError)
-_DB_RETRY_DELAY_SEC = 0.7
 
 T = TypeVar("T")
 
@@ -96,26 +91,14 @@ def _execute_with_retry(
     operation: Callable[[], T],
     *,
     retries: int = 1,
-    delay_sec: float = _DB_RETRY_DELAY_SEC,
+    delay_sec: float = DB_RETRY_DELAY_SEC,
     label: str = "database operation",
 ) -> T:
-    attempt = 0
-    while True:
-        try:
-            return operation()
-        except _DB_RETRYABLE_ERRORS as exc:
-            if attempt >= retries:
-                raise
-            attempt += 1
-            logger.warning(
-                "Ошибка при выполнении %s, повтор через %.1f с (попытка %d/%d)",
-                label,
-                delay_sec,
-                attempt,
-                retries + 1,
-                exc_info=False,
-            )
-            time.sleep(delay_sec)
+    wrapped_operation = retry_db_operation(
+        retries=retries, delay_sec=delay_sec, label=label
+    )(operation)
+
+    return wrapped_operation()
 
 
 DAILY_FACT_SQL = """
@@ -405,7 +388,7 @@ def fetch_work_daily_breakdown(month_start: date, work_identifier: str) -> list[
                 return []
         return rows
 
-    return _execute_with_retry(_load, label="fetch_work_daily_breakdown", delay_sec=_DB_RETRY_DELAY_SEC)
+    return _execute_with_retry(_load, label="fetch_work_daily_breakdown", delay_sec=DB_RETRY_DELAY_SEC)
 
 
 def _fetch_contract_progress(conn, _selected_month: date) -> dict[str, float] | None:
@@ -566,7 +549,7 @@ def fetch_plan_vs_fact_for_month(
         return items, summary, last_updated
 
     return _execute_with_retry(
-        _load, label="fetch_plan_vs_fact_for_month", delay_sec=_DB_RETRY_DELAY_SEC
+        _load, label="fetch_plan_vs_fact_for_month", delay_sec=DB_RETRY_DELAY_SEC
     )
 
 
@@ -580,7 +563,7 @@ def fetch_available_months(limit: int = 12) -> list[date]:
         return [row[0] for row in rows if row and row[0] is not None]
 
     return _execute_with_retry(
-        _load_months, label="fetch_available_months", delay_sec=_DB_RETRY_DELAY_SEC
+        _load_months, label="fetch_available_months", delay_sec=DB_RETRY_DELAY_SEC
     )
 
 
@@ -594,7 +577,7 @@ def fetch_available_days() -> list[date]:
         return [row[0] for row in rows if row and row[0] is not None]
 
     return _execute_with_retry(
-        _load_days, label="fetch_available_days", delay_sec=_DB_RETRY_DELAY_SEC
+        _load_days, label="fetch_available_days", delay_sec=DB_RETRY_DELAY_SEC
     )
 
 
@@ -637,5 +620,5 @@ def fetch_daily_report(target_date: date) -> DailyReportResponse:
         )
 
     return _execute_with_retry(
-        _load_report, label="fetch_daily_report", delay_sec=_DB_RETRY_DELAY_SEC
+        _load_report, label="fetch_daily_report", delay_sec=DB_RETRY_DELAY_SEC
     )
