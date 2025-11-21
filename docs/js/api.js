@@ -1,12 +1,36 @@
-import {
-  calculateDelta,
-  normalizeAmount,
-  shouldIncludeItem,
-  resolveCategoryMeta,
-} from "./utils.js";
+import { calculateDelta, normalizeAmount } from "./utils.js";
+
+const MERGED_SMETA_OVERRIDES = {
+  "внерегл_ч_1": { key: "внерегламент", title: "внерегламент" },
+  "внерегл_ч_2": { key: "внерегламент", title: "внерегламент" },
+};
 
 const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
 const DEFAULT_RETRY_DELAY_MS = 700;
+
+function hasMeaningfulAmount(value) {
+  const normalized = normalizeAmount(value);
+  return normalized !== null && normalized !== 0;
+}
+
+function shouldIncludeItem(item) {
+  if (!item) {
+    return false;
+  }
+  return hasMeaningfulAmount(item.planned_amount) || hasMeaningfulAmount(item.fact_amount);
+}
+
+function resolveCategoryMeta(rawKey, smetaValue) {
+  const keyCandidate = (rawKey || "").trim();
+  const override = MERGED_SMETA_OVERRIDES[keyCandidate.toLowerCase()];
+  if (override) {
+    return { ...override };
+  }
+  const fallbackTitle = (smetaValue || "").trim();
+  const resolvedKey = keyCandidate || fallbackTitle || "Прочее";
+  const resolvedTitle = fallbackTitle || resolvedKey;
+  return { key: resolvedKey, title: resolvedTitle };
+}
 
 async function wait(delayMs = DEFAULT_RETRY_DELAY_MS) {
   return new Promise((resolve) => setTimeout(resolve, delayMs));

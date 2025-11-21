@@ -83,34 +83,3 @@ export function setElementsDisabled(elements, disabled = true) {
     }
   });
 }
-
-// Общие константы и функции категорий для унификации с бэкендом
-
-export const VNR_PLAN_SHARE = 0.43;
-
-export const MERGED_CATEGORY_OVERRIDES = {
-  "внерегл_ч_1": "внерегламент",
-  "внерегл_ч_2": "внерегламент",
-};
-
-export function resolveCategoryMeta(rawKey, smetaValue) {
-  const keyCandidate = (rawKey || "").trim();
-  const override = MERGED_CATEGORY_OVERRIDES[(keyCandidate || "").toLowerCase()];
-  if (override) {
-    return { key: override, title: override };
-  }
-  const fallbackTitle = (smetaValue || "").trim();
-  const resolvedKey = keyCandidate || fallbackTitle || "Прочее";
-  const resolvedTitle = fallbackTitle || resolvedKey;
-  return { key: resolvedKey, title: resolvedTitle };
-}
-
-export function hasMeaningfulAmount(value) {
-  const normalized = normalizeAmount(value);
-  return normalized !== null && Math.abs(normalized) >= 1; // синхронизация с порогом в PDF
-}
-
-export function shouldIncludeItem(item) {
-  if (!item) return false;
-  return hasMeaningfulAmount(item?.planned_amount) || hasMeaningfulAmount(item?.fact_amount);
-}

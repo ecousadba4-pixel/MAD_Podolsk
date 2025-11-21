@@ -8,7 +8,6 @@ import {
   showToast,
   calculateDelta,
   debounce,
-  VNR_PLAN_SHARE,
 } from "./utils.js";
 
 const CATEGORY_COLORS = [
@@ -1083,7 +1082,7 @@ export class UIManager {
       const progressStyle = `width: ${progressWidth}%; --progress-color: ${progressColor};`;
       const ariaValue = hasProgress ? Math.min(120, progressPercent).toFixed(1) : "0";
       const categoryTitleNote = isOffPlanCategory
-        ? `<span class="category-offplan-note"><span>${Math.round(VNR_PLAN_SHARE * 100)}% от</span><span>общего плана</span></span>`
+        ? '<span class="category-offplan-note"><span>30% от</span><span>общего плана</span></span>'
         : `<span class="category-pill">${category.works.length} работ</span>`;
       card.innerHTML = `
         <div class="category-title">

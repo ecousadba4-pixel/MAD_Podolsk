@@ -28,16 +28,13 @@ from .utils import (
     get_next_month_start,
     extract_dict_strings,
 )
-from .categories import (
-    PLAN_BASE_CATEGORIES,
-    VNR_CATEGORY_CODES,
-    VNR_PLAN_SHARE,
-)
 
 logger = logging.getLogger(__name__)
 
 
-# Константы перенесены в app.categories
+_PLAN_BASE_CATEGORIES = {"лето", "зима"}
+_VNR_CATEGORY_CODES = {"внерегл_ч_1", "внерегл_ч_2"}
+_VNR_PLAN_SHARE = Decimal("0.43")
 
 _DB_RETRYABLE_ERRORS = (OperationalError, InterfaceError)
 _DB_RETRY_DELAY_SEC = 0.7
@@ -155,20 +152,20 @@ def _calculate_vnr_plan(items: list["DashboardItem"]) -> float:
         if item.planned_amount is None:
             continue
         category = (item.category or "").strip().lower()
-        if category in PLAN_BASE_CATEGORIES:
+        if category in _PLAN_BASE_CATEGORIES:
             base_total += Decimal(str(item.planned_amount))
 
     if base_total <= 0:
         return 0.0
 
-    return float(base_total * Decimal(str(VNR_PLAN_SHARE)))
+    return float(base_total * _VNR_PLAN_SHARE)
 
 
 def _is_vnr_row(row: dict[str, Any]) -> bool:
     smeta_code = normalize_string(
         safe_get_from_dict(row, "smeta_code", "category_code", default="")
     ).lower()
-    return smeta_code in VNR_CATEGORY_CODES
+    return smeta_code in _VNR_CATEGORY_CODES
 
 
 def _build_vnr_plan_item(plan_value: float, items: list["DashboardItem"]) -> "DashboardItem | None":

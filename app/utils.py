@@ -1,20 +1,10 @@
-"""Утилиты для обработки данных: проверка пустых значений, нормализация, конвертация,
-форматирование дат и чисел, общие константы времени."""
+"""Утилиты для обработки данных: проверка пустых значений, нормализация, конвертация."""
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
-import logging
-
-try:  # Python 3.9+
-    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError  # type: ignore
-except Exception:  # pragma: no cover
-    ZoneInfo = None  # type: ignore
-    ZoneInfoNotFoundError = Exception  # type: ignore
-
-LOGGER = logging.getLogger(__name__)
 
 
 def to_float(value: Any) -> float | None:
@@ -160,48 +150,6 @@ def format_percent(value: float | None, decimals: int = 1) -> str:
     if value is None:
         return "–"
     return f"{value * 100:.{decimals}f} %"
-
-
-# Даты/время
-
-MONTH_LABELS_RU = [
-    "январь",
-    "февраль",
-    "март",
-    "апрель",
-    "май",
-    "июнь",
-    "июль",
-    "август",
-    "сентябрь",
-    "октябрь",
-    "ноябрь",
-    "декабрь",
-]
-
-
-def format_month_ru(month: date) -> str:
-    name = MONTH_LABELS_RU[month.month - 1]
-    return f"{name.capitalize()} {month.year}"
-
-
-try:
-    MOSCOW_TZ = ZoneInfo("Europe/Moscow") if ZoneInfo else timezone(timedelta(hours=3))
-except ZoneInfoNotFoundError:  # type: ignore
-    LOGGER.warning(
-        "Не удалось загрузить таймзону Europe/Moscow из системной базы. Используется UTC+3.")
-    MOSCOW_TZ = timezone(timedelta(hours=3))
-
-
-def format_last_updated_msk(value: datetime | None) -> str:
-    """Форматирование отметки времени в часовом поясе МСК."""
-    if not value:
-        return "нет данных"
-    dt = value
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    dt = dt.astimezone(MOSCOW_TZ)
-    return dt.strftime("%d.%m.%Y %H:%M МСК")
 
 
 def extract_dict_strings(

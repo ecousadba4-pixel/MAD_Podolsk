@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Iterable, Sequence
 from xml.sax.saxutils import escape
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -20,14 +22,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from .font_storage import ensure_embedded_fonts
 from .models import DashboardItem, DashboardSummary
-from .utils import (
-    format_money,
-    format_percent,
-    normalize_string,
-    format_month_ru,
-    format_last_updated_msk,
-)
-from .categories import resolve_category_name
+from .utils import format_money, format_percent, normalize_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -56,7 +51,14 @@ FONT_FALLBACKS: dict[str, str] = {
     BODY_FONT_BOLD: DEFAULT_FONT_BOLD,
 }
 
-# Таймзона и форматирование дат перенесены в utils.py
+try:
+    MOSCOW_TZ = ZoneInfo("Europe/Moscow")
+except ZoneInfoNotFoundError:
+    LOGGER.warning(
+        "Не удалось загрузить таймзону Europe/Moscow из системной базы. "
+        "Используется фиксированное смещение UTC+3."
+    )
+    MOSCOW_TZ = timezone(timedelta(hours=3))
 
 def _font_search_roots() -> list[Path]:
     env_paths = [
@@ -154,7 +156,25 @@ META_STYLE = ParagraphStyle(
     spaceAfter=1,
 )
 
-# Переименования/месяцы перенесены в общие утилиты
+MONTH_LABELS = [
+    "январь",
+    "февраль",
+    "март",
+    "апрель",
+    "май",
+    "июнь",
+    "июль",
+    "август",
+    "сентябрь",
+    "октябрь",
+    "ноябрь",
+    "декабрь",
+]
+
+MERGED_CATEGORY_OVERRIDES: dict[str, str] = {
+    "внерегл_ч_1": "внерегламент",
+    "внерегл_ч_2": "внерегламент",
+}
 
 
 @dataclass
@@ -210,6 +230,21 @@ def _calculate_delta(item: DashboardItem) -> float:
     return fact - planned
 
 
+def _resolve_category_name(
+    raw_key: str | None,
+    title_hint: str | None = None,
+) -> tuple[str, str]:
+    candidate = normalize_string(raw_key)
+    hint = normalize_string(title_hint)
+    fallback = candidate or hint or "Прочее"
+    override = MERGED_CATEGORY_OVERRIDES.get(fallback.lower())
+    if override:
+        return override, override
+    key = candidate or fallback
+    title = hint or fallback
+    return key, title
+
+
 def _group_items(items: Sequence[DashboardItem]) -> list[CategoryGroup]:
     groups: dict[str, CategoryGroup] = {}
     for item in items:
@@ -222,7 +257,7 @@ def _group_items(items: Sequence[DashboardItem]) -> list[CategoryGroup]:
             # Исключаем строки, где план и факт одновременно меньше 1
             continue
         is_plan_only = getattr(item, "category_plan_only", False)
-        key, title = resolve_category_name(
+        key, title = _resolve_category_name(
             item.category or item.smeta,
             item.smeta or item.category,
         )
@@ -263,7 +298,19 @@ def _paragraph(text: str, style: ParagraphStyle = TABLE_TEXT_STYLE) -> Paragraph
     return Paragraph(sanitized, style)
 
 
-# Форматирование дат перенесено в utils: format_month_ru, format_last_updated_msk
+def _format_month(month: date) -> str:
+    name = MONTH_LABELS[month.month - 1]
+    return f"{name.capitalize()} {month.year}"
+
+
+def _format_last_updated(value: datetime | None) -> str:
+    if not value:
+        return "нет данных"
+    dt = value
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    dt = dt.astimezone(MOSCOW_TZ)
+    return dt.strftime("%d.%m.%Y %H:%M МСК")
 
 
 def _build_summary_table(summary: DashboardSummary | None, width: float) -> Table:
@@ -441,8 +488,8 @@ def build_dashboard_pdf(
     )
     story: list = []
     story.append(Paragraph("Сводный отчёт по работам Подольск", TITLE_STYLE))
-    story.append(Paragraph(f"Месяц: <b>{format_month_ru(month)}</b>", META_STYLE))
-    story.append(Paragraph(f"Данные обновлены: {format_last_updated_msk(last_updated)}", META_STYLE))
+    story.append(Paragraph(f"Месяц: <b>{_format_month(month)}</b>", META_STYLE))
+    story.append(Paragraph(f"Данные обновлены: {_format_last_updated(last_updated)}", META_STYLE))
     story.append(Paragraph("Факт содержит только заявки в статусе «Рассмотрено».", META_STYLE))
     story.append(Spacer(1, 6))
     story.append(_build_summary_table(summary, doc.width))
