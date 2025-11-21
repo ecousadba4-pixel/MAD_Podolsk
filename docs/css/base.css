@@ -215,7 +215,6 @@ header {
     align-items: stretch;
   }
   .pdf-action-desktop {
-    order: -1;
   }
 }
 
@@ -672,7 +671,7 @@ select {
     align-items: stretch;
   }
   .view-switch {
-    order: 2;
+    
   }
   .page-header-left {
     flex: 1 1 auto;
