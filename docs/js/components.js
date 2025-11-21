@@ -762,7 +762,6 @@ export class UIManager {
     header.className = "work-row work-row-header";
     header.innerHTML = `
       <div>Смета</div>
-      <div>Вид</div>
       <div>Работы</div>
       <div>Ед. изм.</div>
       <div>Объём</div>
@@ -780,7 +779,6 @@ export class UIManager {
       }
       row.innerHTML = `
         <div>${item.smeta || "—"}</div>
-        <div>${item.work_type || "—"}</div>
         <div>${item.description || "Без названия"}</div>
         <div>${item.unit || "—"}</div>
         <div><strong>${formatNumber(item.total_volume, { maximumFractionDigits: 3 })}</strong></div>
@@ -788,6 +786,22 @@ export class UIManager {
       `;
       fragment.appendChild(row);
     });
+
+    const totalAmount = items.reduce((sum, item) => {
+      const amount = Number(item.total_amount);
+      return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+
+    const totalRow = document.createElement("div");
+    totalRow.className = "work-row work-row-total";
+    totalRow.innerHTML = `
+      <div>Итого</div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div><strong>${formatMoneyRub(totalAmount)}</strong></div>
+    `;
+    fragment.appendChild(totalRow);
 
     this.elements.dailyTable.appendChild(fragment);
   }

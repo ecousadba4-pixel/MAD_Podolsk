@@ -303,7 +303,12 @@
 
 .daily-table .work-row,
 .daily-skeleton .work-row-skeleton {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.6fr) repeat(3, minmax(0, 0.9fr));
+  grid-template-columns:
+    minmax(0, 1.2fr)
+    minmax(0, 1.6fr)
+    minmax(0, 0.8fr)
+    minmax(0, 0.9fr)
+    minmax(0, 1fr);
 }
 
 .daily-table .work-row-header {
@@ -312,13 +317,14 @@
   letter-spacing: 0.08em;
 }
 
-.daily-table .work-row-header div {
-  text-align: right;
+.daily-table .work-row-header div,
+.daily-table .work-row div {
+  text-align: left;
 }
 
-.daily-table .work-row-header div:first-child,
-.daily-table .work-row div:first-child {
-  text-align: left;
+.daily-table .work-row-header div:nth-child(n + 4),
+.daily-table .work-row div:nth-child(n + 4) {
+  text-align: right;
 }
 
 .daily-table .work-row div {
@@ -327,6 +333,11 @@
 
 .daily-table .work-row strong {
   font-weight: 700;
+}
+
+.daily-table .work-row-total {
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .daily-table .work-row:last-child {
