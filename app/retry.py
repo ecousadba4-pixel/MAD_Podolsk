@@ -22,6 +22,18 @@ def db_retry(
     label: str | None = None,
     logger_: logging.Logger | None = None,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
+    """
+    Декоратор для повторных попыток выполнения операций с БД.
+    ...existing code...
+    """
+    log = logger_ or logger
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        ...existing code...
+    return decorator
+
+# Универсальный декоратор с дефолтными параметрами
+def db_retry_default(func: Callable[..., T]) -> Callable[..., T]:
+    return db_retry()(func)
     """Декоратор для повторных попыток выполнения операций с БД.
 
     Typical usage:

@@ -9,6 +9,7 @@ import {
   calculateDelta,
   debounce,
 } from "./utils.js";
+import { retryAsync, handleError } from "./errorUtils.js";
 
 const CATEGORY_COLORS = [
   { accent: "#22c55e", soft: "rgba(34, 197, 94, 0.25)" },
@@ -229,7 +230,7 @@ export class UIManager {
     selectEl.disabled = true;
 
     try {
-      const availableMonths = await this.dataManager.fetchAvailableMonths();
+      const availableMonths = await retryAsync(() => this.dataManager.fetchAvailableMonths());
       const months = (availableMonths || [])
         .map((iso) => {
           if (!iso) return null;
@@ -274,7 +275,7 @@ export class UIManager {
       selectEl.disabled = false;
       this.loadMonthData(selectEl.value || months[0].iso);
     } catch (error) {
-      console.error("Не удалось загрузить список месяцев", error);
+      handleError(error, "Не удалось загрузить список месяцев");
       this.setMonthSelectPlaceholder("Ошибка загрузки");
       this.handleLoadError();
     }
@@ -293,7 +294,7 @@ export class UIManager {
     this.selectedDayIso = null;
 
     try {
-      const availableDays = await this.dataManager.fetchAvailableDays();
+      const availableDays = await retryAsync(() => this.dataManager.fetchAvailableDays());
       this.availableDays = (availableDays || [])
         .map((iso) => {
           const date = new Date(iso);
@@ -339,7 +340,7 @@ export class UIManager {
       this.dayOptionsLoaded = true;
       inputEl.disabled = false;
     } catch (error) {
-      console.error("Не удалось загрузить список дней", error);
+      handleError(error, "Не удалось загрузить список дней");
       inputEl.value = "";
       inputEl.placeholder = "Ошибка загрузки";
       inputEl.setAttribute("aria-invalid", "true");
@@ -452,11 +453,11 @@ export class UIManager {
       this.showLoadingState();
     }
     try {
-      const { data } = await this.dataManager.fetchData(monthIso, { force: Boolean(cached) });
+      const { data } = await retryAsync(() => this.dataManager.fetchData(monthIso, { force: Boolean(cached) }));
       this.applyData(data);
       this.announce(`Данные за ${this.getSelectedMonthLabel() || "выбранный месяц"} обновлены.`);
     } catch (error) {
-      console.error(error);
+      handleError(error, "Ошибка загрузки данных месяца");
       if (!cached) {
         this.handleLoadError();
       } else {
@@ -877,11 +878,11 @@ export class UIManager {
     }
 
     try {
-      const { data } = await this.dataManager.fetchDailyReport(dayIso, { force: Boolean(cached) });
+      const { data } = await retryAsync(() => this.dataManager.fetchDailyReport(dayIso, { force: Boolean(cached) }));
       this.applyDailyData(data);
       this.announce(`Данные за ${formatDate(dayIso, { day: "2-digit", month: "long" })} обновлены.`);
     } catch (error) {
-      console.error(error);
+      handleError(error, "Ошибка загрузки данных дня");
       if (!cached) {
         this.handleDailyLoadError();
       } else {
@@ -927,9 +928,9 @@ export class UIManager {
         this.elements.dailyModalSubtitle.textContent = "";
       }
 
-      const response = await fetch(url.toString(), {
+      const response = await retryAsync(() => fetch(url.toString(), {
         headers: this.visitorTracker ? this.visitorTracker.buildHeaders() : {},
-      });
+      }));
       if (!response.ok) throw new Error("HTTP " + response.status);
       const payload = await response.json();
       const items = Array.isArray(payload) ? payload : (payload?.daily || []);
@@ -950,8 +951,7 @@ export class UIManager {
       this.elements.dailyModal.classList.add("visible");
       this.elements.dailyModal.setAttribute("aria-hidden", "false");
     } catch (err) {
-      console.error("Ошибка загрузки расшифровки по работе:", err);
-      showToast("Не удалось загрузить расшифровку по работе.", "error");
+      handleError(err, "Ошибка загрузки расшифровки по работе");
     }
   }
 
@@ -1479,12 +1479,12 @@ export class UIManager {
     try {
       const pdfUrl = new URL(this.apiPdfUrl, window.location.origin);
       pdfUrl.searchParams.set("month", this.elements.monthSelect.value);
-      const response = await fetch(pdfUrl.toString(), {
+      const response = await retryAsync(() => fetch(pdfUrl.toString(), {
         headers: {
           Accept: "application/pdf",
           ...(this.visitorTracker ? this.visitorTracker.buildHeaders() : {}),
         },
-      });
+      }));
       if (!response.ok) {
         throw new Error("HTTP " + response.status);
       }
@@ -1500,8 +1500,7 @@ export class UIManager {
       setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
       this.announce("PDF-отчёт сформирован.");
     } catch (error) {
-      console.error("PDF export error", error);
-      showToast("Не удалось сформировать PDF. Попробуйте ещё раз позже.", "error");
+      handleError(error, "PDF export error");
       this.announce("Ошибка формирования PDF");
     } finally {
       this.elements.pdfButton.innerHTML = this.pdfButtonDefaultLabel;
