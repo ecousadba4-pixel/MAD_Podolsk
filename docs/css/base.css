@@ -314,26 +314,26 @@ header {
   min-width: 146px;
 }
 
-.day-select-control select {
+.day-select-control input[type="date"] {
   width: 100%;
   font-size: 0.95rem;
   font-weight: 600;
   appearance: none;
-  padding-right: 26px;
+  padding-right: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  outline: none;
 }
 
-.day-select-control::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--chevron-color);
-  border-bottom: 2px solid var(--chevron-color);
-  transform: translateY(-50%) rotate(45deg);
-  pointer-events: none;
-  opacity: 1;
+.day-select-control input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+.day-select-control input[type="date"]:disabled {
+  color: var(--text-muted);
 }
 
 .contract-card {
@@ -487,7 +487,8 @@ header {
   opacity: 1;
 }
 
-select {
+select,
+input[type="date"] {
   border: none;
   background: transparent;
   font-size: 0.95rem;
@@ -944,11 +945,10 @@ select {
     width: 100%;
   }
 
-  .day-select-control select {
+  .day-select-control input[type="date"] {
     width: 100%;
     cursor: pointer;
     text-align: left;
-    text-align-last: left;
   }
 
   .pill {
