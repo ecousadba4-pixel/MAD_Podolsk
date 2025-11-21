@@ -71,6 +71,10 @@ export class UIManager {
     this.prepareWorkList();
     this.liveRegion = this.createLiveRegion();
     this.bindEvents();
+    // По умолчанию скрываем подсказку о ежедневных данных до выбора месяца
+    if (this.elements.workDetailHint) {
+      this.elements.workDetailHint.hidden = true;
+    }
     this.updateViewModeLayout();
     this.initMonthSelect();
     window.addEventListener("resize", this.handleResize);
@@ -426,6 +430,10 @@ export class UIManager {
     }
     if (this.elements.dailyAverageHint) {
       this.elements.dailyAverageHint.hidden = !isCurrentMonth;
+    }
+    // Подзаголовок в разделе «Расшифровка работ по смете» показываем только для текущего месяца
+    if (this.elements.workDetailHint) {
+      this.elements.workDetailHint.hidden = !isCurrentMonth;
     }
   }
 
