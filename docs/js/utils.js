@@ -8,7 +8,7 @@ export function cacheDomElements(selectorMap) {
 }
 
 export function formatMoney(value) {
-  if (value === null || value === undefined || isNaN(value)) return "–";
+  if (isNaN(value)) return "–";
   return value.toLocaleString("ru-RU", { maximumFractionDigits: 0 });
 }
 
@@ -18,7 +18,7 @@ export function formatMoneyRub(value) {
 }
 
 export function formatPercent(value) {
-  if (value === null || value === undefined || isNaN(value)) return "–";
+  if (isNaN(value)) return "–";
   return (value * 100).toFixed(1) + " %";
 }
 
@@ -36,7 +36,7 @@ export function formatDate(value, options = { day: "2-digit", month: "long" }) {
 }
 
 export function formatNumber(value, options = { maximumFractionDigits: 3 }) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "–";
+  if (Number.isNaN(value)) return "–";
   const opts = { minimumFractionDigits: 0, ...options };
   return Number(value).toLocaleString("ru-RU", opts);
 }
@@ -54,7 +54,7 @@ export function showToast(message, type = "success") {
 }
 
 export function calculateDelta(item) {
-  if (item.delta_amount !== null && item.delta_amount !== undefined) {
+  if (item.delta_amount != null) {
     return item.delta_amount;
   }
   const planned = item.planned_amount ?? 0;
@@ -71,7 +71,6 @@ export function debounce(func, wait) {
 }
 
 export function normalizeAmount(value) {
-  if (value === null || value === undefined) return null;
   const numeric = typeof value === "number" ? value : Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
