@@ -14,9 +14,34 @@
   --danger: #c0342b;
   --success: #0f9d58;
   --chevron-color: rgba(94, 100, 115, 0.5);
+  
+  /* Typography scale */
+  --font-size-h1: 1.75rem;
+  --font-size-h2: 1.2rem;
+  --font-size-h3: 1.05rem;
+  --font-size-body: 0.95rem;
+  --font-size-body-sm: 0.88rem;
+  --font-size-caption: 0.78rem;
+  --font-size-label: 0.72rem;
+  --font-size-tiny: 0.64rem;
+  
+  /* Border radius scale */
+  --radius-xl: 22px;
   --radius-lg: 18px;
   --radius-md: 12px;
   --radius-sm: 8px;
+  --radius-xxl: 999px;
+  
+  /* Gap scale */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 18px;
+  --gap-xl: 24px;
+  
+  /* Control heights */
+  --control-height: 54px;
+  --control-height-sm: 36px;
   --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.08);
   --shadow-card: 0 6px 16px rgba(15, 23, 42, 0.05);
   --shadow-btn-primary: 0 14px 24px rgba(47, 111, 237, 0.25);
@@ -198,7 +223,7 @@ header {
   flex-direction: column;
   gap: 16px;
   margin-bottom: var(--grid-gap);
-  padding: clamp(12px, 2vw, 18px) 0;
+  padding: clamp(var(--gap-md), 2vw, var(--gap-lg)) 0;
 }
 
 @media (min-width: 880px) {
@@ -225,7 +250,7 @@ header {
 }
 
 .title {
-  font-size: clamp(1.4rem, 2vw, 1.75rem);
+  font-size: clamp(1.4rem, 2vw, var(--font-size-h1));
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -233,7 +258,7 @@ header {
 }
 
 .subtitle {
-  font-size: 0.92rem;
+  font-size: var(--font-size-body);
   color: var(--text-muted);
   max-width: 640px;
 }
@@ -249,7 +274,7 @@ header {
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--gap-md);
   align-items: stretch;
   justify-content: flex-start;
 }
@@ -257,7 +282,7 @@ header {
 .view-toggle {
   display: inline-flex;
   border: 1px solid var(--border-soft);
-  border-radius: 999px;
+  border-radius: var(--radius-xxl);
   background: var(--bg-card);
   box-shadow: var(--shadow-card);
   overflow: hidden;
@@ -286,25 +311,25 @@ header {
 
 .day-info {
   display: flex;
-  gap: 10px;
+  gap: var(--gap-sm);
   align-items: stretch;
 }
 
 .day-select {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: var(--gap-sm);
+  padding: var(--gap-sm) 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-soft);
   background: var(--bg-card);
   min-width: 162px;
   box-shadow: var(--shadow-card);
-  min-height: 54px;
+  min-height: var(--control-height);
 }
 
 .day-select label {
-  font-size: 0.8rem;
+  font-size: var(--font-size-caption);
   color: var(--text-muted);
 }
 
@@ -317,7 +342,7 @@ header {
 .day-select-control input[type="date"] {
   width: 100%;
   font-family: var(--font-sans);
-  font-size: 0.95rem;
+  font-size: var(--font-size-body);
   font-weight: 600;
   appearance: none;
   padding-right: 32px;
@@ -361,22 +386,22 @@ header {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-card);
-  padding: clamp(14px, 2vw, 18px);
+  padding: clamp(14px, 2vw, var(--gap-lg));
   display: grid;
-  gap: 12px;
+  gap: var(--gap-md);
   margin-bottom: var(--grid-gap);
-  min-height: 54px;
+  min-height: var(--control-height);
 }
 
 .contract-card-header {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--gap-sm);
 }
 
 .contract-card-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: var(--font-size-h3);
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
@@ -392,8 +417,8 @@ header {
 
 .contract-card-values {
   display: flex;
-  gap: 10px;
-  font-size: 0.9rem;
+  gap: var(--gap-sm);
+  font-size: var(--font-size-body-sm);
   flex-wrap: nowrap;
 }
 
@@ -413,10 +438,10 @@ header {
 
 .contract-progress-bar {
   width: 100%;
-  height: 18px;
+  height: var(--gap-lg);
   background: var(--bg-muted);
   border: 1px solid var(--border-soft);
-  border-radius: 999px;
+  border-radius: var(--radius-xxl);
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
   position: relative;
@@ -427,7 +452,7 @@ header {
   width: 0;
   background: var(--accent);
   transition: width 0.35s ease, background-color 0.2s ease;
-  border-radius: 999px;
+  border-radius: var(--radius-xxl);
   box-shadow: var(--shadow-card);
 }
 
@@ -459,25 +484,25 @@ header {
 .month-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--gap-sm);
   flex-wrap: nowrap;
 }
 
 .month-select {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: var(--gap-sm);
+  padding: var(--gap-sm) 14px;
   background: var(--bg-card);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-card);
-  min-height: 54px;
+  min-height: var(--control-height);
   position: relative;
 }
 
 .month-select label {
-  font-size: 0.8rem;
+  font-size: var(--font-size-caption);
   color: var(--text-muted);
 }
 
@@ -511,31 +536,31 @@ select,
 input[type="date"] {
   border: none;
   background: transparent;
-  font-size: 0.95rem;
+  font-size: var(--font-size-body);
   color: var(--text-main);
   outline: none;
   font-weight: 600;
 }
 
 .pill {
-  font-size: 0.82rem;
-  padding: 8px 14px;
+  font-size: var(--font-size-caption);
+  padding: var(--gap-sm) 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-soft);
   background: var(--bg-muted);
   color: var(--text-main);
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--gap-sm);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-  min-height: 54px;
+  min-height: var(--control-height);
 }
 
 /* Зелёный индикатор обновления данных с "эхом" (светлый ореол) */
 .pill-dot {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: var(--radius-xxl);
   background: var(--success);
   position: relative;
   flex: 0 0 auto;
@@ -548,9 +573,9 @@ input[type="date"] {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  border-radius: var(--radius-xxl);
   background: rgba(15,157,88,0.08);
   filter: blur(6px);
   pointer-events: none;
@@ -584,7 +609,7 @@ input[type="date"] {
 }
 
 .pill-label {
-  font-size: 0.64rem;
+  font-size: var(--font-size-tiny);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -600,9 +625,9 @@ input[type="date"] {
 .page-header {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--gap-lg);
   margin-bottom: var(--grid-gap);
-  padding: clamp(12px, 2vw, 18px) 0;
+  padding: clamp(var(--gap-md), 2vw, var(--gap-lg)) 0;
 }
 
 .page-header-left {
@@ -614,7 +639,7 @@ input[type="date"] {
 .page-header-right {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--gap-md);
   align-items: stretch;
 }
 
@@ -625,21 +650,21 @@ input[type="date"] {
 
 .view-switch {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--gap-xs);
   background: var(--bg-card);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  padding: 4px;
+  padding: var(--gap-xs);
   box-shadow: var(--shadow-card);
   width: fit-content;
-  min-height: 54px;
+  min-height: var(--control-height);
 }
 
 .view-tab {
   background: transparent;
   border: none;
-  padding: 4px 12px;
-  font-size: 0.75rem;
+  padding: var(--gap-xs) var(--gap-md);
+  font-size: var(--font-size-label);
   font-weight: 600;
   letter-spacing: 0.02em;
   border-radius: var(--radius-sm);
@@ -662,11 +687,11 @@ input[type="date"] {
 }
 
 .view-tab-line1 {
-  font-size: 0.72rem;
+  font-size: var(--font-size-label);
 }
 
 .view-tab-line2 {
-  font-size: 0.78rem;
+  font-size: var(--font-size-caption);
 }
 
 .view-tab:hover:not(.is-active) {
@@ -839,12 +864,12 @@ input[type="date"] {
   border: 1px solid rgba(47, 111, 237, 0.18);
   box-shadow: var(--shadow-btn-airy);
   padding: 0 16px;
-  min-height: 54px; /* совпадает с высотой .month-select */
+  min-height: var(--control-height);
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--gap-sm);
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 
@@ -865,8 +890,8 @@ input[type="date"] {
     color: var(--text-main);
     border: 1px solid var(--border-soft);
     box-shadow: var(--shadow-btn-airy-desktop);
-    min-height: 54px;
-    padding: 0 18px;
+    min-height: var(--control-height);
+    padding: 0 var(--gap-lg);
   }
 
   .pdf-action-desktop .btn-airy:hover:not(:disabled) {

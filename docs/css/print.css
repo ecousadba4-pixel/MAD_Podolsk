@@ -3,12 +3,12 @@
 .print-report {
   display: none;
   font-family: var(--font-sans);
-  padding: 18px;
-  color: #111827;
+  padding: var(--gap-lg);
+  color: var(--text-main);
   width: 210mm;
   min-height: 297mm;
   box-sizing: border-box;
-  background: #fff;
+  background: var(--bg-card);
   line-height: 1.2;
 }
 
@@ -30,11 +30,11 @@
 
 .print-report .print-meta {
   font-size: 0.76rem;
-  color: #4b5563;
-  margin-bottom: 8px;
+  color: var(--text-muted);
+  margin-bottom: var(--gap-sm);
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: var(--gap-sm) 16px;
 }
 
 .print-table {
@@ -46,8 +46,8 @@
 
 .print-table th,
 .print-table td {
-  border: 1px solid #d1d5db;
-  padding: 4px 6px;
+  border: 1px solid var(--border-soft);
+  padding: var(--gap-xs) 6px;
   vertical-align: top;
 }
 
@@ -55,7 +55,7 @@
   text-transform: uppercase;
   font-size: 0.62rem;
   letter-spacing: 0.04em;
-  background: #f3f4f6;
+  background: var(--print-bg-header);
 }
 
 .print-table td.num {
@@ -66,20 +66,20 @@
 
 .print-smeta-summary td {
   font-weight: 600;
-  background: #f9fafb;
+  background: var(--print-bg-light);
 }
 
 .print-table .delta-positive {
-  color: #166534;
+  color: var(--print-text-success);
 }
 
 .print-table .delta-negative {
-  color: #b91c1c;
+  color: var(--print-text-danger);
 }
 
 .print-table tfoot td {
   font-weight: 700;
-  background: #e5e7eb;
+  background: var(--print-bg-footer);
   text-transform: uppercase;
 }
 
@@ -92,10 +92,16 @@
     --text-main: #111827;
     --text-muted: #4b5563;
     --border-soft: #d1d5db;
+    --print-border: #d1d5db;
+    --print-bg-light: #f9fafb;
+    --print-bg-header: #f3f4f6;
+    --print-bg-footer: #e5e7eb;
+    --print-text-success: #166534;
+    --print-text-danger: #b91c1c;
   }
 
   body {
-    background: #ffffff;
+    background: var(--bg-card);
   }
 
   .page {

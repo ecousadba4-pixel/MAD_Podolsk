@@ -1,6 +1,6 @@
 .panel {
   background: rgba(255,255,255,0.95);
-  border-radius: 22px;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
   border: 1px solid var(--border-soft);
   padding: var(--card-padding);
@@ -19,13 +19,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--gap-sm);
+  margin-bottom: var(--gap-sm);
   flex-wrap: wrap;
 }
 
 .panel-title {
-  font-size: 1.05rem;
+  font-size: var(--font-size-h3);
   font-weight: 600;
 }
 
@@ -40,14 +40,14 @@
 }
 
 .panel-title-mobile-label {
-  font-size: 0.75rem;
+  font-size: var(--font-size-label);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
 }
 
 .panel-title-mobile-value {
-  font-size: 1.05rem;
+  font-size: var(--font-size-h3);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -61,7 +61,7 @@
 }
 
 .panel-subtitle {
-  font-size: 0.82rem;
+  font-size: var(--font-size-caption);
   color: var(--text-muted);
 }
 
@@ -89,9 +89,9 @@
 .category-card {
   position: relative;
   border: 1px solid var(--border-soft);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   padding: var(--card-padding);
-  padding-bottom: clamp(10px, 1.2vw, 16px);
+  padding-bottom: clamp(var(--gap-sm), 1.2vw, 16px);
   background: var(--bg-card);
   display: flex;
   flex-direction: column;
@@ -109,11 +109,11 @@
 .category-card::before {
   content: "";
   position: absolute;
-  top: clamp(10px, 1.4vw, 16px);
-  bottom: clamp(10px, 1.4vw, 16px);
+  top: clamp(var(--gap-sm), 1.4vw, 16px);
+  bottom: clamp(var(--gap-sm), 1.4vw, 16px);
   left: -1px;
-  width: 4px;
-  border-radius: 999px;
+  width: var(--gap-xs);
+  border-radius: var(--radius-xxl);
   background: transparent;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   pointer-events: none;
@@ -135,17 +135,17 @@
 }
 
 .category-title {
-  font-size: 1rem;
+  font-size: var(--font-size-h3);
   font-weight: 600;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: clamp(2px, 0.5vw, 8px);
+  gap: var(--gap-sm);
+  margin-bottom: clamp(2px, 0.5vw, var(--gap-sm));
 }
 
 .category-pill {
-  font-size: 0.7rem;
+  font-size: var(--font-size-label);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   background: rgba(47, 111, 237, 0.12);
@@ -154,7 +154,7 @@
 }
 
 .category-offplan-note {
-  font-size: 0.72rem;
+  font-size: var(--font-size-label);
   line-height: 1.05;
   display: flex;
   flex-direction: column;
@@ -169,7 +169,7 @@
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.3fr);
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: var(--font-size-caption);
   margin-top: clamp(0px, 0.4vw, 6px);
 }
 
@@ -193,14 +193,14 @@
 }
 
 .category-values .label {
-  font-size: 0.7rem;
+  font-size: var(--font-size-label);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .category-values strong {
-  font-size: clamp(0.78rem, 1.5vw, 0.94rem);
+  font-size: clamp(var(--font-size-caption), 1.5vw, 0.94rem);
   display: inline-flex;
   align-items: baseline;
   justify-content: flex-end;
@@ -255,22 +255,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.72rem;
+  font-size: var(--font-size-label);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .category-progress-labels strong {
-  font-size: 0.82rem;
+  font-size: var(--font-size-caption);
   color: var(--text-main);
   letter-spacing: 0;
 }
 
 .category-progress-bar {
   width: 100%;
-  height: 4px;
-  border-radius: 999px;
+  height: var(--gap-xs);
+  border-radius: var(--radius-xxl);
   background: rgba(47, 111, 237, 0.12);
   overflow: hidden;
   position: relative;
