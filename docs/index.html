@@ -15,6 +15,7 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/summary.css" />
   <link rel="stylesheet" href="css/categories.css" />
   <link rel="stylesheet" href="css/work.css" />
@@ -103,13 +104,13 @@
     </section>
 
     <!-- Сводка -->
-    <section class="summary-grid monthly-only" id="summary-grid">
-      <div class="summary-card">
+    <section class="summary-grid layout-grid monthly-only" id="summary-grid">
+      <div class="summary-card card card--stacked">
         <div class="summary-label">План, ₽</div>
         <div class="summary-value" id="sum-planned">–</div>
         <div class="summary-sub">Сметная стоимость</div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card card card--stacked">
         <div class="summary-label">Факт, ₽</div>
         <div class="summary-value" id="sum-fact">–</div>
         <div class="summary-sub">Сумма принятых работ</div>
@@ -123,12 +124,12 @@
           </div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card card card--stacked">
         <div class="summary-label">Отклонение, ₽</div>
         <div class="summary-value" id="sum-delta">–</div>
         <div class="summary-sub">Факт − План</div>
       </div>
-      <button class="summary-card summary-card-interactive" id="daily-average-card" type="button">
+      <button class="summary-card card card--interactive card--stacked summary-card-interactive" id="daily-average-card" type="button">
         <div class="summary-label">Среднедневная выручка, ₽</div>
         <div class="summary-value" id="sum-daily-average">–</div>
         <div class="summary-sub summary-note" id="daily-average-note">
@@ -145,23 +146,23 @@
         <span class="sr-only">Нажмите, чтобы посмотреть детализацию по дням</span>
       </button>
     </section>
-    <section class="summary-grid skeleton-grid monthly-only" id="summary-skeleton" aria-hidden="true">
-      <div class="summary-card summary-card-skeleton">
+    <section class="summary-grid layout-grid skeleton-grid monthly-only" id="summary-skeleton" aria-hidden="true">
+      <div class="summary-card card card--stacked summary-card-skeleton">
         <div class="skeleton skeleton-line skeleton-line-sm"></div>
         <div class="skeleton skeleton-line skeleton-line-lg"></div>
         <div class="skeleton skeleton-line skeleton-line-xs"></div>
       </div>
-      <div class="summary-card summary-card-skeleton">
+      <div class="summary-card card card--stacked summary-card-skeleton">
         <div class="skeleton skeleton-line skeleton-line-sm"></div>
         <div class="skeleton skeleton-line skeleton-line-lg"></div>
         <div class="skeleton skeleton-line skeleton-line-xs"></div>
       </div>
-      <div class="summary-card summary-card-skeleton">
+      <div class="summary-card card card--stacked summary-card-skeleton">
         <div class="skeleton skeleton-line skeleton-line-sm"></div>
         <div class="skeleton skeleton-line skeleton-line-lg"></div>
         <div class="skeleton skeleton-line skeleton-line-xs"></div>
       </div>
-      <div class="summary-card summary-card-skeleton">
+      <div class="summary-card card card--stacked summary-card-skeleton">
         <div class="skeleton skeleton-line skeleton-line-sm"></div>
         <div class="skeleton skeleton-line skeleton-line-lg"></div>
         <div class="skeleton skeleton-line skeleton-line-xs"></div>
@@ -175,7 +176,7 @@
           <div class="panel-title">Работы в разрезе Смет</div>
         </div>
       </div>
-      <div class="category-grid skeleton-category" id="category-skeleton" aria-hidden="true">
+      <div class="category-grid layout-grid layout-grid--auto-fit skeleton-category" id="category-skeleton" aria-hidden="true">
         <div class="category-card-skeleton">
           <div class="skeleton skeleton-line skeleton-line-sm"></div>
           <div class="skeleton skeleton-line skeleton-line-lg"></div>
@@ -197,7 +198,7 @@
           <div class="skeleton skeleton-line"></div>
         </div>
       </div>
-      <div class="category-grid" id="category-grid"></div>
+      <div class="category-grid layout-grid layout-grid--auto-fit" id="category-grid"></div>
     </section>
 
     <!-- Список работ выбранной сметы -->

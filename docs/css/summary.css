@@ -1,9 +1,6 @@
 .summary-grid {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--grid-gap);
   margin-bottom: var(--grid-gap);
-  align-items: stretch;
 }
 
 @media (max-width: 640px) {
@@ -38,23 +35,11 @@
 }
 
 .summary-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: var(--card-padding);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border-soft);
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-xs);
   min-height: clamp(92px, 11vw, 120px);
   height: 100%;
 }
 
 .summary-card-interactive {
-  text-align: left;
-  border: 1px solid var(--border-soft);
-  cursor: pointer;
-  position: relative;
   overflow: hidden;
 }
 

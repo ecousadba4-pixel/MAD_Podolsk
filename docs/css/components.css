@@ -1,0 +1,110 @@
+/* Базовые компоненты и утилиты лейаута */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--card-padding);
+  box-shadow: var(--shadow-card);
+}
+
+.card--xl {
+  border-radius: var(--radius-xl);
+}
+
+.card--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+.card--interactive {
+  position: relative;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: var(--transition-lift), var(--transition-border);
+}
+
+.card--interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.layout-grid {
+  display: grid;
+  gap: var(--grid-gap);
+  align-items: stretch;
+}
+
+.layout-grid--auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-soft);
+  padding: var(--card-padding);
+  margin-top: var(--grid-gap);
+}
+
+.panel:first-of-type {
+  margin-top: 0;
+}
+
+.panel + .panel {
+  margin-top: var(--grid-gap);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--gap-sm);
+  margin-bottom: var(--gap-sm);
+  flex-wrap: wrap;
+}
+
+.panel-title {
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+}
+
+.panel-title-group {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.panel-title-text-desktop {
+  display: inline;
+}
+
+.panel-title-mobile {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel-title-mobile-label {
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.panel-title-mobile-value {
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.panel-subtitle {
+  font-size: var(--font-size-caption);
+  color: var(--text-muted);
+}

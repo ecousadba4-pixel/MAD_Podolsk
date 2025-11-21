@@ -1084,7 +1084,7 @@ export class UIManager {
       const palette = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
       const card = document.createElement("button");
       card.type = "button";
-      card.className = `category-card${category.key === this.activeCategoryKey ? " active" : ""}`;
+      card.className = `card card--interactive category-card${category.key === this.activeCategoryKey ? " active" : ""}`;
       card.style.setProperty("--accent", palette.accent);
       card.style.setProperty("--accent-soft", palette.soft);
       const isOffPlanCategory = typeof category.key === "string" && category.key.toLowerCase() === "внерегламент";
