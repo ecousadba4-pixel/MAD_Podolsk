@@ -1,0 +1,13 @@
+:root {
+  --font-sans: "Google Sans", "Google Sans Text", "Roboto Flex", "Roboto", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Typography scale */
+  --font-size-h1: 1.75rem;
+  --font-size-h2: 1.2rem;
+  --font-size-h3: 1.05rem;
+  --font-size-body: 0.95rem;
+  --font-size-body-sm: 0.88rem;
+  --font-size-caption: 0.78rem;
+  --font-size-label: 0.72rem;
+  --font-size-tiny: 0.64rem;
+}

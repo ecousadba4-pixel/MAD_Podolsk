@@ -1,0 +1,27 @@
+:root {
+  --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 6px 16px rgba(15, 23, 42, 0.05);
+  --shadow-btn-primary: 0 14px 24px rgba(47, 111, 237, 0.25);
+  --shadow-btn-primary-active: 0 3px 10px rgba(37, 99, 235, 0.25);
+  --shadow-btn-airy: 0 10px 30px rgba(47, 111, 237, 0.12);
+  --shadow-btn-airy-hover: 0 12px 32px rgba(47, 111, 237, 0.16);
+  --shadow-btn-airy-active: 0 8px 22px rgba(47, 111, 237, 0.14);
+  --shadow-btn-airy-desktop: 0 6px 16px rgba(15, 23, 42, 0.08);
+  --shadow-btn-airy-desktop-hover: 0 8px 18px rgba(15, 23, 42, 0.1);
+  --shadow-btn-airy-desktop-active: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-category-active: 0 18px 28px rgba(47, 111, 237, 0.15);
+  --shadow-category-indicator: 0 6px 16px rgba(47, 111, 237, 0.35);
+  --shadow-summary-hover: 0 10px 24px rgba(37, 99, 235, 0.12);
+
+  --gradient-page: linear-gradient(180deg, #f6f8fd 0%, #eef2fb 60%, #edf1fb 100%);
+  --gradient-skeleton: linear-gradient(90deg, var(--bg-muted) 25%, var(--bg-card) 50%, var(--bg-muted) 75%);
+  --gradient-accent: linear-gradient(180deg, var(--accent), var(--accent-strong));
+  --gradient-btn-airy: linear-gradient(180deg, #ffffff 0%, #f7f9ff 100%);
+  --gradient-btn-airy-hover: linear-gradient(180deg, #ffffff 0%, #eef3ff 100%);
+  --gradient-btn-airy-desktop: linear-gradient(180deg, #ffffff 0%, #f5f6fb 100%);
+  --gradient-btn-airy-desktop-hover: linear-gradient(180deg, #ffffff 0%, #f1f4fa 100%);
+
+  --transition-lift: transform 0.15s ease, box-shadow 0.2s ease;
+  --transition-fade: opacity 0.2s ease;
+  --transition-border: border-color 0.2s ease, background-color 0.2s ease;
+}
