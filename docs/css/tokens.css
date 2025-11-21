@@ -1,0 +1,38 @@
+:root {
+  --bg: #f1f4fa;
+  --bg-card: #ffffff;
+  --bg-muted: #f7f8fc;
+  --border-soft: #d8deec;
+  --border-strong: #b8c1d8;
+  --text-main: #0f172a;
+  --text-muted: #5e6473;
+  --accent: #2f6fed;
+  --brand-accent: #2f6fed;
+  --accent-strong: #1e4fd8;
+  --accent-soft: #e0e7ff;
+  --danger: #c0342b;
+  --success: #0f9d58;
+  --chevron-color: rgba(94, 100, 115, 0.5);
+
+  /* Border radius scale */
+  --radius-xl: 22px;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-xxl: 999px;
+
+  /* Gap scale */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 18px;
+  --gap-xl: 24px;
+
+  /* Control heights */
+  --control-height: 54px;
+  --control-height-sm: 36px;
+
+  /* Layout helpers */
+  --grid-gap: clamp(12px, 2vw, 20px);
+  --card-padding: clamp(12px, 1.8vw, 18px);
+}
