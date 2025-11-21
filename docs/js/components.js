@@ -908,6 +908,16 @@ export class UIManager {
     ) {
       return;
     }
+    // Устанавливаем заголовок модального окна для среднедневной выручки
+    const titleEl = this.elements.dailyModal.querySelector("#daily-modal-title") || document.getElementById("daily-modal-title");
+    if (titleEl) titleEl.textContent = "Среднедневная выручка";
+    
+    // Устанавливаем подзаголовок
+    const monthLabel = this.getSelectedMonthLabel() || "выбранный месяц";
+    if (this.elements.dailyModalSubtitle) {
+      this.elements.dailyModalSubtitle.textContent = `По дням за ${monthLabel.toLowerCase()}`;
+    }
+    
     this.dailyRevenue = [...this.summaryDailyRevenue];
     this.dailyModalMode = "average";
     this.renderDailyModalList();
