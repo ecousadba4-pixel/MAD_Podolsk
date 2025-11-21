@@ -305,9 +305,9 @@
 .daily-skeleton .work-row-skeleton {
   grid-template-columns:
     minmax(112px, 140px)
-    minmax(0, 3.4fr)
-    minmax(70px, 0.6fr)
-    minmax(86px, 0.75fr)
+    minmax(0, 3.9fr)
+    minmax(62px, 0.52fr)
+    minmax(78px, 0.65fr)
     minmax(116px, 1fr);
 }
 
