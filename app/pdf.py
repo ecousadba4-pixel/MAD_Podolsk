@@ -17,6 +17,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from .font_storage import ensure_embedded_fonts
@@ -126,8 +127,8 @@ BODY_FONT_BOLD_NAME = REGISTERED_FONTS[BODY_FONT_BOLD]
 TABLE_TEXT_STYLE = ParagraphStyle(
     "TableText",
     fontName=BODY_FONT_NAME,
-    fontSize=8.5,
-    leading=10,
+    fontSize=7.5,
+    leading=9,
     spaceAfter=0,
     spaceBefore=0,
 )
@@ -198,6 +199,31 @@ def _format_percent(value: float | None) -> str:
     if value is None:
         return "—"
     return f"{value * 100:.1f} %"
+
+
+class NumberedCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states: list[dict] = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        super().showPage()
+
+    def save(self):
+        total_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self._draw_page_number(total_pages)
+            super().showPage()
+        super().save()
+
+    def _draw_page_number(self, page_count: int):
+        self.setFont(BODY_FONT_NAME, 8)
+        page_number = f"{self._pageNumber} / {page_count}"
+        x = self._pagesize[0] - 15 * mm
+        y = 10 * mm
+        self.drawRightString(x, y, page_number)
 
 
 def _calculate_delta(item: DashboardItem) -> float:
@@ -317,7 +343,9 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
     category_rows: list[int] = []
     item_rows: list[int] = []
     item_row_backgrounds: list[tuple[int, colors.Color]] = []
-    value_font_size = 8.6
+    total_planned = 0.0
+    total_fact = 0.0
+    value_font_size = 7.6
     eight_digit_sample = "99999999"
     padding = 8  # left + right padding per column
     value_width = pdfmetrics.stringWidth(
@@ -334,6 +362,8 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
     if total_value_width >= width:
         value_column_width = width / 4
         total_value_width = value_column_width * 3
+    plan_fact_column_width = max(value_column_width - 4, value_column_width * 0.8)
+    total_value_width = value_column_width + 2 * plan_fact_column_width
     description_width = width - total_value_width
     row_idx = 1
     for group in groups:
@@ -366,13 +396,32 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
                     bg = colors.white
                 item_row_backgrounds.append((row_idx, bg))
                 row_idx += 1
+        total_planned += group.planned_total
+        total_fact += group.fact_total
+    if row_idx > 1:
+        total_delta = (total_fact or 0.0) - (total_planned or 0.0)
+        data.append(
+            [
+                _paragraph(
+                    "Итого",
+                    ParagraphStyle(
+                        "TotalRow", parent=TABLE_TEXT_STYLE, fontName=BODY_FONT_BOLD_NAME
+                    ),
+                ),
+                _format_money(total_planned),
+                _format_money(total_fact),
+                _format_money(total_delta),
+            ]
+        )
+        total_row_idx = row_idx
+        row_idx += 1
     table = Table(
         data,
         repeatRows=1,
         colWidths=[
             description_width,
-            value_column_width,
-            value_column_width,
+            plan_fact_column_width,
+            plan_fact_column_width,
             value_column_width,
         ],
     )
@@ -382,7 +431,7 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
         ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
         ("FONTNAME", (0, 1), (-1, -1), BODY_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 8.6),
+        ("FONTSIZE", (0, 0), (-1, -1), 7.6),
         ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#cbd5f5")),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 4),
@@ -390,6 +439,12 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
         ("TOPPADDING", (0, 0), (-1, -1), 3),
     ]
+    style_commands.extend(
+        [
+            ("RIGHTPADDING", (1, 0), (1, -1), 2),
+            ("LEFTPADDING", (2, 0), (2, -1), 2),
+        ]
+    )
     for idx in category_rows:
         style_commands.extend(
             [
@@ -403,6 +458,14 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         style_commands.append(("BACKGROUND", (0, idx), (-1, idx), background))
     for idx in item_rows:
         style_commands.append(("LEFTPADDING", (0, idx), (0, idx), 10))
+    if row_idx > 1:
+        style_commands.extend(
+            [
+                ("FONTNAME", (0, total_row_idx), (-1, total_row_idx), BODY_FONT_BOLD_NAME),
+                ("BACKGROUND", (0, total_row_idx), (-1, total_row_idx), colors.HexColor("#e5e7eb")),
+                ("LINEABOVE", (0, total_row_idx), (-1, total_row_idx), 0.5, colors.HexColor("#d1d5db")),
+            ]
+        )
     table.setStyle(TableStyle(style_commands))
     return table
 
@@ -435,5 +498,5 @@ def build_dashboard_pdf(
         story.append(Paragraph("Нет данных по выбранному месяцу.", META_STYLE))
     else:
         story.append(_build_items_table(groups, doc.width))
-    doc.build(story)
+    doc.build(story, canvasmaker=NumberedCanvas)
     return buffer.getvalue()
