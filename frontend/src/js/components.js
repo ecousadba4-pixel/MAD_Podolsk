@@ -57,69 +57,35 @@ export class UIManager {
     this.apiPdfUrl = apiPdfUrl;
     this.pdfButtonDefaultLabel = pdfButtonDefaultLabel;
     this.visitorTracker = visitorTracker || null;
+    this.groupedCategories = [];
+    this.activeCategoryKey = null;
     this.workHeaderEl = null;
     this.liveRegion = null;
+    this.metrics = null;
+    this.lastUpdatedMonthlyLabel = null;
+    this.lastUpdatedMonthlyDateLabel = null;
+    this.lastUpdatedDailyLabel = null;
+    this.lastUpdatedDailyDateLabel = null;
+    this.summaryDailyRevenue = [];
+    this.dailyRevenue = [];
+    this.workSort = { column: "planned" };
+    this.selectedMonthIso = null;
+    this.selectedDayIso = null;
+    this.availableDays = [];
     this.initialMonth = new URLSearchParams(window.location.search).get("month");
-    this.state = {
-      viewMode: "monthly",
-      monthIso: null,
-      dayIso: null,
-      availableDays: [],
-      metrics: null,
-      contractMetrics: null,
-      groupedCategories: [],
-      activeCategoryKey: null,
-      currentDailyData: null,
-      loading: {
-        monthly: false,
-        daily: false,
-      },
-      workSort: { column: "planned" },
-      lastUpdatedMonthlyLabel: null,
-      lastUpdatedMonthlyDateLabel: null,
-      lastUpdatedDailyLabel: null,
-      lastUpdatedDailyDateLabel: null,
-    };
+    this.viewMode = "monthly";
+    this.dayOptionsLoaded = false;
+    this.currentDailyData = null;
     if (this.elements.workSortSelect) {
-      this.elements.workSortSelect.value = this.state.workSort.column;
+      this.elements.workSortSelect.value = this.workSort.column;
     }
     this.handleResize = debounce(() => {
       this.updateWorkNameCollapsers();
       this.updateDailyNameCollapsers();
     }, 150);
     this.monthOptionsLoaded = false;
-    this.dayOptionsLoaded = false;
     this.dailyModule = null;
     this.pdfModule = null;
-  }
-
-  updateState(patchOrUpdater) {
-    const prevState = this.state;
-    const nextState =
-      typeof patchOrUpdater === "function"
-        ? patchOrUpdater(prevState)
-        : { ...prevState, ...patchOrUpdater };
-    this.state = {
-      ...prevState,
-      ...nextState,
-      loading: {
-        ...prevState.loading,
-        ...(nextState.loading || {}),
-      },
-      workSort: {
-        ...prevState.workSort,
-        ...(nextState.workSort || {}),
-      },
-    };
-    this.render();
-  }
-
-  render() {
-    this.updateViewModeLayout();
-    this.renderSummarySection();
-    this.renderCategoriesSection();
-    this.renderWorkListSection();
-    this.renderDailyPanelSection();
   }
 
   setActiveCategoryTitle(desktopText, mobileValueText = desktopText) {
@@ -142,7 +108,7 @@ export class UIManager {
     if (this.elements.workDetailHint) {
       this.elements.workDetailHint.hidden = true;
     }
-    this.render();
+    this.updateViewModeLayout();
     this.initMonthSelect();
     window.addEventListener("resize", this.handleResize);
   }
@@ -169,80 +135,24 @@ export class UIManager {
   }
 
   updateViewModeLayout() {
-    const { viewMode, groupedCategories } = this.state;
     if (this.elements.page) {
-      this.elements.page.dataset.viewMode = viewMode;
+      this.elements.page.dataset.viewMode = this.viewMode;
     }
     if (this.elements.viewModeMonthly) {
-      this.elements.viewModeMonthly.classList.toggle("is-active", viewMode === "monthly");
-      this.elements.viewModeMonthly.setAttribute("aria-selected", viewMode === "monthly" ? "true" : "false");
+      this.elements.viewModeMonthly.classList.toggle("is-active", this.viewMode === "monthly");
+      this.elements.viewModeMonthly.setAttribute("aria-selected", this.viewMode === "monthly" ? "true" : "false");
     }
     if (this.elements.viewModeDaily) {
-      this.elements.viewModeDaily.classList.toggle("is-active", viewMode === "daily");
-      this.elements.viewModeDaily.setAttribute("aria-selected", viewMode === "daily" ? "true" : "false");
+      this.elements.viewModeDaily.classList.toggle("is-active", this.viewMode === "daily");
+      this.elements.viewModeDaily.setAttribute("aria-selected", this.viewMode === "daily" ? "true" : "false");
     }
 
-    const shouldDisablePdf = viewMode === "daily";
+    const shouldDisablePdf = this.viewMode === "daily";
     if (this.elements.pdfButton) {
-      this.elements.pdfButton.disabled = shouldDisablePdf || !groupedCategories.length;
+      this.elements.pdfButton.disabled = shouldDisablePdf || !this.groupedCategories.length;
     }
 
     this.updateLastUpdatedPills();
-  }
-
-  renderSummarySection() {
-    const { metrics, summaryDailyRevenue } = this.state;
-    const result = renderSummaryExternal({ metrics, elements: this.elements });
-    const completionLabel = result?.completionLabel;
-    if (completionLabel !== undefined) {
-      updateSummaryProgressExternal({
-        completion: result.completion,
-        label: completionLabel,
-        elements: this.elements,
-      });
-    }
-    if (result?.averageDailyRevenue !== undefined) {
-      const isCurrentMonth = this.isCurrentMonth(this.state.monthIso);
-      updateDailyAverageExternal({
-        averageValue: result.averageDailyRevenue,
-        daysWithData: summaryDailyRevenue?.length || 0,
-        isCurrentMonth,
-        elements: this.elements,
-      });
-    }
-    if (this.state.contractMetrics) {
-      updateContractCardExternal({
-        contractMetrics: this.state.contractMetrics,
-        elements: this.elements,
-      });
-    }
-  }
-
-  renderCategoriesSection() {
-    const { groupedCategories, activeCategoryKey } = this.state;
-    if (!this.elements.categoryGrid) return;
-    renderCategoriesExternal({
-      groupedCategories,
-      activeCategoryKey,
-      elements: this.elements,
-      colors: CATEGORY_COLORS,
-      onSelect: (key) => this.handleCategorySelect(key),
-    });
-  }
-
-  renderWorkListSection() {
-    if (!this.elements.workListScroller) return;
-    const activeCategory = this.state.groupedCategories.find(
-      (category) => category.key === this.state.activeCategoryKey,
-    );
-    const works = activeCategory ? activeCategory.works : [];
-    this.clearWorkRows();
-    this.renderWorkRows(works);
-    this.updateWorkHeaderVisibility(works.length > 0);
-  }
-
-  renderDailyPanelSection() {
-    // Существующая логика daily-panel остаётся, но завязывается на this.state.currentDailyData
   }
 
   prepareWorkList() {
