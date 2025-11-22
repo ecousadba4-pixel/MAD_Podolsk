@@ -1,1 +1,1 @@
-export { initApp } from "../public/js/app.js";
+export { initApp } from "./js/app.js";

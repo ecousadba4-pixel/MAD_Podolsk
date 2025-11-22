@@ -1,5 +1,0 @@
-/* Backwards-compat bridge: keep base.css as a thin aggregator.
-   This allows including only base.css in legacy setups,
-   while Vite/modern bundlers can import tokens.css + layout.css directly. */
-@import url("./tokens.css");
-@import url("./layout.css");
