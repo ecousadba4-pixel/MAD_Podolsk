@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>СКПДИ · МАД · Подольск</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="mad-api-url"
+    content="https://mad-podolsk-karinausadba.amvera.io/api/dashboard"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Google+Sans:opsz,wght@8..20,400..700&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header compact">
+      <div class="page-header-left">
+        <div class="title-block">
+          <div class="title">СКПДИ · МАД · Подольск</div>
+          <div class="subtitle" id="subtitle">работы в статусе «Рассмотрено»</div>
+        </div>
+      </div>
+      <div class="controls">
+        <nav class="view-switch" role="tablist" aria-label="Тип отчёта">
+          <button class="view-tab is-active" role="tab" aria-selected="true" data-view="monthly" id="tab-monthly"><span class="view-tab-line1">По</span><span class="view-tab-line2">месяцам</span></button>
+          <button class="view-tab" role="tab" aria-selected="false" data-view="daily" id="tab-daily"><span class="view-tab-line1">По</span><span class="view-tab-line2">дням</span></button>
+        </nav>
+        <div class="month-info monthly-only" id="month-controls">
+          <div class="month-select">
+            <label for="month">Месяц</label>
+            <div class="month-select-control">
+              <select id="month"><!-- заполним в JS --></select>
+            </div>
+          </div>
+          <div class="pill" id="last-updated-pill">
+            <span class="pill-dot" aria-hidden="true"></span>
+            <div class="pill-info">
+              <span class="pill-label">ДАННЫЕ ОБНОВЛЕНЫ</span>
+              <span class="pill-value" id="last-updated-text">Обновление данных…</span>
+            </div>
+          </div>
+        </div>
+        <div class="day-info daily-only" id="day-controls">
+          <div class="day-select">
+            <label for="day">День</label>
+            <div class="day-select-control">
+              <input id="day" type="date" name="day" placeholder="Выберите дату" />
+            </div>
+          </div>
+          <div class="pill" id="last-updated-pill-daily">
+            <span class="pill-dot" aria-hidden="true"></span>
+            <div class="pill-info">
+              <span class="pill-label">ДАННЫЕ ОБНОВЛЕНЫ</span>
+              <span class="pill-value" id="last-updated-text-daily">Обновление данных…</span>
+            </div>
+          </div>
+        </div>
+        <div class="pdf-action pdf-action-desktop"></div>
+      </div>
+    </header>
+
+    <section class="contract-card monthly-only" id="contract-card">
+      <div class="contract-card-header">
+        <div class="contract-card-title">
+          Исполнение контракта
+          <span class="contract-card-title-date" id="contract-title-date"></span>
+        </div>
+        <div class="contract-card-values">
+          <div>
+            <span class="label">Контракт</span>
+            <strong id="contract-amount">–</strong>
+          </div>
+          <div>
+            <span class="label">Выполнено</span>
+            <strong id="contract-executed">–</strong>
+          </div>
+          <div>
+            <span class="label">Исполнение</span>
+            <strong id="contract-percent">–</strong>
+          </div>
+        </div>
+      </div>
+      <div
+        class="contract-progress-bar"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="120"
+        aria-valuenow="0"
+        aria-label="Исполнение контракта"
+      >
+        <div class="contract-progress-fill" id="contract-progress"></div>
+      </div>
+    </section>
+
+    <!-- Сводка -->
+    <section class="summary-grid layout-grid monthly-only" id="summary-grid">
+      <div class="summary-card card card--stacked">
+        <div class="summary-label">План, ₽</div>
+        <div class="summary-value" id="sum-planned">–</div>
+        <div class="summary-sub">Сметная стоимость</div>
+      </div>
+      <div class="summary-card card card--stacked">
+        <div class="summary-label">Факт, ₽</div>
+        <div class="summary-value" id="sum-fact">–</div>
+        <div class="summary-sub">Сумма принятых работ</div>
+        <div class="summary-progress" id="fact-progress" aria-live="polite">
+          <div class="summary-progress-labels">
+            <span>Исполнение</span>
+            <strong id="sum-fact-progress-label">–</strong>
+          </div>
+          <div class="summary-progress-bar">
+            <div class="summary-progress-fill" id="sum-fact-progress"></div>
+          </div>
+        </div>
+      </div>
+      <div class="summary-card card card--stacked">
+        <div class="summary-label">Отклонение, ₽</div>
+        <div class="summary-value" id="sum-delta">–</div>
+        <div class="summary-sub">Факт − План</div>
+      </div>
+      <button class="summary-card card card--interactive card--stacked summary-card-interactive" id="daily-average-card" type="button">
+        <div class="summary-label">Среднедневная выручка, ₽</div>
+        <div class="summary-value" id="sum-daily-average">–</div>
+        <div class="summary-sub summary-note" id="daily-average-note">
+          <span class="summary-note-line">Расчет без выручки</span>
+          <span class="summary-note-line">за сегодня</span>
+        </div>
+        <span class="summary-card-hint" id="daily-average-hint" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke="currentColor">
+            <circle cx="12" cy="12" r="9" fill="none" stroke-linecap="round" stroke-linejoin="round"></circle>
+            <path d="M12 10v6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M12 8h.01" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </span>
+        <span class="sr-only">Нажмите, чтобы посмотреть детализацию по дням</span>
+      </button>
+    </section>
+    <section class="summary-grid layout-grid skeleton-grid monthly-only" id="summary-skeleton" aria-hidden="true">
+      <div class="summary-card card card--stacked summary-card-skeleton">
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+        <div class="skeleton skeleton-line skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line skeleton-line-xs"></div>
+      </div>
+      <div class="summary-card card card--stacked summary-card-skeleton">
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+        <div class="skeleton skeleton-line skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line skeleton-line-xs"></div>
+      </div>
+      <div class="summary-card card card--stacked summary-card-skeleton">
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+        <div class="skeleton skeleton-line skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line skeleton-line-xs"></div>
+      </div>
+      <div class="summary-card card card--stacked summary-card-skeleton">
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+        <div class="skeleton skeleton-line skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line skeleton-line-xs"></div>
+      </div>
+    </section>
+
+    <!-- Сводка по сметам -->
+    <section class="panel monthly-only">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Работы в разрезе Смет</div>
+        </div>
+      </div>
+      <div class="category-grid layout-grid layout-grid--auto-fit skeleton-category" id="category-skeleton" aria-hidden="true">
+        <div class="category-card-skeleton">
+          <div class="skeleton skeleton-line skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="category-card-skeleton">
+          <div class="skeleton skeleton-line skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="category-card-skeleton">
+          <div class="skeleton skeleton-line skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="category-card-skeleton">
+          <div class="skeleton skeleton-line skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      </div>
+      <div class="category-grid layout-grid layout-grid--auto-fit" id="category-grid"></div>
+    </section>
+
+    <!-- Список работ выбранной сметы -->
+    <section class="panel monthly-only">
+      <div class="panel-header work-panel-header">
+        <div class="work-panel-title-area">
+          <div class="panel-title-group">
+            <div class="panel-title" id="active-category-title">
+              <span class="panel-title-text panel-title-text-desktop" id="active-category-title-desktop">Смета не выбрана</span>
+              <span class="panel-title-mobile" id="active-category-title-mobile">
+                <span class="panel-title-mobile-label">Работы по смете</span>
+                <span class="panel-title-mobile-value" id="active-category-title-mobile-value">Смета не выбрана</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <p class="panel-subtitle work-detail-hint" id="work-detail-hint">Ежедневные данные <span class="work-detail-hint-line-break"><br /></span>при нажатии на вид работы</p>
+        <div class="work-sort-select">
+          <label for="work-sort-select" class="work-sort-select-label">Сортировка</label>
+          <div class="work-sort-select-control">
+            <select id="work-sort-select">
+              <option value="planned" selected>План</option>
+              <option value="fact">Факт</option>
+              <option value="delta">Отклонение</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="work-list work-list-skeleton" id="work-skeleton" aria-hidden="true">
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      </div>
+      <div class="empty-state" id="work-empty-state">
+        Здесь появится список работ выбранной сметы.
+      </div>
+      <div class="work-list" id="work-list"></div>
+    </section>
+
+    <!-- Ежедневные данные -->
+    <section class="panel daily-only" id="daily-panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" id="daily-panel-title">Данные за выбранный день</div>
+          <div class="panel-subtitle" id="daily-panel-subtitle">Выберите день, чтобы увидеть данные</div>
+        </div>
+      </div>
+      <div class="work-list work-list-skeleton daily-skeleton" id="daily-skeleton" aria-hidden="true">
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+        <div class="work-row-skeleton">
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      </div>
+      <div class="empty-state" id="daily-empty-state">Здесь появятся данные за выбранный день.</div>
+      <div class="work-list daily-table" id="daily-table"></div>
+    </section>
+
+    <!-- Верхняя мобильная кнопка PDF удалена (дублирует нижнюю). -->
+
+  </div>
+
+  <div class="modal-backdrop" id="daily-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="daily-modal-title">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="daily-modal-title">Дневная расшифровка</div>
+        </div>
+        <button class="modal-close" type="button" id="daily-modal-close" aria-label="Закрыть">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke="currentColor">
+            <path d="M6 6l12 12M6 18 18 6" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="daily-modal-body">
+        <div class="modal-empty" id="daily-modal-empty">Нет данных по дням</div>
+        <div class="modal-list" id="daily-modal-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="print-report" id="print-report" aria-hidden="true">
+    <h1>Сводный отчёт по работам</h1>
+    <div class="print-meta">
+      <div>Месяц: <strong id="print-month">–</strong></div>
+      <div><span class="pill-dot pill-dot-print" aria-hidden="true"></span>Данные обновлены: <strong id="print-updated">–</strong></div>
+      <div id="print-subtitle">Выгружены все строки со статусом «Рассмотрено»</div>
+    </div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 28%">Смета</th>
+          <th style="width: 42%">Работа</th>
+          <th style="width: 10%">План</th>
+          <th style="width: 10%">Факт</th>
+          <th style="width: 10%">Отклонение</th>
+        </tr>
+      </thead>
+      <tbody id="print-report-body">
+        <tr>
+          <td colspan="5" style="text-align:center; font-style: italic;">Данные загружаются…</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Итого</td>
+          <td class="num" id="print-total-plan">–</td>
+          <td class="num" id="print-total-fact">–</td>
+          <td class="num" id="print-total-delta">–</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Мобильная кнопка PDF перенесена в самый низ страницы -->
+  <div class="pdf-action pdf-action-mobile pdf-action-mobile-bottom">
+    <button class="btn btn-airy btn-pdf-compact" type="button" id="download-pdf" aria-live="polite">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+        <path d="M12 3v11m-4-4l4 4 4-4M4 19h16" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>PDF</span>
+    </button>
+  </div>
+
+  <script type="module" src="/frontend/main.js"></script>
+
+
+</body>
+</html>
