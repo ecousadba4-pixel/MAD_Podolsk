@@ -10,7 +10,6 @@ import {
   debounce,
 } from "@js/utils.js";
 import { initializeWorkList, renderWorkRows as renderWorkRowsExternal } from "@js/work-list.js";
-import { applyDailyData as applyDailyDataExternal } from "@js/daily-report.js";
 import {
   renderSummary as renderSummaryExternal,
   updateSummaryProgress as updateSummaryProgressExternal,
@@ -85,6 +84,8 @@ export class UIManager {
       this.updateDailyNameCollapsers();
     }, 150);
     this.monthOptionsLoaded = false;
+    this.dailyModule = null;
+    this.pdfModule = null;
   }
 
   setActiveCategoryTitle(desktopText, mobileValueText = desktopText) {
@@ -222,6 +223,18 @@ export class UIManager {
         this.loadDailyData(this.elements.daySelect.value);
       });
     }
+  }
+
+  async loadDailyModule() {
+    if (this.dailyModule) return this.dailyModule;
+    this.dailyModule = await import("@js/daily-report.js");
+    return this.dailyModule;
+  }
+
+  async loadPdfModule() {
+    if (this.pdfModule) return this.pdfModule;
+    this.pdfModule = await import("@js/pdf-client.js").catch(() => null);
+    return this.pdfModule;
   }
 
   async initMonthSelect() {
@@ -421,6 +434,84 @@ export class UIManager {
       }
     } else {
       this.updateLastUpdatedPills();
+    }
+  }
+
+  async loadDailyData(dayIso) {
+    if (!dayIso) return;
+    this.selectedDayIso = dayIso;
+    if (this.elements.dailySkeleton) {
+      this.elements.dailySkeleton.style.display = "block";
+    }
+
+    try {
+      const { applyDailyData } = await this.loadDailyModule();
+      const { data } = await this.dataManager.fetchDailyReport(dayIso, { force: true });
+      this.currentDailyData = data;
+      applyDailyData({
+        data,
+        elements: this.elements,
+        onAfterRender: () => this.updateDailyNameCollapsers(),
+      });
+    } catch (error) {
+      console.error("Не удалось загрузить дневной отчёт", error);
+      if (this.elements.dailyEmptyState) {
+        this.elements.dailyEmptyState.textContent = "Ошибка загрузки данных";
+        this.elements.dailyEmptyState.style.display = "block";
+      }
+    } finally {
+      if (this.elements.dailySkeleton) {
+        this.elements.dailySkeleton.style.display = "none";
+      }
+    }
+  }
+
+  async openDailyModal() {
+    if (!this.elements.dailyModal) return;
+    const { applyDailyData } = await this.loadDailyModule();
+    if (this.currentDailyData) {
+      applyDailyData({
+        data: this.currentDailyData,
+        elements: this.elements,
+        onAfterRender: () => this.updateDailyNameCollapsers(),
+      });
+    }
+    this.elements.dailyModal.dataset.open = "true";
+  }
+
+  closeDailyModal() {
+    if (!this.elements.dailyModal) return;
+    this.elements.dailyModal.dataset.open = "false";
+  }
+
+  async downloadPdfReport(event) {
+    if (!this.elements.pdfButton || this.elements.pdfButton.disabled) return;
+    event.preventDefault();
+
+    const button = this.elements.pdfButton;
+    const originalLabel = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = "Скачивание…";
+
+    try {
+      const pdfModule = await this.loadPdfModule();
+      if (pdfModule && typeof pdfModule.downloadPdf === "function") {
+        await pdfModule.downloadPdf({
+          apiPdfUrl: this.apiPdfUrl,
+          selectedMonthIso: this.selectedMonthIso,
+        });
+      } else {
+        const url = new URL(this.apiPdfUrl, window.location.origin);
+        if (this.selectedMonthIso) {
+          url.searchParams.set("month", this.selectedMonthIso);
+        }
+        window.open(url.toString(), "_blank");
+      }
+    } catch (error) {
+      console.error("Не удалось скачать PDF", error);
+    } finally {
+      button.disabled = false;
+      button.innerHTML = originalLabel;
     }
   }
 
