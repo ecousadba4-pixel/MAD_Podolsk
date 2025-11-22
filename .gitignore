@@ -26,8 +26,6 @@ env/
 
 # Build artifacts
 docs-build/
-dist/
-node_modules/
 
 # Fonts
 # Исходники шрифтов хранятся в текстовом виде (см. app/font_storage.py),
