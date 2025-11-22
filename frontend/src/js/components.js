@@ -758,19 +758,47 @@ export class UIManager {
 
   applyDailyData(data) {
     this.currentDailyData = data;
+    const invokeApply = (applyFn) => {
+      try {
+        applyFn({
+          data,
+          elements: this.elements,
+          onAfterRender: () => {
+            this.lastUpdatedDailyLabel = data?.has_data ? formatDateTime(data.last_updated) : "Нет данных";
+            this.lastUpdatedDailyDateLabel = data?.has_data
+              ? formatDate(data.last_updated, { day: "2-digit", month: "2-digit", year: "numeric" })
+              : this.lastUpdatedDailyLabel;
+            this.updateLastUpdatedPills();
+            requestAnimationFrame(() => this.updateDailyNameCollapsers());
+          },
+        });
+      } catch (err) {
+        console.error("Ошибка при применении дневных данных:", err);
+      }
+    };
 
-    applyDailyDataExternal({
-      data,
-      elements: this.elements,
-      onAfterRender: () => {
-        this.lastUpdatedDailyLabel = data?.has_data ? formatDateTime(data.last_updated) : "Нет данных";
-        this.lastUpdatedDailyDateLabel = data?.has_data
-          ? formatDate(data.last_updated, { day: "2-digit", month: "2-digit", year: "numeric" })
-          : this.lastUpdatedDailyLabel;
-        this.updateLastUpdatedPills();
-        requestAnimationFrame(() => this.updateDailyNameCollapsers());
-      },
-    });
+    if (this.dailyModule && typeof this.dailyModule.applyDailyData === "function") {
+      invokeApply(this.dailyModule.applyDailyData);
+      return;
+    }
+
+    // Если модуль ещё не загружен — подгружаем динамически и затем вызываем функцию
+    this.loadDailyModule()
+      .then((mod) => {
+        const fn = mod && (mod.applyDailyData || (mod.default && mod.default.applyDailyData));
+        if (typeof fn === "function") {
+          // Сохраняем ссылку на модуль для последующих вызовов
+          this.dailyModule = mod;
+          invokeApply(fn);
+        } else {
+          console.error("Модуль daily-report не экспортирует applyDailyData");
+          this.handleDailyLoadError();
+        }
+      })
+      .catch((err) => {
+        console.error("Не удалось загрузить модуль daily-report:", err);
+        this.handleDailyLoadError();
+      });
   }
 
   async loadDailyData(dayIso) {
