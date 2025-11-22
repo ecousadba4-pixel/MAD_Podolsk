@@ -1,5 +1,25 @@
 import { calculateDelta, normalizeAmount } from "./utils.js";
 
+// Базовые настройки API, синхронизированные с `app.js`.
+// При необходимости можно переопределить через те же механизмы
+// (meta-тег `mad-api-url` или глобальную `window.MAD_API_URL`).
+const DEFAULT_API_BASE = "/api/dashboard";
+const API_PDF_SUFFIX = "/pdf";
+const API_MONTHS_SUFFIX = "/months";
+const API_DAYS_SUFFIX = "/days";
+const API_DAILY_SUFFIX = "/daily";
+
+const API_URL = (() => {
+  const metaApiUrl = document.querySelector('meta[name="mad-api-url"]');
+  const explicitUrl = (metaApiUrl?.content || window.MAD_API_URL || "").trim();
+  return explicitUrl || DEFAULT_API_BASE;
+})();
+const API_BASE = API_URL.replace(/\/$/, "");
+const API_PDF_URL = `${API_BASE}${API_PDF_SUFFIX}`;
+const API_MONTHS_URL = `${API_BASE}${API_MONTHS_SUFFIX}`;
+const API_DAYS_URL = `${API_BASE}${API_DAYS_SUFFIX}`;
+const API_DAILY_URL = `${API_BASE}${API_DAILY_SUFFIX}`;
+
 const MERGED_SMETA_OVERRIDES = {
   "внерегл_ч_1": { key: "внерегламент", title: "внерегламент" },
   "внерегл_ч_2": { key: "внерегламент", title: "внерегламент" },
@@ -85,11 +105,11 @@ export {
 };
 
 export class DataManager {
-  constructor(apiUrl, { monthsUrl, daysUrl, dailyUrl, visitorTracker } = {}) {
+  constructor(apiUrl = API_URL, { monthsUrl = API_MONTHS_URL, daysUrl = API_DAYS_URL, dailyUrl = API_DAILY_URL, visitorTracker } = {}) {
     this.apiUrl = apiUrl;
-    this.monthsUrl = monthsUrl || `${apiUrl.replace(/\/$/, "")}/months`;
-    this.daysUrl = daysUrl || `${apiUrl.replace(/\/$/, "")}/days`;
-    this.dailyUrl = dailyUrl || `${apiUrl.replace(/\/$/, "")}/daily`;
+    this.monthsUrl = monthsUrl;
+    this.daysUrl = daysUrl;
+    this.dailyUrl = dailyUrl;
     this.cache = new Map();
     this.dailyCache = new Map();
     this.currentData = null;

@@ -125,7 +125,8 @@ export class VisitorTracker {
     };
 
     try {
-      await fetch(`${apiBase}/visit`, {
+      const base = (apiBase || "").replace(/\/$/, "") || "/api";
+      await fetch(`${base}/visit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
