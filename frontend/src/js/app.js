@@ -3,30 +3,16 @@ import { DataManager } from "@js/api.js";
 import { UIManager } from "@js/components.js";
 import { VisitorTracker } from "@js/visitor.js";
 import {
-  DEFAULT_API_BASE,
-  API_PDF_SUFFIX,
-  API_MONTHS_SUFFIX,
-  API_DAYS_SUFFIX,
-  API_DAILY_SUFFIX,
+  API_URL,
+  API_BASE,
+  API_PDF_URL,
+  API_MONTHS_URL,
+  API_DAYS_URL,
+  API_DAILY_URL,
   MOBILE_MEDIA_QUERY,
   DEFAULT_PDF_LABEL,
   SELECTORS,
 } from "@js/config.frontend.js";
-
-// Разрешаем переопределять адрес API через meta-тег `mad-api-url` или
-// глобальную переменную `MAD_API_URL`, чтобы фронтенд можно было разворачивать
-// на статическом хостинге с бекендом на другом домене.
-
-const API_URL = (() => {
-  const metaApiUrl = document.querySelector('meta[name="mad-api-url"]');
-  const explicitUrl = (metaApiUrl?.content || window.MAD_API_URL || "").trim();
-  return explicitUrl || DEFAULT_API_BASE; // значение по умолчанию — тот же домен
-})();
-const API_BASE = API_URL.replace(/\/$/, "");
-const API_PDF_URL = `${API_BASE}${API_PDF_SUFFIX}`;
-const API_MONTHS_URL = `${API_BASE}${API_MONTHS_SUFFIX}`;
-const API_DAYS_URL = `${API_BASE}${API_DAYS_SUFFIX}`;
-const API_DAILY_URL = `${API_BASE}${API_DAILY_SUFFIX}`;
 
 export function initApp() {
   const visitorTracker = new VisitorTracker();
@@ -70,6 +56,6 @@ export function initApp() {
   uiManager.init();
 
   const endpointPath = new URL(API_URL, window.location.origin).pathname;
-  visitorTracker.sendVisitLog({ apiBase: API_BASE, endpoint: endpointPath });
+  visitorTracker.logInitialVisit({ apiBase: API_BASE, endpoint: endpointPath });
 }
 

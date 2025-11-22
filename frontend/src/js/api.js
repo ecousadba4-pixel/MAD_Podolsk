@@ -1,24 +1,11 @@
 import { calculateDelta, normalizeAmount } from "@js/utils.js";
-
-// Базовые настройки API, синхронизированные с `app.js`.
-// При необходимости можно переопределить через те же механизмы
-// (meta-тег `mad-api-url` или глобальную `window.MAD_API_URL`).
-const DEFAULT_API_BASE = "/api/dashboard";
-const API_PDF_SUFFIX = "/pdf";
-const API_MONTHS_SUFFIX = "/months";
-const API_DAYS_SUFFIX = "/days";
-const API_DAILY_SUFFIX = "/daily";
-
-const API_URL = (() => {
-  const metaApiUrl = document.querySelector('meta[name="mad-api-url"]');
-  const explicitUrl = (metaApiUrl?.content || window.MAD_API_URL || "").trim();
-  return explicitUrl || DEFAULT_API_BASE;
-})();
-const API_BASE = API_URL.replace(/\/$/, "");
-const API_PDF_URL = `${API_BASE}${API_PDF_SUFFIX}`;
-const API_MONTHS_URL = `${API_BASE}${API_MONTHS_SUFFIX}`;
-const API_DAYS_URL = `${API_BASE}${API_DAYS_SUFFIX}`;
-const API_DAILY_URL = `${API_BASE}${API_DAILY_SUFFIX}`;
+import {
+  API_URL,
+  API_PDF_URL,
+  API_MONTHS_URL,
+  API_DAYS_URL,
+  API_DAILY_URL,
+} from "@js/config.frontend.js";
 
 const MERGED_SMETA_OVERRIDES = {
   "внерегл_ч_1": { key: "внерегламент", title: "внерегламент" },

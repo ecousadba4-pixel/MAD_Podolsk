@@ -137,4 +137,8 @@ export class VisitorTracker {
       console.warn("Не удалось отправить статистику визита", error);
     }
   }
+
+  logInitialVisit({ apiBase, endpoint } = {}) {
+    this.sendVisitLog({ apiBase, endpoint });
+  }
 }

@@ -4,6 +4,22 @@ export const API_MONTHS_SUFFIX = "/months";
 export const API_DAYS_SUFFIX = "/days";
 export const API_DAILY_SUFFIX = "/daily";
 
+// Адрес API может переопределяться через meta-тег `mad-api-url`
+// или глобальную переменную `window.MAD_API_URL`, чтобы фронтенд
+// можно было разворачивать на статическом хостинге с бэкендом
+// на другом домене.
+export const API_URL = (() => {
+  const metaApiUrl = document.querySelector('meta[name="mad-api-url"]');
+  const explicitUrl = (metaApiUrl?.content || window.MAD_API_URL || "").trim();
+  return explicitUrl || DEFAULT_API_BASE;
+})();
+
+export const API_BASE = API_URL.replace(/\/$/, "");
+export const API_PDF_URL = `${API_BASE}${API_PDF_SUFFIX}`;
+export const API_MONTHS_URL = `${API_BASE}${API_MONTHS_SUFFIX}`;
+export const API_DAYS_URL = `${API_BASE}${API_DAYS_SUFFIX}`;
+export const API_DAILY_URL = `${API_BASE}${API_DAILY_SUFFIX}`;
+
 export const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
 export const DEFAULT_PDF_LABEL = "Скачать PDF";
 
