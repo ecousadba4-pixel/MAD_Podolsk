@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .constants import API_PREFIX, HEALTH_PATH
@@ -31,6 +35,12 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(title="SKPDI Dashboard API", lifespan=lifespan)
+
+    project_root = Path(__file__).resolve().parent.parent
+    dist_dir = project_root / "dist"
+
+    if dist_dir.exists():
+        app.mount("/", StaticFiles(directory=dist_dir, html=True), name="frontend")
 
     allow_all_origins = "*" in settings.allowed_origins_list
     allow_origins = ["*"] if allow_all_origins else settings.allowed_origins_list

@@ -28,12 +28,6 @@ jobs:
         run: |
           npm run build
 
-      - name: Cache-bust built assets
-        env:
-          CACHE_BUSTER: ${{ github.sha }}
-        run: |
-          python scripts/cache_bust.py
-
       - name: Start ssh-agent and add key
         uses: webfactory/ssh-agent@v0.9.0
         with:
