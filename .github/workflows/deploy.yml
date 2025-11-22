@@ -1,4 +1,4 @@
-name: Deploy Vite build to podolsk.mad.moclean.ru
+name: Deploy to podolsk.mad.moclean.ru
 
 on:
   push:
@@ -14,18 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend with Vite
-        run: npm run build
-
       - name: Start ssh-agent and add key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -36,11 +24,17 @@ jobs:
           mkdir -p ~/.ssh
           printf "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > ~/.ssh/config
 
-      - name: Deploy dist folder to server via rsync
+      - name: Build frontend with cache-busting filenames
+        env:
+          CACHE_BUSTER: ${{ github.sha }}
+        run: |
+          python scripts/cache_bust.py
+
+      - name: Deploy docs folder to server via rsync
         run: |
           rsync -avzr --delete \
             --exclude=".git" \
             --exclude=".github" \
             -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            ./dist/ \
+            ./docs-build/ \
             u3330235@37.140.192.181:/var/www/u3330235/data/www/podolsk.mad.moclean.ru/
