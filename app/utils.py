@@ -92,38 +92,6 @@ def get_next_month_start(month_start: date) -> date:
     return (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
 
 
-def is_empty_value(value: Any) -> bool:
-    """Проверяет, является ли значение пустым (None, пустая строка после strip, 0).
-    
-    Args:
-        value: Значение для проверки.
-    
-    Returns:
-        True, если значение считается пустым.
-    """
-    if value is None:
-        return True
-    if isinstance(value, str):
-        return not value.strip()
-    if isinstance(value, (int, float, Decimal)):
-        return value == 0
-    return False
-
-
-def coalesce(*values: Any) -> Any:
-    """Возвращает первое непустое значение из списка.
-    
-    Args:
-        *values: Значения для проверки.
-    
-    Returns:
-        Первое непустое значение или None.
-    """
-    for value in values:
-        if not is_empty_value(value):
-            return value
-    return None
-
 
 def format_money(value: float | None) -> str:
     """Форматирует денежное значение с разделителями тысяч.
