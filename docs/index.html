@@ -21,7 +21,6 @@
   <link rel="stylesheet" href="css/categories.css" />
   <link rel="stylesheet" href="css/work.css" />
   <link rel="stylesheet" href="css/modal.css" />
-  <link rel="stylesheet" href="css/print.css" />
 </head>
 <body>
   <div class="page">
@@ -323,39 +322,6 @@
         <div class="modal-list" id="daily-modal-list"></div>
       </div>
     </div>
-  </div>
-
-  <div class="print-report" id="print-report" aria-hidden="true">
-    <h1>Сводный отчёт по работам</h1>
-    <div class="print-meta">
-      <div>Месяц: <strong id="print-month">–</strong></div>
-      <div><span class="pill-dot pill-dot-print" aria-hidden="true"></span>Данные обновлены: <strong id="print-updated">–</strong></div>
-      <div id="print-subtitle">Выгружены все строки со статусом «Рассмотрено»</div>
-    </div>
-    <table class="print-table">
-      <thead>
-        <tr>
-          <th style="width: 28%">Смета</th>
-          <th style="width: 42%">Работа</th>
-          <th style="width: 10%">План</th>
-          <th style="width: 10%">Факт</th>
-          <th style="width: 10%">Отклонение</th>
-        </tr>
-      </thead>
-      <tbody id="print-report-body">
-        <tr>
-          <td colspan="5" style="text-align:center; font-style: italic;">Данные загружаются…</td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="2">Итого</td>
-          <td class="num" id="print-total-plan">–</td>
-          <td class="num" id="print-total-fact">–</td>
-          <td class="num" id="print-total-delta">–</td>
-        </tr>
-      </tfoot>
-    </table>
   </div>
 
   <!-- Мобильная кнопка PDF перенесена в самый низ страницы -->

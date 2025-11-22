@@ -39,14 +39,7 @@
   --gap-lg: 18px;
   --gap-xl: 24px;
   
-  /* Control heights */
-  --control-height: 54px;
-  --control-height-sm: 36px;
-  --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.08);
-  --shadow-card: 0 6px 16px rgba(15, 23, 42, 0.05);
-  --shadow-btn-primary: 0 14px 24px rgba(47, 111, 237, 0.25);
-  --shadow-btn-primary-active: 0 3px 10px rgba(37, 99, 235, 0.25);
-  --shadow-btn-airy: 0 10px 30px rgba(47, 111, 237, 0.12);
+ 
   --shadow-btn-airy-hover: 0 12px 32px rgba(47, 111, 237, 0.16);
   --shadow-btn-airy-active: 0 8px 22px rgba(47, 111, 237, 0.14);
   --shadow-btn-airy-desktop: 0 6px 16px rgba(15, 23, 42, 0.08);
@@ -481,16 +474,6 @@ input[type="date"] {
   filter: blur(6px);
   pointer-events: none;
   z-index: -1;
-}
-
-/* Маленький вариант для печатной меты (вставляется inline перед текстом) */
-.pill-dot-print {
-  width: 10px;
-  height: 10px;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 8px;
-  box-shadow: none;
 }
 
 .pill-info {

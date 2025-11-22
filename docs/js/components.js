@@ -543,7 +543,6 @@ export class UIManager {
     this.renderSummary();
     this.renderCategories();
     this.renderWorkList();
-    this.renderPrintReport();
   }
 
   ensureActiveCategory() {
@@ -1399,80 +1398,6 @@ export class UIManager {
 
   updateWorkNameCollapsers() {
     this.updateNameCollapsers(this.elements.workListScroller);
-  }
-
-  renderPrintReport() {
-    const currentData = this.dataManager.getCurrentData();
-    const monthLabel = this.getSelectedMonthLabel() || "–";
-    this.elements.printMonth.textContent = monthLabel;
-    this.elements.printUpdated.textContent = currentData && currentData.has_data
-      ? formatDateTime(currentData.last_updated)
-      : "нет данных";
-    this.elements.printSubtitle.textContent = currentData && currentData.has_data
-      ? "Выгружены все строки со статусом «Рассмотрено»"
-      : "Данные по выбранному месяцу отсутствуют";
-
-    this.elements.printBody.innerHTML = "";
-
-    const fragment = document.createDocumentFragment();
-
-    if (!currentData || !this.groupedCategories.length) {
-      const row = document.createElement("tr");
-      row.innerHTML = '<td colspan="5" style="text-align:center; font-style: italic;">Нет данных для печати</td>';
-      fragment.appendChild(row);
-      this.elements.printBody.appendChild(fragment);
-      this.elements.printTotalPlan.textContent = "–";
-      this.elements.printTotalFact.textContent = "–";
-      this.elements.printTotalDelta.textContent = "–";
-      this.elements.printTotalDelta.classList.remove("delta-positive", "delta-negative");
-      return;
-    }
-
-    let totalPlan = 0;
-    let totalFact = 0;
-    let totalDelta = 0;
-
-    this.groupedCategories.forEach((category) => {
-      const catDelta = category.delta ?? (category.fact - category.planned);
-      const catRow = document.createElement("tr");
-      const deltaClass = catDelta > 0 ? "delta-positive" : catDelta < 0 ? "delta-negative" : "";
-      catRow.className = "print-smeta-summary";
-      catRow.innerHTML = `
-        <td>${category.title}</td>
-        <td>Итого по смете</td>
-        <td class="num">${formatMoneyRub(category.planned)}</td>
-        <td class="num">${formatMoneyRub(category.fact)}</td>
-        <td class="num ${deltaClass}">${formatMoneyRub(catDelta)}</td>
-      `;
-      fragment.appendChild(catRow);
-
-      category.works.forEach((item) => {
-        const delta = calculateDelta(item);
-        const deltaClassWork = delta > 0 ? "delta-positive" : delta < 0 ? "delta-negative" : "";
-        const workRow = document.createElement("tr");
-        workRow.innerHTML = `
-          <td></td>
-          <td>${item.work_name || item.description || "Без названия"}</td>
-          <td class="num">${formatMoneyRub(item.planned_amount)}</td>
-          <td class="num">${formatMoneyRub(item.fact_amount)}</td>
-          <td class="num ${deltaClassWork}">${formatMoneyRub(delta)}</td>
-        `;
-        fragment.appendChild(workRow);
-      });
-
-      totalPlan += category.planned ?? 0;
-      totalFact += category.fact ?? 0;
-      totalDelta += catDelta ?? 0;
-    });
-
-    this.elements.printBody.appendChild(fragment);
-
-    this.elements.printTotalPlan.textContent = formatMoneyRub(totalPlan);
-    this.elements.printTotalFact.textContent = formatMoneyRub(totalFact);
-    this.elements.printTotalDelta.textContent = formatMoneyRub(totalDelta);
-    this.elements.printTotalDelta.classList.remove("delta-positive", "delta-negative");
-    if (totalDelta > 0) this.elements.printTotalDelta.classList.add("delta-positive");
-    if (totalDelta < 0) this.elements.printTotalDelta.classList.add("delta-negative");
   }
 
   getSelectedMonthLabel() {
