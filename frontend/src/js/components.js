@@ -542,6 +542,7 @@ export class UIManager {
 
   async loadMonthData(monthIso) {
     this.uiStore.setSelectedMonth(monthIso);
+    this.selectedMonthIso = monthIso;
     this.updateDailyAverageVisibility(monthIso);
     const cached = this.dataManager.getCached(monthIso);
     if (cached) {
@@ -820,24 +821,28 @@ export class UIManager {
   }
 
   openDailyModal() {
-  if (!this.summaryDailyRevenue.length || !this.isCurrentMonth(this.selectedMonthIso)) {
-    return;
-  }
-  this.dailyRevenue = [...this.summaryDailyRevenue];
-  this.dailyModalMode = "average";
-  this.renderDailyModalList();
-  openAverageDailyModalView({
-    elements: this.elements,
-    summaryDailyRevenue: this.summaryDailyRevenue,
-    selectedMonthLabel: this.getSelectedMonthLabel(),
-    isCurrentMonth: this.isCurrentMonth(this.selectedMonthIso),
-  });
+    const monthIso = this.uiStore.getSelectedMonth();
+    if (!this.summaryDailyRevenue.length || !this.isCurrentMonth(monthIso)) {
+      return;
+    }
+    this.selectedMonthIso = monthIso;
+    this.dailyRevenue = [...this.summaryDailyRevenue];
+    this.dailyModalMode = "average";
+    this.renderDailyModalList();
+    openAverageDailyModalView({
+      elements: this.elements,
+      summaryDailyRevenue: this.summaryDailyRevenue,
+      selectedMonthLabel: this.getSelectedMonthLabel(),
+      isCurrentMonth: this.isCurrentMonth(monthIso),
+    });
   }
 
   async openWorkModal(item) {
-  if (!item || !this.elements.dailyModal || !this.isCurrentMonth(this.selectedMonthIso)) {
-    return;
-  }
+    const monthIso = this.uiStore.getSelectedMonth();
+    if (!item || !this.elements.dailyModal || !this.isCurrentMonth(monthIso)) {
+      return;
+    }
+    this.selectedMonthIso = monthIso;
   try {
     const dailyRevenue = await openWorkModalView({
       elements: this.elements,
