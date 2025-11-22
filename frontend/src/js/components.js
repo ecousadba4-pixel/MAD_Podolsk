@@ -9,7 +9,6 @@ import {
   calculateDelta,
   debounce,
 } from "@js/utils.js";
-import { initializeWorkList, renderWorkRows as renderWorkRowsExternal } from "@js/work-list.js";
 import {
   renderSummary as renderSummaryExternal,
   updateSummaryProgress as updateSummaryProgressExternal,
@@ -17,7 +16,8 @@ import {
   updateContractCard as updateContractCardExternal,
   updateContractProgress as updateContractProgressExternal,
 } from "@js/summary.js";
-import { renderCategories as renderCategoriesExternal } from "@js/categories.js";
+import { renderCategoriesView } from "@js/ui/categoriesView.js";
+import { initWorkListView, renderWorkRowsView } from "@js/ui/workListView.js";
 
 // Цветовые палитры категорий вынесены в константу верхнего уровня,
 // чтобы `UIManager` концентрировался на логике, а не на данных оформления.
@@ -157,13 +157,14 @@ export class UIManager {
   }
 
   prepareWorkList() {
-    const { headerEl, scroller, sortButtons } = initializeWorkList({
+    const { headerEl, scroller, sortButtons } = initWorkListView({
       container: this.elements.workList,
       onSortChange: (column) => this.handleWorkSortChange(column),
       onWorkClick: (item, event) => {
         if (event && event.target.closest(".work-row-name-toggle")) return;
         this.openWorkModal(item);
       },
+      initializeNameToggle: (nameWrapper) => this.initializeNameToggle(nameWrapper),
     });
 
     this.workHeaderEl = headerEl;
@@ -179,7 +180,7 @@ export class UIManager {
   }
 
   renderWorkRows(works) {
-    renderWorkRowsExternal({
+    renderWorkRowsView({
       scroller: this.elements.workListScroller,
       works,
       onWorkClick: (item, event) => {
@@ -187,7 +188,6 @@ export class UIManager {
         this.openWorkModal(item);
       },
       initializeNameToggle: (nameWrapper) => this.initializeNameToggle(nameWrapper),
-      calculateDeltaFn: (item) => calculateDelta(item),
     });
     requestAnimationFrame(() => this.updateWorkNameCollapsers());
   }
@@ -996,7 +996,7 @@ export class UIManager {
   }
 
   renderCategories() {
-    renderCategoriesExternal({
+    renderCategoriesView({
       groupedCategories: this.groupedCategories,
       activeCategoryKey: this.activeCategoryKey,
       elements: this.elements,
