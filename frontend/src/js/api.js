@@ -1,13 +1,5 @@
 import { normalizeAmount } from "@shared/utils.js";
-import {
-  hasMeaningfulAmount,
-  shouldIncludeItem,
-  resolveCategoryMeta,
-  summarizeItems,
-  calculateMetrics as calculateMetricsDomain,
-  calculateContractMetrics as calculateContractMetricsDomain,
-  buildCategories as buildCategoriesDomain,
-} from "@js/services/domain-service.js";
+import { domainStore } from "@js/services/domain-service.js";
 import {
   API_URL,
   API_PDF_URL,
@@ -61,15 +53,7 @@ async function withRetry(requestFn, { retries = 1, delayMs = DEFAULT_RETRY_DELAY
 
 // Экспортируем утилиты, чтобы их можно было переиспользовать в других модулях
 // и в будущем в Vite-проекте без дублирования кода.
-export {
-  hasMeaningfulAmount,
-  shouldIncludeItem,
-  resolveCategoryMeta,
-  wait,
-  buildHttpError,
-  isRetryableError,
-  withRetry,
-};
+export { wait, buildHttpError, isRetryableError, withRetry };
 
 export class DataManager {
   constructor(apiUrl = API_URL, { monthsUrl = API_MONTHS_URL, daysUrl = API_DAYS_URL, dailyUrl = API_DAILY_URL, visitorTracker } = {}) {
@@ -209,18 +193,18 @@ export class DataManager {
   }
 
   summarizeItems(items = []) {
-    return summarizeItems(items);
+    return domainStore.summarizeItems(items);
   }
 
   calculateMetrics(data) {
-    return calculateMetricsDomain(data);
+    return domainStore.calculateMetrics(data);
   }
 
   calculateContractMetrics(data) {
-    return calculateContractMetricsDomain(data);
+    return domainStore.calculateContractMetrics(data);
   }
 
   buildCategories(items = []) {
-    return buildCategoriesDomain(items);
+    return domainStore.buildCategories(items);
   }
 }

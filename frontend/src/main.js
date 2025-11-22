@@ -8,7 +8,7 @@ import "@styles/categories.css";
 import "@styles/work.css";
 import "@styles/modal.css";
 
-import { initApp } from "./app.js";
+import { initApp } from "@js/app.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
