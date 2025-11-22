@@ -1,4 +1,4 @@
-import { formatDate, formatNumber, formatMoneyRub } from "./utils.js";
+import { formatDate, formatNumber, formatMoneyRub } from "@js/utils.js";
 
 export function applyDailyData({
   data,

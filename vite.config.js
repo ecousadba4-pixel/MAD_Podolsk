@@ -3,6 +3,13 @@ import { resolve } from "node:path";
 
 export default defineConfig({
   root: "frontend",
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "frontend/src"),
+      "@js": resolve(__dirname, "frontend/src/js"),
+      "@styles": resolve(__dirname, "frontend/src/styles"),
+    },
+  },
   build: {
     outDir: "../dist",
     emptyOutDir: true,

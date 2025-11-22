@@ -8,16 +8,16 @@ import {
   showToast,
   calculateDelta,
   debounce,
-} from "./utils.js";
-import { initializeWorkList, renderWorkRows as renderWorkRowsExternal } from "./work-list.js";
-import { applyDailyData as applyDailyDataExternal } from "./daily-report.js";
+} from "@js/utils.js";
+import { initializeWorkList, renderWorkRows as renderWorkRowsExternal } from "@js/work-list.js";
+import { applyDailyData as applyDailyDataExternal } from "@js/daily-report.js";
 import {
   renderSummary as renderSummaryExternal,
   updateSummaryProgress as updateSummaryProgressExternal,
   updateDailyAverage as updateDailyAverageExternal,
   updateContractCard as updateContractCardExternal,
-} from "./summary.js";
-import { renderCategories as renderCategoriesExternal } from "./categories.js";
+} from "@js/summary.js";
+import { renderCategories as renderCategoriesExternal } from "@js/categories.js";
 
 // Цветовые палитры категорий вынесены в константу верхнего уровня,
 // чтобы `UIManager` концентрировался на логике, а не на данных оформления.

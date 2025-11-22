@@ -1,4 +1,4 @@
-import { normalizeAmount } from "./utils.js";
+import { normalizeAmount } from "@js/utils.js";
 
 function generateUuid() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {

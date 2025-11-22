@@ -1,4 +1,4 @@
-import { calculateDelta, normalizeAmount } from "./utils.js";
+import { calculateDelta, normalizeAmount } from "@js/utils.js";
 
 // Базовые настройки API, синхронизированные с `app.js`.
 // При необходимости можно переопределить через те же механизмы

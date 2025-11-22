@@ -1,7 +1,7 @@
-import { cacheDomElements, setElementsDisabled } from "./utils.js";
-import { DataManager } from "./api.js";
-import { UIManager } from "./components.js";
-import { VisitorTracker } from "./visitor.js";
+import { cacheDomElements, setElementsDisabled } from "@js/utils.js";
+import { DataManager } from "@js/api.js";
+import { UIManager } from "@js/components.js";
+import { VisitorTracker } from "@js/visitor.js";
 import {
   DEFAULT_API_BASE,
   API_PDF_SUFFIX,
@@ -11,7 +11,7 @@ import {
   MOBILE_MEDIA_QUERY,
   DEFAULT_PDF_LABEL,
   SELECTORS,
-} from "./config.frontend.js";
+} from "@js/config.frontend.js";
 
 // Разрешаем переопределять адрес API через meta-тег `mad-api-url` или
 // глобальную переменную `MAD_API_URL`, чтобы фронтенд можно было разворачивать
