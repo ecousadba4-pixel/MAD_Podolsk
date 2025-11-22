@@ -5,9 +5,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .constants import API_PREFIX, HEALTH_PATH
 from .db import close_pool
 from .routers import dashboard
-
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -55,9 +55,9 @@ def create_app() -> FastAPI:
 
         return response
 
-    app.include_router(dashboard.router, prefix="/api")
+    app.include_router(dashboard.router, prefix=API_PREFIX)
 
-    @app.get("/health")
+    @app.get(HEALTH_PATH)
     def health() -> dict[str, str]:
         return {"status": "ok"}
 

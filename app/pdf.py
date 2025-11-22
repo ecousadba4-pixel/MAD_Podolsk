@@ -20,6 +20,25 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from .constants import (
+    CATEGORY_VNR_1,
+    CATEGORY_VNR_2,
+    CATEGORY_VNR_LABEL,
+    LAST_UPDATED_DATETIME_FORMAT,
+    MIN_VALUE_THRESHOLD,
+    PAGE_NUMBER_OFFSET_X_MM,
+    PAGE_NUMBER_OFFSET_Y_MM,
+    SUMMARY_LABEL_COMPLETION,
+    SUMMARY_LABEL_DELTA,
+    SUMMARY_LABEL_FACT,
+    SUMMARY_LABEL_PLAN,
+    TABLE_HEADER_DELTA,
+    TABLE_HEADER_FACT,
+    TABLE_HEADER_PLAN,
+    TABLE_HEADER_SMETA,
+    TZ_MOSCOW_NAME,
+    UNTITLED_WORK_LABEL,
+)
 from .font_storage import ensure_embedded_fonts
 from .models import DashboardItem, DashboardSummary
 from .utils import format_money, format_percent, normalize_string
@@ -52,7 +71,7 @@ FONT_FALLBACKS: dict[str, str] = {
 }
 
 try:
-    MOSCOW_TZ = ZoneInfo("Europe/Moscow")
+    MOSCOW_TZ = ZoneInfo(TZ_MOSCOW_NAME)
 except ZoneInfoNotFoundError:
     LOGGER.warning(
         "Не удалось загрузить таймзону Europe/Moscow из системной базы. "
@@ -172,8 +191,8 @@ MONTH_LABELS = [
 ]
 
 MERGED_CATEGORY_OVERRIDES: dict[str, str] = {
-    "внерегл_ч_1": "внерегламент",
-    "внерегл_ч_2": "внерегламент",
+    CATEGORY_VNR_1: CATEGORY_VNR_LABEL,
+    CATEGORY_VNR_2: CATEGORY_VNR_LABEL,
 }
 
 
@@ -217,8 +236,8 @@ class NumberedCanvas(canvas.Canvas):
     def _draw_page_number(self, page_count: int):
         self.setFont(BODY_FONT_NAME, 8)
         page_number = f"{self._pageNumber} / {page_count}"
-        x = self._pagesize[0] - 15 * mm
-        y = 10 * mm
+        x = self._pagesize[0] - PAGE_NUMBER_OFFSET_X_MM * mm
+        y = PAGE_NUMBER_OFFSET_Y_MM * mm
         self.drawRightString(x, y, page_number)
 
 
@@ -253,7 +272,7 @@ def _group_items(items: Sequence[DashboardItem]) -> list[CategoryGroup]:
             continue
         planned_value = item.planned_amount or 0.0
         fact_value = item.fact_amount or 0.0
-        if planned_value < 1 and fact_value < 1:
+        if planned_value < MIN_VALUE_THRESHOLD and fact_value < MIN_VALUE_THRESHOLD:
             # Исключаем строки, где план и факт одновременно меньше 1
             continue
         is_plan_only = getattr(item, "category_plan_only", False)
@@ -310,7 +329,7 @@ def _format_last_updated(value: datetime | None) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     dt = dt.astimezone(MOSCOW_TZ)
-    return dt.strftime("%d.%m.%Y %H:%M МСК")
+    return dt.strftime(LAST_UPDATED_DATETIME_FORMAT)
 
 
 def _build_summary_table(summary: DashboardSummary | None, width: float) -> Table:
@@ -319,10 +338,10 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
     completion = summary.completion_pct if summary else None
     delta = summary.delta_amount if summary else None
     data = [
-        ["План", format_money(planned)],
-        ["Факт", format_money(fact)],
-        ["Выполнение", format_percent(completion)],
-        ["Отклонение", format_money(delta)],
+        [SUMMARY_LABEL_PLAN, format_money(planned)],
+        [SUMMARY_LABEL_FACT, format_money(fact)],
+        [SUMMARY_LABEL_COMPLETION, format_percent(completion)],
+        [SUMMARY_LABEL_DELTA, format_money(delta)],
     ]
     table = Table(data, colWidths=[width * 0.35, width * 0.65])
     table.setStyle(
@@ -339,7 +358,12 @@ def _build_summary_table(summary: DashboardSummary | None, width: float) -> Tabl
 
 
 def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
-    header = ["Смета", "План", "Факт", "Отклонение"]
+    header = [
+        TABLE_HEADER_SMETA,
+        TABLE_HEADER_PLAN,
+        TABLE_HEADER_FACT,
+        TABLE_HEADER_DELTA,
+    ]
     data: list[list[object]] = [header]
     category_rows: list[int] = []
     item_rows: list[int] = []
@@ -381,7 +405,7 @@ def _build_items_table(groups: Iterable[CategoryGroup], width: float) -> Table:
         if group.items:
             for idx, item in enumerate(group.items):
                 delta = _calculate_delta(item)
-                work_name = item.work_name or item.description or "Без названия"
+                work_name = item.work_name or item.description or UNTITLED_WORK_LABEL
                 data.append(
                     [
                         _paragraph(work_name, NESTED_TABLE_TEXT_STYLE),

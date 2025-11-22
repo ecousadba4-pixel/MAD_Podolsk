@@ -7,6 +7,7 @@ from fastapi import Request
 from pydantic import BaseModel, Field, field_validator
 from psycopg2 import IntegrityError
 
+from .constants import TZ_MOSCOW_NAME
 from .db import get_connection
 
 logger = logging.getLogger(__name__)

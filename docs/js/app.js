@@ -6,16 +6,24 @@ import { VisitorTracker } from "./visitor.js";
 // Разрешаем переопределять адрес API через meta-тег `mad-api-url` или
 // глобальную переменную `MAD_API_URL`, чтобы фронтенд можно было разворачивать
 // на статическом хостинге с бекендом на другом домене.
+
+const DEFAULT_API_BASE = "/api/dashboard";
+const API_PDF_SUFFIX = "/pdf";
+const API_MONTHS_SUFFIX = "/months";
+const API_DAYS_SUFFIX = "/days";
+const API_DAILY_SUFFIX = "/daily";
+const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
+
 const API_URL = (() => {
   const metaApiUrl = document.querySelector('meta[name="mad-api-url"]');
   const explicitUrl = (metaApiUrl?.content || window.MAD_API_URL || "").trim();
-  return explicitUrl || "/api/dashboard"; // значение по умолчанию — тот же домен
+  return explicitUrl || DEFAULT_API_BASE; // значение по умолчанию — тот же домен
 })();
 const API_BASE = API_URL.replace(/\/$/, "");
-const API_PDF_URL = `${API_BASE}/pdf`;
-const API_MONTHS_URL = `${API_BASE}/months`;
-const API_DAYS_URL = `${API_BASE}/days`;
-const API_DAILY_URL = `${API_BASE}/daily`;
+const API_PDF_URL = `${API_BASE}${API_PDF_SUFFIX}`;
+const API_MONTHS_URL = `${API_BASE}${API_MONTHS_SUFFIX}`;
+const API_DAYS_URL = `${API_BASE}${API_DAYS_SUFFIX}`;
+const API_DAILY_URL = `${API_BASE}${API_DAILY_SUFFIX}`;
 
 document.addEventListener("DOMContentLoaded", () => {
   const visitorTracker = new VisitorTracker();
@@ -73,13 +81,14 @@ document.addEventListener("DOMContentLoaded", () => {
     dailyPanelSubtitle: "#daily-panel-subtitle",
   });
 
-  const pdfButtonDefaultLabel = DOM.pdfButton ? DOM.pdfButton.innerHTML : "Скачать PDF";
+  const DEFAULT_PDF_LABEL = "Скачать PDF";
+  const pdfButtonDefaultLabel = DOM.pdfButton ? DOM.pdfButton.innerHTML : DEFAULT_PDF_LABEL;
   setElementsDisabled({
     pdfButton: DOM.pdfButton,
     workSortSelect: DOM.workSortSelect,
   }, true);
 
-  const pdfMobileMediaQuery = window.matchMedia("(max-width: 767px)");
+  const pdfMobileMediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
   const movePdfButton = (isMobile) => {
     if (!DOM.pdfButton || !DOM.pdfButtonContainerDesktop || !DOM.pdfButtonContainerMobile) {
       return;

@@ -9,6 +9,7 @@ from typing import Any, Callable, TypeVar
 from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
 
+from .constants import CATEGORY_SEASONAL, CATEGORY_VNR_CODES, CATEGORY_VNR_LABEL
 from .db import get_connection
 from .retry import db_retry
 from .models import (
@@ -32,8 +33,8 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-_PLAN_BASE_CATEGORIES = {"лето", "зима"}
-_VNR_CATEGORY_CODES = {"внерегл_ч_1", "внерегл_ч_2"}
+_PLAN_BASE_CATEGORIES = CATEGORY_SEASONAL
+_VNR_CATEGORY_CODES = CATEGORY_VNR_CODES
 _VNR_PLAN_SHARE = Decimal("0.43")
 
 _DB_RETRYABLE_ERRORS = (OperationalError, InterfaceError)
@@ -146,7 +147,7 @@ def _build_vnr_plan_item(plan_value: float, items: list["DashboardItem"]) -> "Da
 
     category = None
     smeta = None
-    description = "внерегламент"
+    description = CATEGORY_VNR_LABEL
 
     for item in items:
         category_code = (item.category or "").strip().lower()

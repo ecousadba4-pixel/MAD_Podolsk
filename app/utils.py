@@ -6,6 +6,8 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
+from .constants import EMPTY_DISPLAY_VALUE, THOUSANDS_SEPARATOR, PERCENT_SUFFIX
+
 
 def to_float(value: Any) -> float | None:
     """Безопасное преобразование значения в float.
@@ -130,11 +132,11 @@ def format_money(value: float | None) -> str:
         value: Денежное значение.
     
     Returns:
-        Отформатированная строка или "–" для None.
+        Отформатированная строка или EMPTY_DISPLAY_VALUE для None.
     """
     if value is None:
-        return "–"
-    return f"{value:,.0f}".replace(",", " ")
+        return EMPTY_DISPLAY_VALUE
+    return f"{value:,.0f}".replace(",", THOUSANDS_SEPARATOR)
 
 
 def format_percent(value: float | None, decimals: int = 1) -> str:
@@ -145,11 +147,11 @@ def format_percent(value: float | None, decimals: int = 1) -> str:
         decimals: Количество десятичных знаков.
     
     Returns:
-        Отформатированная строка или "–" для None.
+        Отформатированная строка или EMPTY_DISPLAY_VALUE для None.
     """
     if value is None:
-        return "–"
-    return f"{value * 100:.{decimals}f} %"
+        return EMPTY_DISPLAY_VALUE
+    return f"{value * 100:.{decimals}f}{PERCENT_SUFFIX}"
 
 
 def extract_dict_strings(
