@@ -122,6 +122,3 @@ export function initApp() {
   visitorTracker.sendVisitLog({ apiBase: API_BASE, endpoint: endpointPath });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  initApp();
-});
