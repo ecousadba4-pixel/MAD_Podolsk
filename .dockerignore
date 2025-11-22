@@ -7,3 +7,11 @@ docs
 .env
 __pycache__
 *.pyc
+
+# Node.js
+node_modules
+frontend/node_modules
+
+# Сборки фронтенда
+dist
+frontend/dist
