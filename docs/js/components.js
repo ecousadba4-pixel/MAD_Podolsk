@@ -18,6 +18,7 @@ import {
   updateContractCard as updateContractCardExternal,
 } from "./summary.js";
 import { renderCategories as renderCategoriesExternal } from "./categories.js";
+import { DailyModal } from "./daily-modal.js";
 
 // Цветовые палитры категорий вынесены в константу верхнего уровня,
 // чтобы `UIManager` концентрировался на логике, а не на данных оформления.
@@ -68,7 +69,6 @@ export class UIManager {
     this.lastUpdatedDailyLabel = null;
     this.lastUpdatedDailyDateLabel = null;
     this.summaryDailyRevenue = [];
-    this.dailyRevenue = [];
     this.workSort = { column: "planned" };
     this.selectedMonthIso = null;
     this.selectedDayIso = null;
@@ -77,6 +77,14 @@ export class UIManager {
     this.viewMode = "monthly";
     this.dayOptionsLoaded = false;
     this.currentDailyData = null;
+    this.dailyModal = new DailyModal({
+      elements: this.elements,
+      dataManager: this.dataManager,
+      visitorTracker: this.visitorTracker,
+      getSelectedMonthLabel: () => this.getSelectedMonthLabel(),
+      isCurrentMonth: (iso) => this.isCurrentMonth(iso),
+      announce: (message) => this.announce(message),
+    });
     if (this.elements.workSortSelect) {
       this.elements.workSortSelect.value = this.workSort.column;
     }
@@ -102,6 +110,7 @@ export class UIManager {
   init() {
     this.prepareWorkList();
     this.liveRegion = this.createLiveRegion();
+    this.dailyModal.bindEvents();
     this.bindEvents();
     // По умолчанию скрываем подсказку о ежедневных данных до выбора месяца
     if (this.elements.workDetailHint) {
@@ -198,19 +207,6 @@ export class UIManager {
       });
     }
     this.elements.pdfButton.addEventListener("click", (event) => this.downloadPdfReport(event));
-    if (this.elements.dailyAverageCard) {
-      this.elements.dailyAverageCard.addEventListener("click", () => this.openDailyModal());
-    }
-    if (this.elements.dailyModalClose) {
-      this.elements.dailyModalClose.addEventListener("click", () => this.closeDailyModal());
-    }
-    if (this.elements.dailyModal) {
-      this.elements.dailyModal.addEventListener("click", (event) => {
-        if (event.target === this.elements.dailyModal) {
-          this.closeDailyModal();
-        }
-      });
-    }
     if (this.elements.viewModeMonthly) {
       this.elements.viewModeMonthly.addEventListener("click", () => this.switchViewMode("monthly"));
     }
@@ -453,6 +449,9 @@ export class UIManager {
 
   async loadMonthData(monthIso) {
     this.selectedMonthIso = monthIso;
+    if (this.dailyModal) {
+      this.dailyModal.setSelectedMonth(monthIso);
+    }
     this.updateDailyAverageVisibility(monthIso);
     const cached = this.dataManager.getCached(monthIso);
     if (cached) {
@@ -570,7 +569,9 @@ export class UIManager {
     } = renderSummaryExternal({ metrics, elements: this.elements });
 
     this.summaryDailyRevenue = summaryDailyRevenue || [];
-    this.dailyRevenue = [...this.summaryDailyRevenue];
+    if (this.dailyModal) {
+      this.dailyModal.setSummaryDailyRevenue(this.summaryDailyRevenue);
+    }
     this.updateSummaryProgress(completion, completionLabel);
     this.updateDailyAverage(averageDailyRevenue, this.summaryDailyRevenue.length);
   }
@@ -711,169 +712,13 @@ export class UIManager {
   }
 
   openDailyModal() {
-    if (
-      !this.summaryDailyRevenue.length
-      || !this.elements.dailyModal
-      || !this.isCurrentMonth(this.selectedMonthIso)
-    ) {
-      return;
-    }
-    // Устанавливаем заголовок модального окна для среднедневной выручки
-    const titleEl = this.elements.dailyModal.querySelector("#daily-modal-title") || document.getElementById("daily-modal-title");
-    if (titleEl) titleEl.textContent = "Среднедневная выручка";
-    
-    // Устанавливаем подзаголовок
-    const monthLabel = this.getSelectedMonthLabel() || "выбранный месяц";
-    if (this.elements.dailyModalSubtitle) {
-      this.elements.dailyModalSubtitle.textContent = `По дням за ${monthLabel.toLowerCase()}`;
-    }
-    
-    this.dailyRevenue = [...this.summaryDailyRevenue];
-    this.dailyModalMode = "average";
-    this.renderDailyModalList();
-    this.elements.dailyModal.classList.add("visible");
-    this.elements.dailyModal.setAttribute("aria-hidden", "false");
+    if (!this.dailyModal) return;
+    this.dailyModal.openAverageModal();
   }
 
   async openWorkModal(item) {
-    if (!item || !this.elements.dailyModal || !this.isCurrentMonth(this.selectedMonthIso)) {
-      return;
-    }
-    const workName = (item.work_name || item.description || "").toString();
-    const monthIso = this.selectedMonthIso;
-    const apiBase = (this.dataManager && this.dataManager.apiUrl)
-      ? this.dataManager.apiUrl.replace(/\/$/, "")
-      : "/api/dashboard";
-
-    const url = new URL(`${apiBase}/work-breakdown`, window.location.origin);
-    url.searchParams.set("month", monthIso);
-    url.searchParams.set("work", workName);
-
-    try {
-      // Установим заголовок модального окна
-      const titleEl = this.elements.dailyModal.querySelector("#daily-modal-title") || document.getElementById("daily-modal-title");
-      if (titleEl) titleEl.textContent = `Расшифровка: ${workName}`;
-      if (this.elements.dailyModalSubtitle) {
-        this.elements.dailyModalSubtitle.textContent = "";
-      }
-
-      const response = await fetch(url.toString(), {
-        headers: this.visitorTracker ? this.visitorTracker.buildHeaders() : {},
-      });
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      const payload = await response.json();
-      const items = Array.isArray(payload) ? payload : (payload?.daily || []);
-
-      // Преобразуем в формат для отрисовки с единицей измерения
-      this.dailyModalMode = "work";
-      this.dailyRevenue = (items || []).map((it) => {
-        const date = it.date || it.work_date || it.day;
-        const raw = it.amount ?? it.total_volume ?? it.value;
-        const amount = raw === null || raw === undefined ? null : Number(raw);
-        const unit = it.unit || "";
-        const total_amount = it.total_amount ?? null;
-        if (!date || amount === null || !Number.isFinite(amount)) return null;
-        return { date, amount, unit, total_amount };
-      }).filter(Boolean);
-
-      this.renderDailyModalList();
-      this.elements.dailyModal.classList.add("visible");
-      this.elements.dailyModal.setAttribute("aria-hidden", "false");
-    } catch (err) {
-      console.error("Ошибка загрузки расшифровки по работе:", err);
-      showToast("Не удалось загрузить расшифровку по работе.", "error");
-    }
-  }
-
-  closeDailyModal() {
-    if (!this.elements.dailyModal) return;
-    this.elements.dailyModal.classList.remove("visible");
-    this.elements.dailyModal.setAttribute("aria-hidden", "true");
-  }
-
-  renderDailyModalList() {
-    if (!this.elements.dailyModalList || !this.elements.dailyModalEmpty) return;
-
-    const monthLabel = this.getSelectedMonthLabel() || "выбранный месяц";
-    if (this.elements.dailyModalSubtitle) {
-      this.elements.dailyModalSubtitle.textContent = `По дням за ${monthLabel.toLowerCase()}`;
-    }
-
-    this.elements.dailyModalList.innerHTML = "";
-    const sorted = [...this.dailyRevenue].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    if (!sorted.length) {
-      this.elements.dailyModalEmpty.style.display = "block";
-      this.elements.dailyModalList.style.display = "none";
-      return;
-    }
-
-    this.elements.dailyModalEmpty.style.display = "none";
-    this.elements.dailyModalList.style.display = "grid";
-
-    // Определяем режим отображения: по-умолчанию — если у элементов есть unit или total_amount,
-    // показываем колонки "Объем" + "Сумма" (работы). Иначе — показываем только "Сумма" (среднедневная выручка).
-    const isWorkMode = this.dailyModalMode === "work" || sorted.some((it) => it.unit || (it.total_amount !== null && it.total_amount !== undefined));
-
-    // Добавляем заголовки
-      const header = document.createElement("div");
-      header.className = "modal-row modal-row-header";
-      if (isWorkMode) {
-        header.innerHTML = `
-          <div class="modal-row-date">Дата</div>
-          <div class="modal-row-value"><span class="modal-value-number">Объем</span></div>
-          <div class="modal-row-sum">Сумма,₽</div>
-        `;
-      } else {
-        header.innerHTML = `
-          <div class="modal-row-date">Дата</div>
-          <div class="modal-row-sum">Сумма, ₽</div>
-        `;
-      }
-    this.elements.dailyModalList.appendChild(header);
-
-    const fragment = document.createDocumentFragment();
-    sorted.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "modal-row";
-      // Для мобильной версии используем компактный формат даты DD.MM
-      const isMobile = typeof window !== "undefined" && window.matchMedia
-        ? window.matchMedia("(max-width: 767px)").matches
-        : false;
-      const dateLabel = isMobile
-        ? formatDate(item.date, { day: "2-digit", month: "2-digit" })
-        : formatDate(item.date);
-      if (isWorkMode) {
-        const amount = Number(item.amount);
-        const formattedAmount = Number.isFinite(amount) ? amount.toFixed(1) : "–";
-        const unit = item.unit || "";
-        const totalAmount = Number(item.total_amount);
-        const formattedTotal = Number.isFinite(totalAmount)
-          ? totalAmount.toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-          : "–";
-        row.innerHTML = `
-          <div class="modal-row-date">${dateLabel}</div>
-          <div class="modal-row-value">
-            <span class="modal-value-number">${Number.isFinite(amount) ? formattedAmount : formattedAmount}</span>
-            ${unit ? `<span class="modal-value-unit">(${unit})</span>` : ""}
-          </div>
-          <div class="modal-row-sum">${formattedTotal}</div>
-        `;
-      } else {
-        // Режим среднедневной выручки: item.amount — это денежная величина
-        const sumAmount = Number(item.amount);
-        const formattedSum = Number.isFinite(sumAmount)
-          ? sumAmount.toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-          : "–";
-        row.innerHTML = `
-          <div class="modal-row-date">${dateLabel}</div>
-          <div class="modal-row-sum">${formattedSum}</div>
-        `;
-      }
-      fragment.appendChild(row);
-    });
-
-    this.elements.dailyModalList.appendChild(fragment);
+    if (!this.dailyModal) return;
+    await this.dailyModal.openWorkModal(item, this.selectedMonthIso);
   }
 
   renderCategories() {
@@ -1148,97 +993,4 @@ export class UIManager {
         console.error(err);
       }
     });
-    return row;
-  }
-
-  updateWorkNameCollapsers() {
-    this.updateNameCollapsers(this.elements.workListScroller);
-  }
-
-  getSelectedMonthLabel() {
-    const option = this.elements.monthSelect.options[this.elements.monthSelect.selectedIndex];
-    return option ? option.textContent.trim() : "";
-  }
-
-  async downloadPdfReport(event) {
-    event.preventDefault();
-    if (this.elements.pdfButton.disabled) {
-      return;
-    }
-    const selectedMonth = this.getSelectedMonthLabel() || this.elements.monthSelect.value || "period";
-    const fileNameSlug = selectedMonth
-      .toString()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^0-9A-Za-zА-Яа-я\-]+/g, "")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-    const fileName = fileNameSlug ? `mad-podolsk-otchet-${fileNameSlug}.pdf` : "mad-podolsk-otchet.pdf";
-    this.elements.pdfButton.disabled = true;
-    this.elements.pdfButton.innerHTML = "Формируем PDF…";
-    try {
-      const pdfUrl = new URL(this.apiPdfUrl, window.location.origin);
-      pdfUrl.searchParams.set("month", this.elements.monthSelect.value);
-      const response = await fetch(pdfUrl.toString(), {
-        headers: {
-          Accept: "application/pdf",
-          ...(this.visitorTracker ? this.visitorTracker.buildHeaders() : {}),
-        },
-      });
-      if (!response.ok) {
-        throw new Error("HTTP " + response.status);
-      }
-      const blob = await response.blob();
-      const downloadUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = downloadUrl;
-      anchor.download = fileName;
-      anchor.style.display = "none";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
-      this.announce("PDF-отчёт сформирован.");
-    } catch (error) {
-      console.error("PDF export error", error);
-      showToast("Не удалось сформировать PDF. Попробуйте ещё раз позже.", "error");
-      this.announce("Ошибка формирования PDF");
-    } finally {
-      this.elements.pdfButton.innerHTML = this.pdfButtonDefaultLabel;
-      this.elements.pdfButton.disabled = !this.groupedCategories.length;
-    }
-  }
-
-  enhanceAccessibility() {
-    const cards = this.elements.categoryGrid.querySelectorAll(".category-card");
-    cards.forEach((card, index) => {
-      const title = card.querySelector(".category-title span")?.textContent?.trim() || `Смета ${index + 1}`;
-      card.setAttribute("role", "button");
-      card.setAttribute("tabindex", "0");
-      card.setAttribute("aria-label", `Смета ${title}`);
-      card.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          card.click();
-        }
-      });
-    });
-  }
-
-  createLiveRegion() {
-    const liveRegion = document.createElement("div");
-    liveRegion.setAttribute("aria-live", "polite");
-    liveRegion.setAttribute("aria-atomic", "true");
-    liveRegion.className = "sr-only";
-    document.body.appendChild(liveRegion);
-    return liveRegion;
-  }
-
-  announce(message) {
-    if (!this.liveRegion) return;
-    this.liveRegion.textContent = "";
-    requestAnimationFrame(() => {
-      this.liveRegion.textContent = message;
-    });
-  }
-}
+    
